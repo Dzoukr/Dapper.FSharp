@@ -1,0 +1,17 @@
+.fable/
+.fake/
+.vs/
+obj/
+bin/
+packages/
+paket-files/
+node_modules/
+release.cmd
+release.sh
+.idea/
+*.DotSettings.user
+deploy
+src/Yobo.Client/output/
+/.ionide
+config.development.json
+local.settings.json

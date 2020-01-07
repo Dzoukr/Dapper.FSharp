@@ -1,0 +1,19 @@
+version 5.241.2
+
+source https://api.nuget.org/v3/index.json
+storage: none
+
+nuget FSharp.Core
+nuget Dapper
+nuget Expecto
+nuget Microsoft.Data.SqlClient
+nuget TaskBuilder.fs
+nuget Microsoft.Extensions.Configuration.Json
+
+group Build
+    source https://api.nuget.org/v3/index.json
+    storage: none
+    nuget FSharp.Core
+    nuget Fake.DotNet.Cli
+    nuget Fake.Core.Target
+    nuget Fake.IO.FileSystem

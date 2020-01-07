@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Dapper.FSharp", "src\Dapper.FSharp\Dapper.FSharp.fsproj", "{14E8D2C3-AAF2-4A0A-A8B8-B93E4437F2B3}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Dapper.FSharp.Tests", "tests\Dapper.FSharp.Tests\Dapper.FSharp.Tests.fsproj", "{626FF868-45FD-4836-BB92-6E1A428CC057}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{14E8D2C3-AAF2-4A0A-A8B8-B93E4437F2B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{14E8D2C3-AAF2-4A0A-A8B8-B93E4437F2B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{14E8D2C3-AAF2-4A0A-A8B8-B93E4437F2B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{14E8D2C3-AAF2-4A0A-A8B8-B93E4437F2B3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{626FF868-45FD-4836-BB92-6E1A428CC057}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{626FF868-45FD-4836-BB92-6E1A428CC057}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{626FF868-45FD-4836-BB92-6E1A428CC057}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{626FF868-45FD-4836-BB92-6E1A428CC057}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
