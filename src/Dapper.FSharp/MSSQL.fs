@@ -138,12 +138,6 @@ module private Reflection =
         match box v with
         | null -> None
         | x -> mkSome typeof<'a> x :?> Option<_>
-    
-    let isOption (t:Type) = 
-        t.IsGenericType &&
-        t.GetGenericTypeDefinition() = typedefof<Option<_>>        
-    
-    let getOptionType (t:Type) = t.GetGenericArguments() |> Array.head
             
     let getFields (t:Type) =
         FSharp.Reflection.FSharpType.GetRecordFields(t)
