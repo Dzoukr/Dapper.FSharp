@@ -20,6 +20,12 @@ let main _ =
     Dapper.FSharp.OptionTypes.register()
     let conn = new SqlConnection(connectionString)
     
-    Tests.testList "MSSQL" [ MSSQL.InsertTests.tests conn; MSSQL.UpdateTests.tests conn; MSSQL.DeleteTests.tests conn ]
+    [
+        MSSQL.InsertTests.tests conn
+        MSSQL.UpdateTests.tests conn
+        MSSQL.DeleteTests.tests conn
+        MSSQL.SelectTests.tests conn
+    ]
+    |> Tests.testList "MSSQL" 
     |> Tests.testSequenced
     |> Tests.runTests testConfig

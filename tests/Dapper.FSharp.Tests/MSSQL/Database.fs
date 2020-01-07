@@ -60,3 +60,47 @@ module Persons =
                 |> conn.ExecuteIgnore
             return ()                
         }
+        
+module Dogs =
+    
+    type View = {
+        OwnerId : Guid
+        Nickname : string
+    }
+    
+    module View =
+        let generate1to1 (owners:Persons.View list) =
+            owners
+            |> List.mapi (fun i x ->
+                {
+                    OwnerId = x.Id
+                    Nickname = sprintf "Dog_%i" i
+                }
+            )
+        
+        let generate1toN count (owner:Persons.View) =
+            [1..count]
+            |> List.map (fun i ->
+                {
+                    OwnerId = owner.Id
+                    Nickname = sprintf "Dog_%i" i
+                }
+            )
+        
+    
+    let tableName = "Dogs"
+    
+    let init (conn:IDbConnection) =
+        task {
+            do! "DROP TABLE <TABLE_NAME>" |> withTable tableName |> conn.ExecuteCatchIgnore
+            do! 
+                """
+                CREATE TABLE [dbo].[<TABLE_NAME>](
+                    [OwnerId] [uniqueidentifier] NOT NULL,
+                    [Nickname] [nvarchar](max) NOT NULL
+                )
+                """
+                |> withTable tableName
+                |> conn.ExecuteIgnore
+            return ()                
+        }        

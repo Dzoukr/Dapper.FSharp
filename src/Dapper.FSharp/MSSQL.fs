@@ -127,9 +127,26 @@ module private Evaluators =
         sb.ToString()        
     
 module private Reflection =        
-
-    let getFields<'a> () =
-        FSharp.Reflection.FSharpType.GetRecordFields(typeof<'a>)
+    open System
+    
+    let mkSome (typ:Type) arg =
+        let unionType = typedefof<option<_>>.MakeGenericType typ
+        let meth = unionType.GetMethod("Some")
+        meth.Invoke(null, [|arg|])
+    
+    let makeOption<'a> (v:obj) : Option<'a> =
+        match box v with
+        | null -> None
+        | x -> mkSome typeof<'a> x :?> Option<_>
+    
+    let isOption (t:Type) = 
+        t.IsGenericType &&
+        t.GetGenericTypeDefinition() = typedefof<Option<_>>        
+    
+    let getOptionType (t:Type) = t.GetGenericArguments() |> Array.head
+            
+    let getFields (t:Type) =
+        FSharp.Reflection.FSharpType.GetRecordFields(t)
         |> Array.map (fun x -> x.Name)
         |> Array.toList
     
@@ -140,7 +157,7 @@ module private Reflection =
 module private Preparators =
     
     let prepareSelect<'a> (q:SelectQuery) =
-        let fields = Reflection.getFields<'a>()
+        let fields = typeof<'a> |> Reflection.getFields
         // extract metadata
         let meta = WhereAnalyzer.getWhereMetadata [] q.Where
         let query = Evaluators.evalSelectQuery fields meta q
@@ -148,24 +165,25 @@ module private Preparators =
         query, pars
     
     let prepareSelectTuple2<'a,'b> (q:SelectQuery) =
+        let f2 = typeof<'b> |> Reflection.getFields
         let tableTwo = q.Joins.Head |> Join.tableName
-        let fieldsOne = Reflection.getFields<'a>() |> List.map (sprintf "%s.%s" q.Table)
-        let fieldsTwo = Reflection.getFields<'b>() |> List.map (sprintf "%s.%s" tableTwo)
+        let fieldsOne = typeof<'a> |> Reflection.getFields |> List.map (sprintf "%s.%s" q.Table)
+        let fieldsTwo = f2 |> List.map (sprintf "%s.%s" tableTwo)
         let fields = fieldsOne @ fieldsTwo
         
         // extract metadata
         let meta = WhereAnalyzer.getWhereMetadata [] q.Where
         let query = Evaluators.evalSelectQuery fields meta q
         let pars = WhereAnalyzer.extractWhereParams meta |> Map.ofList
-        query, pars
+        query, pars, f2.Head
         
     let prepareInsert (q:InsertQuery<'a>) =
-        let fields = Reflection.getFields<'a>()
+        let fields = typeof<'a> |> Reflection.getFields
         let query = Evaluators.evalInsertQuery fields q
         query, q.Values
     
     let prepareUpdate<'a> (q:UpdateQuery<'a>) =
-        let fields = Reflection.getFields<'a>()
+        let fields = typeof<'a> |> Reflection.getFields
         let values = Reflection.getValues q.Value
         // extract metadata
         let meta = WhereAnalyzer.getWhereMetadata [] q.Where
@@ -184,13 +202,15 @@ open Dapper
 type System.Data.IDbConnection with
     member this.SelectAsync<'a> (q:SelectQuery) =
         let query, pars = q |> Preparators.prepareSelect<'a>
-        //printfn "%s" query
         this.QueryAsync<'a>(query, pars)
     
     member this.SelectAsync<'a,'b> (q:SelectQuery) =
-        let query, pars = q |> Preparators.prepareSelectTuple2<'a,'b>
-        //printfn "%s" query
-        this.QueryAsync<'a,'b,('a * 'b)>(query, (fun x y -> x, y), pars)
+        let query, pars, splitOn = q |> Preparators.prepareSelectTuple2<'a,'b>
+        this.QueryAsync<'a,'b,('a * 'b)>(query, (fun x y -> x, y), pars, splitOn = splitOn)
+    
+    member this.SelectAsyncOption<'a, 'b> (q:SelectQuery) =
+        let query, pars, splitOn = q |> Preparators.prepareSelectTuple2<'a,'b>
+        this.QueryAsync<'a,'b,('a * 'b option)>(query, (fun x y -> x, Reflection.makeOption y), pars, splitOn = splitOn)
         
     member this.InsertAsync<'a> (q:InsertQuery<'a>) =
         let query, values = q |> Preparators.prepareInsert

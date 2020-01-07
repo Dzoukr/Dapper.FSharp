@@ -16,6 +16,7 @@
     <Compile Include="MSSQL\InsertTests.fs" />
     <Compile Include="MSSQL\UpdateTests.fs" />
     <Compile Include="MSSQL\DeleteTests.fs" />
+    <Compile Include="MSSQL\SelectTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
