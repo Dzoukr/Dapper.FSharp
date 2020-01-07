@@ -5,14 +5,18 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="MSSQLTests.fs" />
-    <Compile Include="Program.fs" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="local.settings.json" Condition="Exists('local.settings.json')">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Extensions.fs" />
+    <Compile Include="MSSQL\Database.fs" />
+    <Compile Include="MSSQL\InsertTests.fs" />
+    <Compile Include="MSSQL\UpdateTests.fs" />
+    <Compile Include="MSSQL\DeleteTests.fs" />
+    <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Dapper.FSharp\Dapper.FSharp.fsproj" />

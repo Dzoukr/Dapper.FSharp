@@ -18,8 +18,8 @@ let main _ =
     let connectionString = conf.["connectionString"]                      
     
     Dapper.FSharp.OptionTypes.register()
-    let connection = new SqlConnection(connectionString)
+    let conn = new SqlConnection(connectionString)
     
-    Tests.testList "MSSQL" (MSSQLTests.tests connection)
+    Tests.testList "MSSQL" [ MSSQL.InsertTests.tests conn; MSSQL.UpdateTests.tests conn; MSSQL.DeleteTests.tests conn ]
     |> Tests.testSequenced
     |> Tests.runTests testConfig
