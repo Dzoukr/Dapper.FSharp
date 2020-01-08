@@ -13,17 +13,17 @@ let tests (conn:IDbConnection) = Tests.testList "DELETE" [
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table Persons.tableName
+                table "Persons"
                 values rs
             } |> conn.InsertAsync
         let! _ =
             delete {
-                table Persons.tableName
+                table "Persons"
                 where (column "Position" (Eq 10))
             } |> conn.DeleteAsync
         let! fromDb =
             select {
-                table Persons.tableName
+                table "Persons"
                 orderBy "Position" Desc
             } |> conn.SelectAsync<Persons.View>            
         Expect.equal 9 (Seq.length fromDb) ""
@@ -35,18 +35,18 @@ let tests (conn:IDbConnection) = Tests.testList "DELETE" [
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table Persons.tableName
+                table "Persons"
                 values rs
             } |> conn.InsertAsync
         let! _ =
             delete {
-                table Persons.tableName
+                table "Persons"
                 where (column "Position" (Ge 7))
             } |> conn.DeleteAsync
         
         let! fromDb =
             select {
-                table Persons.tableName
+                table "Persons"
             } |> conn.SelectAsync<Persons.View>            
         Expect.equal 6 (Seq.length fromDb) ""
     }

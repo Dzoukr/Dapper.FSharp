@@ -5,8 +5,6 @@ open System
 open System.Data
 open FSharp.Control.Tasks
 
-let private withTable tn (str:string) = str.Replace("<TABLE_NAME>", tn)
-
 module Persons =
     
     type View = {
@@ -37,26 +35,23 @@ module Persons =
                 }
             ) 
     
-    let tableName = "Persons"
-    
     let init (conn:IDbConnection) =
         task {
-            do! "DROP TABLE <TABLE_NAME>" |> withTable tableName |> conn.ExecuteCatchIgnore
+            do! "DROP TABLE Persons" |> conn.ExecuteCatchIgnore
             do! 
                 """
-                CREATE TABLE [dbo].[<TABLE_NAME>](
+                CREATE TABLE [dbo].[Persons](
                     [Id] [uniqueidentifier] NOT NULL,
                     [FirstName] [nvarchar](max) NOT NULL,
                     [LastName] [nvarchar](max) NOT NULL,
                     [Position] [int] NOT NULL,
                     [DateOfBirth] [datetime] NULL,
-                 CONSTRAINT [PK_<TABLE_NAME>] PRIMARY KEY CLUSTERED 
+                 CONSTRAINT [PK_Persons] PRIMARY KEY CLUSTERED 
                 (
                     [Id] ASC
                 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
                 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
                 """
-                |> withTable tableName
                 |> conn.ExecuteIgnore
             return ()                
         }
@@ -86,21 +81,63 @@ module Dogs =
                     Nickname = sprintf "Dog_%i" i
                 }
             )
-        
-    
-    let tableName = "Dogs"
     
     let init (conn:IDbConnection) =
         task {
-            do! "DROP TABLE <TABLE_NAME>" |> withTable tableName |> conn.ExecuteCatchIgnore
+            do! "DROP TABLE Dogs" |> conn.ExecuteCatchIgnore
             do! 
                 """
-                CREATE TABLE [dbo].[<TABLE_NAME>](
+                CREATE TABLE [dbo].[Dogs](
                     [OwnerId] [uniqueidentifier] NOT NULL,
                     [Nickname] [nvarchar](max) NOT NULL
                 )
                 """
-                |> withTable tableName
                 |> conn.ExecuteIgnore
             return ()                
-        }        
+        }
+
+module DogsWeights =
+    
+    type View = {
+        DogNickname : string
+        Year : int16
+        Weight : int16
+    }
+    
+    module View =
+        let generate1to1 (dogs:Dogs.View list) =
+            dogs
+            |> List.mapi (fun i x ->
+                {
+                    DogNickname = x.Nickname
+                    Year = 2010s + (int16 i)
+                    Weight = 10s + (int16 i)
+                }
+            )
+        
+        let generate1toN count (dog:Dogs.View) =
+            [1..count]
+            |> List.map (fun i ->
+                {
+                    DogNickname = dog.Nickname
+                    Year = 2010s + (int16 i)
+                    Weight = 10s + (int16 i)
+                }
+                
+            )
+    
+    let init (conn:IDbConnection) =
+        task {
+            do! "DROP TABLE DogsWeights" |> conn.ExecuteCatchIgnore
+            do! 
+                """
+                CREATE TABLE [dbo].[DogsWeights](
+	            [DogNickname] [nvarchar](max) NOT NULL,
+	            [Year] [smallint] NOT NULL,
+	            [Weight] [smallint] NOT NULL
+                )
+                """
+                |> conn.ExecuteIgnore
+            return ()                
+        }
+                

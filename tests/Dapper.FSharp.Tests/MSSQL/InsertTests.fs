@@ -13,12 +13,12 @@ let tests (conn:IDbConnection) = Tests.testList "INSERT" [
         let r = Persons.View.generate 1 |> List.head
         let! _ =
             insert {
-                table Persons.tableName
+                table "Persons"
                 value r
             } |> conn.InsertAsync
         let! fromDb =
             select {
-                table Persons.tableName
+                table "Persons"
                 where (column "Id" (Eq r.Id))
             } |> conn.SelectAsync<Persons.View>
         Expect.equal r (Seq.head fromDb) ""                            
@@ -32,12 +32,12 @@ let tests (conn:IDbConnection) = Tests.testList "INSERT" [
             |> fun x -> ({ Id = x.Id; FirstName = x.FirstName; LastName = x.LastName; Position = x.Position } : Persons.ViewRequired)
         let! _ =
             insert {
-                table Persons.tableName
+                table "Persons"
                 value r
             } |> conn.InsertAsync
         let! fromDb =
             select {
-                table Persons.tableName
+                table "Persons"
                 where (column "Id" (Eq r.Id))
             } |> conn.SelectAsync<Persons.ViewRequired>
         Expect.equal r (Seq.head fromDb) ""                            
@@ -48,12 +48,12 @@ let tests (conn:IDbConnection) = Tests.testList "INSERT" [
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table Persons.tableName
+                table "Persons"
                 values rs
             } |> conn.InsertAsync
         let! fromDb =
             select {
-                table Persons.tableName
+                table "Persons"
                 orderBy "Position" Asc
             } |> conn.SelectAsync<Persons.View>            
         Expect.equal rs (Seq.toList fromDb) ""
