@@ -62,7 +62,6 @@ type SelectBuilder() =
             Where = Where.Empty
             OrderBy = []
             Pagination = Skip 0
-            IgnoredColumns = []
             Joins = []
         } : SelectQuery
     
@@ -97,14 +96,6 @@ type SelectBuilder() =
     /// LEFT JOIN table where COLNAME equals to another COLUMN (including TABLE name)
     [<CustomOperation "leftJoin">]
     member __.LeftJoin (state:SelectQuery, tableName, colName, equalsTo) = { state with Joins = state.Joins @ [LeftJoin(tableName, colName, equalsTo)] }        
-    
-    /// Ignore column for mapping
-    [<CustomOperation "ignore">]
-    member __.Ignore (state:SelectQuery, name) = { state with IgnoredColumns = [name] }        
-    
-    /// Ignore more columns for mapping
-    [<CustomOperation "ignoreMany">]
-    member __.IgnoreMany (state:SelectQuery, names) = { state with IgnoredColumns = names }        
         
 let insert<'a> = InsertBuilder<'a>()
 let delete = DeleteBuilder()

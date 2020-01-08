@@ -35,8 +35,6 @@ module private WhereAnalyzer =
     
 module private Evaluators =
     
-    open System.Linq
-    
     let evalCombination = function
         | And -> "AND"
         | Or -> "OR"
@@ -87,7 +85,7 @@ module private Evaluators =
         sb.ToString()
     
     let evalSelectQuery fields meta (q:SelectQuery) =
-        let fieldNames = fields |> List.filter (fun x -> not <| q.IgnoredColumns.Contains(x)) |> String.concat ", "
+        let fieldNames = fields |> String.concat ", "
         // basic query
         let sb = StringBuilder(sprintf "SELECT %s FROM %s" fieldNames q.Table)
         // joins
@@ -158,18 +156,34 @@ module private Preparators =
         let pars = WhereAnalyzer.extractWhereParams meta |> Map.ofList
         query, pars
     
+    let private extractFieldsAndSplit<'a> (j:Join) =
+        let table = j |> Join.tableName
+        let f = typeof<'a> |> Reflection.getFields
+        let fieldNames = f |> List.map (sprintf "%s.%s" table)
+        fieldNames, f.Head
+    
+    let private createSplitOn (xs:string list) = xs |> String.concat ","
+    
     let prepareSelectTuple2<'a,'b> (q:SelectQuery) =
-        let f2 = typeof<'b> |> Reflection.getFields
-        let tableTwo = q.Joins.Head |> Join.tableName
+        let joinsArray = q.Joins |> Array.ofList
         let fieldsOne = typeof<'a> |> Reflection.getFields |> List.map (sprintf "%s.%s" q.Table)
-        let fieldsTwo = f2 |> List.map (sprintf "%s.%s" tableTwo)
-        let fields = fieldsOne @ fieldsTwo
-        
+        let fieldsTwo, splitOn = extractFieldsAndSplit<'b> joinsArray.[0]
         // extract metadata
         let meta = WhereAnalyzer.getWhereMetadata [] q.Where
-        let query = Evaluators.evalSelectQuery fields meta q
+        let query = Evaluators.evalSelectQuery (fieldsOne @ fieldsTwo) meta q
         let pars = WhereAnalyzer.extractWhereParams meta |> Map.ofList
-        query, pars, f2.Head
+        query, pars, createSplitOn [splitOn]
+        
+    let prepareSelectTuple3<'a,'b, 'c> (q:SelectQuery) =
+        let joinsArray = q.Joins |> Array.ofList
+        let fieldsOne = typeof<'a> |> Reflection.getFields |> List.map (sprintf "%s.%s" q.Table)
+        let fieldsTwo, splitOn1 = extractFieldsAndSplit<'b> joinsArray.[0]
+        let fieldsThree, splitOn2 = extractFieldsAndSplit<'c> joinsArray.[1]
+        // extract metadata
+        let meta = WhereAnalyzer.getWhereMetadata [] q.Where
+        let query = Evaluators.evalSelectQuery (fieldsOne @ fieldsTwo @ fieldsThree) meta q
+        let pars = WhereAnalyzer.extractWhereParams meta |> Map.ofList
+        query, pars, createSplitOn [splitOn1;splitOn2]
         
     let prepareInsert (q:InsertQuery<'a>) =
         let fields = typeof<'a> |> Reflection.getFields
@@ -202,9 +216,17 @@ type System.Data.IDbConnection with
         let query, pars, splitOn = q |> Preparators.prepareSelectTuple2<'a,'b>
         this.QueryAsync<'a,'b,('a * 'b)>(query, (fun x y -> x, y), pars, splitOn = splitOn)
     
-    member this.SelectAsyncOption<'a, 'b> (q:SelectQuery) =
+    member this.SelectAsync<'a,'b,'c> (q:SelectQuery) =
+        let query, pars, splitOn = q |> Preparators.prepareSelectTuple3<'a,'b,'c>
+        this.QueryAsync<'a,'b,'c,('a * 'b * 'c)>(query, (fun x y z -> x, y, z), pars, splitOn = splitOn)
+    
+    member this.SelectAsyncOption<'a,'b> (q:SelectQuery) =
         let query, pars, splitOn = q |> Preparators.prepareSelectTuple2<'a,'b>
         this.QueryAsync<'a,'b,('a * 'b option)>(query, (fun x y -> x, Reflection.makeOption y), pars, splitOn = splitOn)
+    
+    member this.SelectAsyncOption<'a,'b,'c> (q:SelectQuery) =
+        let query, pars, splitOn = q |> Preparators.prepareSelectTuple3<'a,'b,'c>
+        this.QueryAsync<'a,'b,'c,('a * 'b option * 'c option)>(query, (fun x y z -> x, Reflection.makeOption y, Reflection.makeOption z), pars, splitOn = splitOn)
         
     member this.InsertAsync<'a> (q:InsertQuery<'a>) =
         let query, values = q |> Preparators.prepareInsert

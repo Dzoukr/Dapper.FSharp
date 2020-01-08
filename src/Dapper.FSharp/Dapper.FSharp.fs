@@ -47,7 +47,6 @@ type SelectQuery = {
     Where : Where
     OrderBy : OrderBy list
     Pagination : Pagination
-    IgnoredColumns : string list
     Joins : Join list
 }
 
