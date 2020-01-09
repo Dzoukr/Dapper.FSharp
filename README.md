@@ -37,15 +37,15 @@ This library does two things:
 2. Extends `IDbConnection` with few more methods to handle such definitions and creates proper SQL query + parameters for Dapper. Then it calls Dapper `QueryAsync` or `ExecuteAsync`. How does library knows the column names? It uses reflection to get record properties. So yes, there is one (the only) simple rule: *All property names must match columns in table.*
 
 ### Do I need to create record with all columns?
-You can, but don't have to. If need read only subset of data, you can create special *view* record just for this. Also if you don't want to write nullable data, you can omit them in record definition. 
+You can, but don't have to. If you need to read only subset of data, you can create special *view* record just for this. Also if you don't want to write nullable data, you can omit them in record definition. 
 
 ### And what about names mapping using Attributes or foreign keys magic?
 Nope. Sorry. Not gonna happen in this library. Simplicity is what matters. Just define your record as it is in database and you are ok.
 
-## Can I map more records from one query?
+### Can I map more records from one query?
 Yes. If you use LEFT or INNER JOIN, you can map each table to separate record. If you use LEFT JOIN, you can even map 2nd and/or 3rd table to `Option` (F# records and `null` values don't work well together). Current limitation is 3 tables (two joins).
 
-## What if I need join more than 3 tables or something special?
+### What if I need join more than 3 tables or something special?
 Fallback to plain Dapper then. Really. Dapper is amazing library and sometimes there's nothing better than manually written optimized SQL query. Remember this library has one and only goal: Simplify 90% of repetitive SQL queries you would have to write manually. Nothing. Else.
 
 ## Getting started
