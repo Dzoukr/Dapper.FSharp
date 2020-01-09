@@ -19,7 +19,7 @@ let tests (conn:IDbConnection) = Tests.testList "DELETE" [
         let! _ =
             delete {
                 table "Persons"
-                where (column "Position" (Eq 10))
+                where (eq "Position" 10)
             } |> conn.DeleteAsync
         let! fromDb =
             select {
@@ -41,7 +41,7 @@ let tests (conn:IDbConnection) = Tests.testList "DELETE" [
         let! _ =
             delete {
                 table "Persons"
-                where (column "Position" (Ge 7))
+                where (ge "Position" 7)
             } |> conn.DeleteAsync
         
         let! fromDb =

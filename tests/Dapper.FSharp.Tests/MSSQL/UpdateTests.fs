@@ -20,12 +20,12 @@ let tests (conn:IDbConnection) = Tests.testList "UPDATE" [
             update {
                 table "Persons"
                 set {| LastName = "UPDATED" |}
-                where (column "Position" (Eq 2))
+                where (eq "Position" 2)
             } |> conn.UpdateAsync
         let! fromDb =
             select {
                 table "Persons"
-                where (column "LastName" (Eq "UPDATED"))
+                where (eq "LastName" "UPDATED")
             } |> conn.SelectAsync<Persons.View>            
         Expect.equal 1 (Seq.length fromDb) ""
         Expect.equal 2 (fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position) ""
@@ -43,13 +43,13 @@ let tests (conn:IDbConnection) = Tests.testList "UPDATE" [
             update {
                 table "Persons"
                 set {| LastName = "UPDATED" |}
-                where (column "Position" (Gt 7))
+                where (gt "Position" 7)
             } |> conn.UpdateAsync
         
         let! fromDb =
             select {
                 table "Persons"
-                where (column "LastName" (Eq "UPDATED"))
+                where (eq "LastName" "UPDATED")
             } |> conn.SelectAsync<Persons.View>            
         Expect.equal 3 (Seq.length fromDb) ""
     }

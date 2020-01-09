@@ -58,4 +58,7 @@ Target.create "Pack" (fun _ -> "src" </> "Dapper.FSharp" |> createNuget)
 Target.create "Publish" (fun _ -> "src" </> "Dapper.FSharp" |> publishNuget)
 Target.create "Test" (fun _ -> Tools.dotnet "run" ("tests" </> "Dapper.FSharp.Tests"))
 
+"Test" ==> "Pack"
+"Test" ==> "Publish"
+
 Target.runOrDefaultWithArguments "Test"

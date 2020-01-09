@@ -19,9 +19,82 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT" [
         let! fromDb =
             select {
                 table "Persons"
-                where (column "Position" (Eq 5))
+                where (eq "Position" 5)
             } |> conn.SelectAsync<Persons.View>
         Expect.equal (rs |> List.find (fun x -> x.Position = 5)) (Seq.head fromDb) ""            
+    }
+    
+    testTask "Selects by IN where condition" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+                where (isIn "Position" [5;6])
+                orderBy "Position" Asc
+            } |> conn.SelectAsync<Persons.View>
+        Expect.equal (rs |> List.find (fun x -> x.Position = 5)) (Seq.head fromDb) ""            
+        Expect.equal (rs |> List.find (fun x -> x.Position = 6)) (Seq.last fromDb) ""            
+    }
+    
+    testTask "Selects by NOT IN where condition" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+                where (isNotIn "Position" [1;2;3])
+                orderBy "Position" Asc
+            } |> conn.SelectAsync<Persons.View>
+        Expect.equal (rs |> List.find (fun x -> x.Position = 4)) (Seq.head fromDb) ""            
+        Expect.equal (rs |> List.find (fun x -> x.Position = 10)) (Seq.last fromDb) ""
+        Expect.equal 7 (Seq.length fromDb) ""
+    }
+    
+    testTask "Selects by IS NULL where condition" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+                where (isNullValue "DateOfBirth")
+                orderBy "Position" Asc
+            } |> conn.SelectAsync<Persons.View>
+        Expect.equal (rs |> List.find (fun x -> x.Position = 2)) (Seq.head fromDb) ""            
+        Expect.equal 5 (Seq.length fromDb) ""
+    }
+    
+    testTask "Selects by IS NOT NULL where condition" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+                where (isNotNullValue "DateOfBirth")
+                orderBy "Position" Asc
+            } |> conn.SelectAsync<Persons.View>
+        Expect.equal (rs |> List.find (fun x -> x.Position = 1)) (Seq.head fromDb) ""            
+        Expect.equal 5 (Seq.length fromDb) ""
     }
     
     testTask "Selects by multiple where conditions" {
@@ -35,7 +108,7 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT" [
         let! fromDb =
             select {
                 table "Persons"
-                where (column "Position" (Gt 2) + column "Position" (Lt 4))
+                where (gt "Position" 2 + lt "Position" 4)
             } |> conn.SelectAsync<Persons.View>
         Expect.equal (rs |> List.find (fun x -> x.Position = 3)) (Seq.head fromDb) ""            
     }

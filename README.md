@@ -45,7 +45,7 @@ Nope. Sorry. Not gonna happen in this library. Simplicity is what matters. Just 
 ### Can I map more records from one query?
 Yes. If you use LEFT or INNER JOIN, you can map each table to separate record. If you use LEFT JOIN, you can even map 2nd and/or 3rd table to `Option` (F# records and `null` values don't work well together). Current limitation is 3 tables (two joins).
 
-### What if I need join more than 3 tables or something special?
+### What if I need join more than 3 tables, sub-select or something special?
 Fallback to plain Dapper then. Really. Dapper is amazing library and sometimes there's nothing better than manually written optimized SQL query. Remember this library has one and only goal: Simplify 90% of repetitive SQL queries you would have to write manually. Nothing. Else.
 
 ## Getting started
@@ -126,6 +126,25 @@ insert {
 
 *Note: All methods are asynchronous (returning Task) so you must "bang" (await) them. This part is skipped in examples.*
 
+### WHERE clause
+
+Since version `1.1` there are few helper functions available to make syntax shorter.
+
+Longer syntax:
+
+```f#
+where (column "Id" (Eq updatedPerson.Id))
+```
+
+Shorter syntax:
+
+```f#
+where (eq "Id" updatedPerson.Id)
+```
+
+*Note: The longer syntax is still valid and it's up to your personal taste which one you gonna use.*
+
+
 ### UPDATE
 
 As you can insert values, you can update them:
@@ -135,7 +154,7 @@ let updatedPerson = { existingPerson with LastName = "Vorezprut" }
 update {
     table "Persons"
     set updatedPerson
-    where (column "Id" (Eq updatedPerson.Id))
+    where (eq "Id" updatedPerson.Id)
 } |> conn.UpdateAsync
 ```
 
@@ -145,7 +164,7 @@ Partial updates are also possible:
 update {
     table "Persons"
     set {| LastName = "UPDATED" |}
-    where (column "Position" (Eq 1))
+    where (eq "Position" 1)
 } |> conn.UpdateAsync
 ```
 
@@ -156,7 +175,7 @@ The same goes for delete, but please, for the mother of all backups, **don't for
 ```f#
 delete {
     table "Persons"
-    where (column "Position" (Eq 10))
+    where (eq "Position" 10)
 } |> conn.DeleteAsync
 ```
 
@@ -177,7 +196,7 @@ To filter values, use `where` clause as you know it from `update` and `delete`. 
 ```f#
 select {
     table "Persons"
-    where (column "Position" (Gt 5) + column "Position" (Lt 10))
+    where (gt "Position" 5 + lt "Position" 10)
 } |> conn.SelectAsync<Person>
 ```
 
@@ -186,7 +205,7 @@ Sorting works as you would expect:
 ```f#
 select {
     table "Persons"
-    where (column "Position" (Gt 5) + column "Position" (Lt 10))
+    where (gt "Position" 5 + lt "Position" 10)
     orderBy "Position" Asc
 } |> conn.SelectAsync<Person>
 ```
@@ -196,7 +215,7 @@ If you need to skip some values or take only subset of results, use `skip` and `
 ```f#
 select {
     table "Persons"
-    where (column "Position" (Gt 5) + column "Position" (Lt 10))
+    where (gt "Position" 5 + lt "Position" 10)
     orderBy "Position" Asc
     skipTake 2 3 // skip first 2 rows, take next 3
 } |> conn.SelectAsync<Person>

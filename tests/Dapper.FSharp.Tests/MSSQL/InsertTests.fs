@@ -19,7 +19,7 @@ let tests (conn:IDbConnection) = Tests.testList "INSERT" [
         let! fromDb =
             select {
                 table "Persons"
-                where (column "Id" (Eq r.Id))
+                where (eq "Id" r.Id)
             } |> conn.SelectAsync<Persons.View>
         Expect.equal r (Seq.head fromDb) ""                            
     }
@@ -38,7 +38,7 @@ let tests (conn:IDbConnection) = Tests.testList "INSERT" [
         let! fromDb =
             select {
                 table "Persons"
-                where (column "Id" (Eq r.Id))
+                where (eq "Id" r.Id)
             } |> conn.SelectAsync<Persons.ViewRequired>
         Expect.equal r (Seq.head fromDb) ""                            
     }
