@@ -126,7 +126,7 @@ insert {
 
 *Note: All methods are asynchronous (returning Task) so you must "bang" (await) them. This part is skipped in examples.*
 
-### WHERE clause
+### WHERE condition
 
 Since version `1.1` there are few helper functions available to make syntax shorter.
 
@@ -170,7 +170,7 @@ update {
 
 ### DELETE
 
-The same goes for delete, but please, for the mother of all backups, **don't forget where clause**:
+The same goes for delete, but please, for the mother of all backups, **don't forget where condition**:
 
 ```f#
 delete {
@@ -179,7 +179,7 @@ delete {
 } |> conn.DeleteAsync
 ```
 
-Did I say you should **never forget where clause** in delete?
+Did I say you should **never forget where condition** in delete?
 
 ### SELECT
 
@@ -191,7 +191,7 @@ select {
 } |> conn.SelectAsync<Person>
 ```
 
-To filter values, use `where` clause as you know it from `update` and `delete`. Where conditions can be also combined with `(+) operator` (logical AND) or `(*) operator` (logical OR):
+To filter values, use `where` condition as you know it from `update` and `delete`. Where conditions can be also combined with `(+) operator` (logical AND) or `(*) operator` (logical OR):
 
 ```f#
 select {
