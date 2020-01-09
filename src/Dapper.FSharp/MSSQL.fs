@@ -6,7 +6,7 @@ open Dapper.FSharp
 module private WhereAnalyzer =
     
     type FieldWhereMetadata = {
-        Key : string * WhereComparison
+        Key : string * ColumnComparison
         Name : string
         ParameterName : string
     }
@@ -31,11 +31,12 @@ module private WhereAnalyzer =
                 |> List.length
                 |> fun l -> sprintf "Where_%s%i" field (l + 1)
             meta @ [{ Key = (field, comp); Name = field; ParameterName = parName }]
-        | Binary(w1, _, w2) -> [w1;w2] |> List.fold getWhereMetadata meta      
+        | Binary(w1, _, w2) -> [w1;w2] |> List.fold getWhereMetadata meta
+        | Unary(_, w) -> w |> getWhereMetadata meta
     
 module private Evaluators =
     
-    let evalCombination = function
+    let evalBinary = function
         | And -> "AND"
         | Or -> "OR"
 
@@ -63,7 +64,11 @@ module private Evaluators =
         | Binary(w1, comb, w2) ->
             match evalWhere meta w1, evalWhere meta w2 with
             | "", fq | fq , "" -> fq
-            | fq1, fq2 -> sprintf "(%s %s %s)" fq1 (evalCombination comb) fq2
+            | fq1, fq2 -> sprintf "(%s %s %s)" fq1 (evalBinary comb) fq2
+        | Unary (Not, w) ->
+            match evalWhere meta w with
+            | "" -> ""
+            | v -> sprintf "NOT (%s)" v
 
     let evalOrderBy (xs:OrderBy list) =
         xs

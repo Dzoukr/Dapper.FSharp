@@ -10,8 +10,8 @@
     <PackageIconUrl>https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png</PackageIconUrl>
     <PackageTags>fsharp;dapper;database</PackageTags>
     <Authors>Roman Provazník</Authors>
-    <Version>1.1.0</Version>
-    <PackageReleaseNotes>Added helper functions for easier WHERE condition creation</PackageReleaseNotes>
+    <Version>1.2.0</Version>
+    <PackageReleaseNotes>Added unary NOT operation with custom operator</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Dapper.FSharp.fs" />

@@ -97,6 +97,24 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT" [
         Expect.equal 5 (Seq.length fromDb) ""
     }
     
+    testTask "Selects by UNARY NOT where condition" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+                where !! (gt "Position" 5 + isNullValue "DateOfBirth")
+                orderBy "Position" Asc
+            } |> conn.SelectAsync<Persons.View>
+        Expect.equal (rs |> List.find (fun x -> x.Position = 9)) (Seq.last fromDb) ""            
+        Expect.equal 7 (Seq.length fromDb) ""
+    }
+        
     testTask "Selects by multiple where conditions" {
         do! Persons.init conn
         let rs = Persons.View.generate 10

@@ -6,7 +6,7 @@ type OrderDirection =
 
 type OrderBy = string * OrderDirection
     
-type WhereComparison =
+type ColumnComparison =
     | Eq of obj
     | Ne of obj
     | Gt of obj
@@ -18,16 +18,21 @@ type WhereComparison =
     | IsNull
     | IsNotNull
     
-type WhereCombination =
+type BinaryOperation =
     | And
     | Or
+    
+type UnaryOperation =
+    | Not
 
 type Where =
     | Empty
-    | Column of string * WhereComparison
-    | Binary of Where * WhereCombination * Where
+    | Column of string * ColumnComparison
+    | Binary of Where * BinaryOperation * Where
+    | Unary of UnaryOperation * Where
     static member (+) (a, b) = Binary(a, And, b)
     static member (*) (a, b) = Binary(a, Or, b)
+    static member (!!) a = Unary (Not, a)
 
 type Pagination =
     | Skip of skip:int

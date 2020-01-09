@@ -200,6 +200,15 @@ select {
 } |> conn.SelectAsync<Person>
 ```
 
+To flip boolean logic in `where` condition, use `(!!) operator` (unary NOT):
+
+```f#
+select {
+    table "Persons"
+    where !! (gt "Position" 5 + lt "Position" 10)
+} |> conn.SelectAsync<Person>
+```
+
 Sorting works as you would expect:
 
 ```f#
