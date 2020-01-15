@@ -210,37 +210,48 @@ module private Preparators =
         let query = Evaluators.evalDeleteQuery meta q
         query, pars
 
+open System
+open System.Data
 open Dapper
 
 type System.Data.IDbConnection with
-    member this.SelectAsync<'a> (q:SelectQuery) =
+    
+    member this.SelectAsync<'a> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         let query, pars = q |> Preparators.prepareSelect<'a>
-        this.QueryAsync<'a>(query, pars)
+        if logFunction.IsSome then (query, pars) |> logFunction.Value
+        this.QueryAsync<'a>(query, pars, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
     
-    member this.SelectAsync<'a,'b> (q:SelectQuery) =
+    member this.SelectAsync<'a,'b> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         let query, pars, splitOn = q |> Preparators.prepareSelectTuple2<'a,'b>
-        this.QueryAsync<'a,'b,('a * 'b)>(query, (fun x y -> x, y), pars, splitOn = splitOn)
+        if logFunction.IsSome then (query, pars) |> logFunction.Value
+        this.QueryAsync<'a,'b,('a * 'b)>(query, (fun x y -> x, y), pars, splitOn = splitOn, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
     
-    member this.SelectAsync<'a,'b,'c> (q:SelectQuery) =
+    member this.SelectAsync<'a,'b,'c> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         let query, pars, splitOn = q |> Preparators.prepareSelectTuple3<'a,'b,'c>
-        this.QueryAsync<'a,'b,'c,('a * 'b * 'c)>(query, (fun x y z -> x, y, z), pars, splitOn = splitOn)
+        if logFunction.IsSome then (query, pars) |> logFunction.Value
+        this.QueryAsync<'a,'b,'c,('a * 'b * 'c)>(query, (fun x y z -> x, y, z), pars, splitOn = splitOn, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
     
-    member this.SelectAsyncOption<'a,'b> (q:SelectQuery) =
+    member this.SelectAsyncOption<'a,'b> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         let query, pars, splitOn = q |> Preparators.prepareSelectTuple2<'a,'b>
-        this.QueryAsync<'a,'b,('a * 'b option)>(query, (fun x y -> x, Reflection.makeOption y), pars, splitOn = splitOn)
+        if logFunction.IsSome then (query, pars) |> logFunction.Value
+        this.QueryAsync<'a,'b,('a * 'b option)>(query, (fun x y -> x, Reflection.makeOption y), pars, splitOn = splitOn, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
     
-    member this.SelectAsyncOption<'a,'b,'c> (q:SelectQuery) =
+    member this.SelectAsyncOption<'a,'b,'c> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         let query, pars, splitOn = q |> Preparators.prepareSelectTuple3<'a,'b,'c>
-        this.QueryAsync<'a,'b,'c,('a * 'b option * 'c option)>(query, (fun x y z -> x, Reflection.makeOption y, Reflection.makeOption z), pars, splitOn = splitOn)
+        if logFunction.IsSome then (query, pars) |> logFunction.Value
+        this.QueryAsync<'a,'b,'c,('a * 'b option * 'c option)>(query, (fun x y z -> x, Reflection.makeOption y, Reflection.makeOption z), pars, splitOn = splitOn, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
         
-    member this.InsertAsync<'a> (q:InsertQuery<'a>) =
+    member this.InsertAsync<'a> (q:InsertQuery<'a>, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         let query, values = q |> Preparators.prepareInsert
-        this.ExecuteAsync(query, values)
+        if logFunction.IsSome then (query, values) |> logFunction.Value
+        this.ExecuteAsync(query, values, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
         
-    member this.UpdateAsync<'a> (q:UpdateQuery<'a>) =
+    member this.UpdateAsync<'a> (q:UpdateQuery<'a>, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         let query, pars = q |> Preparators.prepareUpdate<'a>
-        this.ExecuteAsync(query, pars)
+        if logFunction.IsSome then (query, pars) |> logFunction.Value
+        this.ExecuteAsync(query, pars, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
     
-    member this.DeleteAsync (q:DeleteQuery) =
+    member this.DeleteAsync (q:DeleteQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         let query, pars = q |> Preparators.prepareDelete
-        this.ExecuteAsync(query, pars)
+        if logFunction.IsSome then (query, pars) |> logFunction.Value
+        this.ExecuteAsync(query, pars, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
