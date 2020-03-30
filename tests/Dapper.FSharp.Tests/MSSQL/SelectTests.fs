@@ -24,6 +24,22 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT" [
         Expect.equal (rs |> List.find (fun x -> x.Position = 5)) (Seq.head fromDb) ""            
     }
     
+    testTask "Selects by single where condition with table name used" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+                where (eq "Persons.Position" 5)
+            } |> conn.SelectAsync<Persons.View>
+        Expect.equal (rs |> List.find (fun x -> x.Position = 5)) (Seq.head fromDb) ""            
+    }
+    
     testTask "Selects by IN where condition" {
         do! Persons.init conn
         let rs = Persons.View.generate 10

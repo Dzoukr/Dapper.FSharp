@@ -20,16 +20,22 @@ module private WhereAnalyzer =
             | IsNull | IsNotNull -> None
         meta
         |> List.choose fn
-
+    
+    let normalizeParamName (s:string) =
+        s.Replace(".","_")
+    
     let rec getWhereMetadata (meta:FieldWhereMetadata list) (w:Where)  =
         match w with
         | Empty -> meta
         | Column (field, comp) ->
+            
             let parName =
                 meta
                 |> List.filter (fun x -> x.Name = field)
                 |> List.length
                 |> fun l -> sprintf "Where_%s%i" field (l + 1)
+                |> normalizeParamName
+                
             meta @ [{ Key = (field, comp); Name = field; ParameterName = parName }]
         | Binary(w1, _, w2) -> [w1;w2] |> List.fold getWhereMetadata meta
         | Unary(_, w) -> w |> getWhereMetadata meta
