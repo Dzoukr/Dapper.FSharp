@@ -7,7 +7,7 @@ open Dapper.FSharp
 open Dapper.FSharp.MSSQL
 
 let tests (conn:IDbConnection) = Tests.testList "UPDATE" [
-    
+
     testTask "Updates single records" {
         do! Persons.init conn
         let rs = Persons.View.generate 10
@@ -26,11 +26,11 @@ let tests (conn:IDbConnection) = Tests.testList "UPDATE" [
             select {
                 table "Persons"
                 where (eq "LastName" "UPDATED")
-            } |> conn.SelectAsync<Persons.View>            
+            } |> conn.SelectAsync<Persons.View>
         Expect.equal 1 (Seq.length fromDb) ""
         Expect.equal 2 (fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position) ""
     }
-    
+
     testTask "Updates and outputs single records" {
         do! Persons.init conn
         let rs = Persons.View.generate 10
@@ -63,12 +63,12 @@ let tests (conn:IDbConnection) = Tests.testList "UPDATE" [
                 set {| LastName = "UPDATED" |}
                 where (gt "Position" 7)
             } |> conn.UpdateAsync
-        
+
         let! fromDb =
             select {
                 table "Persons"
                 where (eq "LastName" "UPDATED")
-            } |> conn.SelectAsync<Persons.View>            
+            } |> conn.SelectAsync<Persons.View>
         Expect.equal 3 (Seq.length fromDb) ""
     }
 ]
