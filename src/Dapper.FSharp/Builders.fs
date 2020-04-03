@@ -18,7 +18,7 @@ type InsertBuilder<'a>() =
     
     /// Sets the single value for INSERT
     [<CustomOperation "value">]
-    member __.Value (state:InsertQuery<'a>, value:'a) = { state with Values = [value] }        
+    member __.Value (state:InsertQuery<'a>, value:'a) = { state with Values = [value] }
     
 type DeleteBuilder() =
     member __.Yield _ =
@@ -53,7 +53,7 @@ type UpdateBuilder<'a>() =
     
     /// Sets the WHERE condition
     [<CustomOperation "where">]
-    member __.Where (state:UpdateQuery<_>, where:Where) = { state with Where = where }        
+    member __.Where (state:UpdateQuery<_>, where:Where) = { state with Where = where }
 
 type SelectBuilder() =
     member __.Yield _ =

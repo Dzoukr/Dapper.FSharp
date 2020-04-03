@@ -29,7 +29,24 @@ let tests (conn:IDbConnection) = Tests.testList "DELETE" [
         Expect.equal 9 (Seq.length fromDb) ""
         Expect.equal 9 (fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position) ""
     }
-    
+
+    testTask "Deletes and outputs single record" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            delete {
+                table "Persons"
+                where (eq "Position" 10)
+            } |> conn.DeleteOutputAsync<Persons.View>         
+        Expect.equal 1 (Seq.length fromDb) ""
+        Expect.equal 10 (fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position) ""
+    }
+
     testTask "Deletes more records" {
         do! Persons.init conn
         let rs = Persons.View.generate 10

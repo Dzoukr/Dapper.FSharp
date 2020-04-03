@@ -31,6 +31,24 @@ let tests (conn:IDbConnection) = Tests.testList "UPDATE" [
         Expect.equal 2 (fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position) ""
     }
     
+    testTask "Updates and outputs single records" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            update {
+                table "Persons"
+                set {| LastName = "UPDATED" |}
+                where (eq "Position" 2)
+            } |> conn.UpdateOutputAsync<{| LastName:string |}, Persons.View>
+        Expect.equal "UPDATED" (fromDb |> Seq.head |> fun (x:Persons.View) -> x.LastName) ""
+        Expect.equal 2 (fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position) ""
+    }
+
     testTask "Updates more records" {
         do! Persons.init conn
         let rs = Persons.View.generate 10

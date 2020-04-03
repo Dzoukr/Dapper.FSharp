@@ -23,6 +23,17 @@ let tests (conn:IDbConnection) = Tests.testList "INSERT" [
             } |> conn.SelectAsync<Persons.View>
         Expect.equal r (Seq.head fromDb) ""                            
     }
+
+    testTask "Inserts and outputs new record" {
+        do! Persons.init conn
+        let r = Persons.View.generate 1 |> List.head
+        let! fromDb =
+            insert {
+                table "Persons"
+                value r
+            } |> conn.InsertOutputAsync<Persons.View, Persons.View>
+        Expect.equal r (Seq.head fromDb) ""                            
+    }
     
     testTask "Inserts partial record" {
         do! Persons.init conn
