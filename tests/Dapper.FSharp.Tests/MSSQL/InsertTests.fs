@@ -5,9 +5,9 @@ open Expecto
 open Dapper.FSharp.Tests.MSSQL.Database
 open Dapper.FSharp
 open Dapper.FSharp.MSSQL
-       
+
 let tests (conn:IDbConnection) = Tests.testList "INSERT" [
-    
+
     testTask "Inserts new record" {
         do! Persons.init conn
         let r = Persons.View.generate 1 |> List.head
@@ -21,9 +21,20 @@ let tests (conn:IDbConnection) = Tests.testList "INSERT" [
                 table "Persons"
                 where (eq "Id" r.Id)
             } |> conn.SelectAsync<Persons.View>
-        Expect.equal r (Seq.head fromDb) ""                            
+        Expect.equal r (Seq.head fromDb) ""
     }
-    
+
+    testTask "Inserts and outputs new record" {
+        do! Persons.init conn
+        let r = Persons.View.generate 1 |> List.head
+        let! fromDb =
+            insert {
+                table "Persons"
+                value r
+            } |> conn.InsertOutputAsync<Persons.View, Persons.View>
+        Expect.equal r (Seq.head fromDb) ""
+    }
+
     testTask "Inserts partial record" {
         do! Persons.init conn
         let r =
@@ -40,9 +51,9 @@ let tests (conn:IDbConnection) = Tests.testList "INSERT" [
                 table "Persons"
                 where (eq "Id" r.Id)
             } |> conn.SelectAsync<Persons.ViewRequired>
-        Expect.equal r (Seq.head fromDb) ""                            
+        Expect.equal r (Seq.head fromDb) ""
     }
-    
+
     testTask "Inserts more records" {
         do! Persons.init conn
         let rs = Persons.View.generate 10
@@ -55,7 +66,7 @@ let tests (conn:IDbConnection) = Tests.testList "INSERT" [
             select {
                 table "Persons"
                 orderBy "Position" Asc
-            } |> conn.SelectAsync<Persons.View>            
+            } |> conn.SelectAsync<Persons.View>
         Expect.equal rs (Seq.toList fromDb) ""
     }
 ]

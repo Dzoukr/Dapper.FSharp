@@ -7,7 +7,7 @@ open Dapper.FSharp
 open Dapper.FSharp.MSSQL
 
 let tests (conn:IDbConnection) = Tests.testList "DELETE" [
-    
+
     testTask "Deletes single records" {
         do! Persons.init conn
         let rs = Persons.View.generate 10
@@ -25,11 +25,28 @@ let tests (conn:IDbConnection) = Tests.testList "DELETE" [
             select {
                 table "Persons"
                 orderBy "Position" Desc
-            } |> conn.SelectAsync<Persons.View>            
+            } |> conn.SelectAsync<Persons.View>
         Expect.equal 9 (Seq.length fromDb) ""
         Expect.equal 9 (fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position) ""
     }
-    
+
+    testTask "Deletes and outputs single record" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            delete {
+                table "Persons"
+                where (eq "Position" 10)
+            } |> conn.DeleteOutputAsync<Persons.View>
+        Expect.equal 1 (Seq.length fromDb) ""
+        Expect.equal 10 (fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position) ""
+    }
+
     testTask "Deletes more records" {
         do! Persons.init conn
         let rs = Persons.View.generate 10
@@ -43,11 +60,11 @@ let tests (conn:IDbConnection) = Tests.testList "DELETE" [
                 table "Persons"
                 where (ge "Position" 7)
             } |> conn.DeleteAsync
-        
+
         let! fromDb =
             select {
                 table "Persons"
-            } |> conn.SelectAsync<Persons.View>            
+            } |> conn.SelectAsync<Persons.View>
         Expect.equal 6 (Seq.length fromDb) ""
     }
 ]

@@ -4,13 +4,13 @@ open System.Text
 open Dapper.FSharp
 
 module private WhereAnalyzer =
-    
+
     type FieldWhereMetadata = {
         Key : string * ColumnComparison
         Name : string
         ParameterName : string
     }
-    
+
     let extractWhereParams (meta:FieldWhereMetadata list) =
         let fn (m:FieldWhereMetadata) =
             match m.Key |> snd with
@@ -20,28 +20,28 @@ module private WhereAnalyzer =
             | IsNull | IsNotNull -> None
         meta
         |> List.choose fn
-    
+
     let normalizeParamName (s:string) =
         s.Replace(".","_")
-    
+
     let rec getWhereMetadata (meta:FieldWhereMetadata list) (w:Where)  =
         match w with
         | Empty -> meta
         | Column (field, comp) ->
-            
+
             let parName =
                 meta
                 |> List.filter (fun x -> x.Name = field)
                 |> List.length
                 |> fun l -> sprintf "Where_%s%i" field (l + 1)
                 |> normalizeParamName
-                
+
             meta @ [{ Key = (field, comp); Name = field; ParameterName = parName }]
         | Binary(w1, _, w2) -> [w1;w2] |> List.fold getWhereMetadata meta
         | Unary(_, w) -> w |> getWhereMetadata meta
-    
+
 module private Evaluators =
-    
+
     let evalBinary = function
         | And -> "AND"
         | Or -> "OR"
@@ -54,7 +54,7 @@ module private Evaluators =
         match w with
         | Empty -> ""
         | Column (field, comp) ->
-            let fieldMeta = meta |> List.find (fun x -> x.Key = (field,comp)) 
+            let fieldMeta = meta |> List.find (fun x -> x.Key = (field,comp))
             let withField op = sprintf "%s %s @%s" fieldMeta.Name op fieldMeta.ParameterName
             match comp with
             | Eq _ -> withField "="
@@ -86,7 +86,7 @@ module private Evaluators =
         | Skip x when x <= 0 -> ""
         | Skip o -> sprintf "OFFSET %i ROWS" o
         | SkipTake(o,f) -> sprintf "OFFSET %i ROWS FETCH NEXT %i ROWS ONLY" o f
-    
+
     let evalJoins (joins:Join list) =
         let sb = StringBuilder()
         let evalJoin = function
@@ -94,7 +94,7 @@ module private Evaluators =
             | LeftJoin(table,colName,equalsTo) -> sprintf " LEFT JOIN %s ON %s.%s=%s" table table colName equalsTo
         joins |> List.map evalJoin |> List.iter (sb.Append >> ignore)
         sb.ToString()
-    
+
     let evalSelectQuery fields meta (q:SelectQuery) =
         let fieldNames = fields |> String.concat ", "
         // basic query
@@ -110,55 +110,91 @@ module private Evaluators =
         if orderBy.Length > 0 then sb.Append (sprintf " ORDER BY %s" orderBy) |> ignore
         // pagination
         let pagination = evalPagination q.Pagination
-        if pagination.Length > 0 then sb.Append (sprintf " %s" pagination) |> ignore    
+        if pagination.Length > 0 then sb.Append (sprintf " %s" pagination) |> ignore
         sb.ToString()
-            
+
     let evalInsertQuery fields (q:InsertQuery<_>) =
         let fieldNames = fields |> String.concat ", " |> sprintf "(%s)"
-        let values = fields |> List.map (sprintf "@%s") |> String.concat ", " |> sprintf "(%s)" 
-        sprintf "INSERT INTO %s %s VALUES %s" q.Table fieldNames values        
+        let values = fields |> List.map (sprintf "@%s") |> String.concat ", " |> sprintf "(%s)"
+        sprintf "INSERT INTO %s %s VALUES %s" q.Table fieldNames values
 
-    let evalUpdateQuery fields meta (q:UpdateQuery<'a>) =
+    // Separate function because dapper QueryAsync does not allow using 'a list type parameters
+    // We need to make each parameter name unique
+    let evalOutputInsertQuery fields outputFields (q:InsertQuery<_>) =
+        let fieldNames = fields |> String.concat ", " |> sprintf "(%s)"
+        let values =
+            q.Values
+            |> List.mapi (fun i _ -> fields |> List.map (fun field -> sprintf "@%s%i" field i ) |> String.concat ", " |> sprintf "(%s)")
+            |> String.concat ", "
+        match outputFields with
+        | [] ->
+            sprintf "INSERT INTO %s %s VALUES %s" q.Table fieldNames values
+        | outputFields ->
+            let outputFieldNames = outputFields |> List.map (sprintf "INSERTED.%s") |> String.concat ", "
+            sprintf "INSERT INTO %s %s OUTPUT %s VALUES %s" q.Table fieldNames outputFieldNames values
+
+    let evalUpdateQuery fields outputFields meta (q:UpdateQuery<'a>) =
         // basic query
         let pairs = fields |> List.map (fun x -> sprintf "%s=@%s" x x) |> String.concat ", "
-        let sb = StringBuilder(sprintf "UPDATE %s SET %s" q.Table pairs)
+        let baseQuery =
+            match outputFields with
+            | [] ->
+                sprintf "UPDATE %s SET %s" q.Table pairs
+            | outputFields ->
+                let outputFieldNames = outputFields |> List.map (sprintf "INSERTED.%s") |> String.concat ", "
+                sprintf "UPDATE %s SET %s OUTPUT %s" q.Table pairs outputFieldNames
+        let sb = StringBuilder(baseQuery)
         // where
         let where = evalWhere meta q.Where
         if where.Length > 0 then sb.Append (sprintf " WHERE %s" where) |> ignore
         sb.ToString()
 
-    let evalDeleteQuery meta (q:DeleteQuery) =
+    let evalDeleteQuery outputFields meta (q:DeleteQuery) =
+        let baseQuery =
+            match outputFields with
+            | [] ->
+                sprintf "DELETE FROM %s" q.Table
+            | outputFields ->
+                let outputFieldNames = outputFields |> List.map (sprintf "DELETED.%s") |> String.concat ", "
+                sprintf "DELETE FROM %s OUTPUT %s" q.Table outputFieldNames
         // basic query
-        let sb = StringBuilder(sprintf "DELETE FROM %s" q.Table)
+        let sb = StringBuilder(baseQuery)
         // where
         let where = evalWhere meta q.Where
         if where.Length > 0 then sb.Append (sprintf " WHERE %s" where) |> ignore
-        sb.ToString()        
-    
-module private Reflection =        
+        sb.ToString()
+
+module private Reflection =
     open System
-    
+
     let mkSome (typ:Type) arg =
         let unionType = typedefof<option<_>>.MakeGenericType typ
         let meth = unionType.GetMethod("Some")
         meth.Invoke(null, [|arg|])
-    
+
     let makeOption<'a> (v:obj) : Option<'a> =
         match box v with
         | null -> None
         | x -> mkSome typeof<'a> x :?> Option<_>
-            
+
     let getFields (t:Type) =
         FSharp.Reflection.FSharpType.GetRecordFields(t)
         |> Array.map (fun x -> x.Name)
         |> Array.toList
-    
+
     let getValues r =
         FSharp.Reflection.FSharpValue.GetRecordFields r
         |> Array.toList
-        
+
+    let boxify (x : obj) =
+        match x with
+        | null -> null
+        | _ -> match x.GetType().GetProperty("Value") with
+               | null -> x
+               | prop -> prop.GetValue(x)
+
 module private Preparators =
-    
+
     let prepareSelect<'a> (q:SelectQuery) =
         let fields = typeof<'a> |> Reflection.getFields
         // extract metadata
@@ -166,15 +202,15 @@ module private Preparators =
         let query = Evaluators.evalSelectQuery fields meta q
         let pars = WhereAnalyzer.extractWhereParams meta |> Map.ofList
         query, pars
-    
+
     let private extractFieldsAndSplit<'a> (j:Join) =
         let table = j |> Join.tableName
         let f = typeof<'a> |> Reflection.getFields
         let fieldNames = f |> List.map (sprintf "%s.%s" table)
         fieldNames, f.Head
-    
+
     let private createSplitOn (xs:string list) = xs |> String.concat ","
-    
+
     let prepareSelectTuple2<'a,'b> (q:SelectQuery) =
         let joinsArray = q.Joins |> Array.ofList
         let fieldsOne = typeof<'a> |> Reflection.getFields |> List.map (sprintf "%s.%s" q.Table)
@@ -184,8 +220,8 @@ module private Preparators =
         let query = Evaluators.evalSelectQuery (fieldsOne @ fieldsTwo) meta q
         let pars = WhereAnalyzer.extractWhereParams meta |> Map.ofList
         query, pars, createSplitOn [splitOn]
-        
-    let prepareSelectTuple3<'a,'b, 'c> (q:SelectQuery) =
+
+    let prepareSelectTuple3<'a,'b,'c> (q:SelectQuery) =
         let joinsArray = q.Joins |> Array.ofList
         let fieldsOne = typeof<'a> |> Reflection.getFields |> List.map (sprintf "%s.%s" q.Table)
         let fieldsTwo, splitOn1 = extractFieldsAndSplit<'b> joinsArray.[0]
@@ -195,25 +231,55 @@ module private Preparators =
         let query = Evaluators.evalSelectQuery (fieldsOne @ fieldsTwo @ fieldsThree) meta q
         let pars = WhereAnalyzer.extractWhereParams meta |> Map.ofList
         query, pars, createSplitOn [splitOn1;splitOn2]
-        
+
     let prepareInsert (q:InsertQuery<'a>) =
         let fields = typeof<'a> |> Reflection.getFields
         let query = Evaluators.evalInsertQuery fields q
         query, q.Values
-    
+
+    let prepareOutputInsert<'Input, 'Output> (q:InsertQuery<'Input>) =
+        let fields = typeof<'Input> |> Reflection.getFields
+        let outputFields = typeof<'Output> |> Reflection.getFields
+        let query = Evaluators.evalOutputInsertQuery fields outputFields q
+        let pars =
+            q.Values
+            |> List.map (Reflection.getValues >> List.zip fields)
+            |> List.mapi (fun i values ->
+                values |> List.map (fun (key,value) -> sprintf "%s%i" key i, Reflection.boxify value))
+            |> List.collect id
+            |> Map.ofList
+        query, pars
+
     let prepareUpdate<'a> (q:UpdateQuery<'a>) =
         let fields = typeof<'a> |> Reflection.getFields
+        let values = Reflection.getValues q.Value |> List.map Reflection.boxify
+        // extract metadata
+        let meta = WhereAnalyzer.getWhereMetadata [] q.Where
+        let pars = (WhereAnalyzer.extractWhereParams meta) @ (List.zip fields values) |> Map.ofList
+        let query = Evaluators.evalUpdateQuery fields [] meta q
+        query, pars
+
+    let prepareOutputUpdate<'Input, 'Output> (q:UpdateQuery<'Input>) =
+        let fields = typeof<'Input> |> Reflection.getFields
+        let outputFields = typeof<'Output> |> Reflection.getFields
         let values = Reflection.getValues q.Value
         // extract metadata
         let meta = WhereAnalyzer.getWhereMetadata [] q.Where
         let pars = (WhereAnalyzer.extractWhereParams meta) @ (List.zip fields values) |> Map.ofList
-        let query = Evaluators.evalUpdateQuery fields meta q
+        let query = Evaluators.evalUpdateQuery fields outputFields meta q
         query, pars
-        
+
     let prepareDelete (q:DeleteQuery) =
         let meta = WhereAnalyzer.getWhereMetadata [] q.Where
         let pars = (WhereAnalyzer.extractWhereParams meta) |> Map.ofList
-        let query = Evaluators.evalDeleteQuery meta q
+        let query = Evaluators.evalDeleteQuery [] meta q
+        query, pars
+
+    let prepareOutputDelete<'Output> (q:DeleteQuery) =
+        let outputFields = typeof<'Output> |> Reflection.getFields
+        let meta = WhereAnalyzer.getWhereMetadata [] q.Where
+        let pars = (WhereAnalyzer.extractWhereParams meta) |> Map.ofList
+        let query = Evaluators.evalDeleteQuery outputFields meta q
         query, pars
 
 open System
@@ -221,43 +287,58 @@ open System.Data
 open Dapper
 
 type System.Data.IDbConnection with
-    
+
     member this.SelectAsync<'a> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         let query, pars = q |> Preparators.prepareSelect<'a>
         if logFunction.IsSome then (query, pars) |> logFunction.Value
         this.QueryAsync<'a>(query, pars, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
-    
+
     member this.SelectAsync<'a,'b> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         let query, pars, splitOn = q |> Preparators.prepareSelectTuple2<'a,'b>
         if logFunction.IsSome then (query, pars) |> logFunction.Value
         this.QueryAsync<'a,'b,('a * 'b)>(query, (fun x y -> x, y), pars, splitOn = splitOn, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
-    
+
     member this.SelectAsync<'a,'b,'c> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         let query, pars, splitOn = q |> Preparators.prepareSelectTuple3<'a,'b,'c>
         if logFunction.IsSome then (query, pars) |> logFunction.Value
         this.QueryAsync<'a,'b,'c,('a * 'b * 'c)>(query, (fun x y z -> x, y, z), pars, splitOn = splitOn, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
-    
+
     member this.SelectAsyncOption<'a,'b> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         let query, pars, splitOn = q |> Preparators.prepareSelectTuple2<'a,'b>
         if logFunction.IsSome then (query, pars) |> logFunction.Value
         this.QueryAsync<'a,'b,('a * 'b option)>(query, (fun x y -> x, Reflection.makeOption y), pars, splitOn = splitOn, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
-    
+
     member this.SelectAsyncOption<'a,'b,'c> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         let query, pars, splitOn = q |> Preparators.prepareSelectTuple3<'a,'b,'c>
         if logFunction.IsSome then (query, pars) |> logFunction.Value
         this.QueryAsync<'a,'b,'c,('a * 'b option * 'c option)>(query, (fun x y z -> x, Reflection.makeOption y, Reflection.makeOption z), pars, splitOn = splitOn, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
-        
+
     member this.InsertAsync<'a> (q:InsertQuery<'a>, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         let query, values = q |> Preparators.prepareInsert
         if logFunction.IsSome then (query, values) |> logFunction.Value
         this.ExecuteAsync(query, values, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
-        
+
+    member this.InsertOutputAsync<'Input, 'Output> (q:InsertQuery<'Input>, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
+        let query, pars = q |> Preparators.prepareOutputInsert<'Input, 'Output>
+        if logFunction.IsSome then (query, pars) |> logFunction.Value
+        this.QueryAsync<'Output>(query, pars, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
+
     member this.UpdateAsync<'a> (q:UpdateQuery<'a>, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         let query, pars = q |> Preparators.prepareUpdate<'a>
         if logFunction.IsSome then (query, pars) |> logFunction.Value
         this.ExecuteAsync(query, pars, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
-    
+
+    member this.UpdateOutputAsync<'Input, 'Output> (q:UpdateQuery<'Input>, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
+        let query, pars = q |> Preparators.prepareOutputUpdate<'Input, 'Output>
+        if logFunction.IsSome then (query, pars) |> logFunction.Value
+        this.QueryAsync<'Output>(query, pars, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
+
     member this.DeleteAsync (q:DeleteQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         let query, pars = q |> Preparators.prepareDelete
         if logFunction.IsSome then (query, pars) |> logFunction.Value
         this.ExecuteAsync(query, pars, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
+
+    member this.DeleteOutputAsync<'Output> (q:DeleteQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
+        let query, pars = q |> Preparators.prepareOutputDelete<'Output>
+        if logFunction.IsSome then (query, pars) |> logFunction.Value
+        this.QueryAsync<'Output>(query, pars, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)

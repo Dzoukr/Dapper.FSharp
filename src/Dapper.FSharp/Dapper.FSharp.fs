@@ -5,7 +5,7 @@ type OrderDirection =
     | Desc
 
 type OrderBy = string * OrderDirection
-    
+
 type ColumnComparison =
     | Eq of obj
     | Ne of obj
@@ -17,11 +17,11 @@ type ColumnComparison =
     | NotIn of obj list
     | IsNull
     | IsNotNull
-    
+
 type BinaryOperation =
     | And
     | Or
-    
+
 type UnaryOperation =
     | Not
 
