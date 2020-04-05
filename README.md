@@ -13,6 +13,7 @@ Lightweight F# extension for StackOverflow Dapper
 - Support for F# options
 - Support for SQL Server 2012 (11.x) and later / Azure SQL Database
 - Support for SELECT (including JOINs), INSERT, UPDATE (full / partial), DELETE
+- Support for OUTPUT clause
 - Easy usage thanks to F# computation expressions
 - Keeps things simple
 
@@ -265,3 +266,5 @@ select {
 } |> conn.SelectAsyncOption<Person, Dog, DogsWeight>
 ``` 
 
+## OUTPUT clause support
+From version `1.4.0` this library supports `OUTPUT` clause using special methods: `InsertOutputAsync`, `UpdateOutputAsync` and `DeleteOutputAsync`. Please check tests located under tests/Dapper.FSharp.Tests folder for more examples.

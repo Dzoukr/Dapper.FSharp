@@ -10,8 +10,8 @@
     <PackageIconUrl>https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png</PackageIconUrl>
     <PackageTags>fsharp;dapper;database</PackageTags>
     <Authors>Roman Provazník</Authors>
-    <Version>1.3.1</Version>
-    <PackageReleaseNotes>Fixing bug with not handling safe parameter name generation</PackageReleaseNotes>
+    <Version>1.4.0</Version>
+    <PackageReleaseNotes>Add support to output inserted, updated and deleted values #2</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Dapper.FSharp.fs" />
