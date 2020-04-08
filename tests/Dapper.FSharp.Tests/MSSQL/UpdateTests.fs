@@ -48,7 +48,7 @@ let tests (conn:IDbConnection) = Tests.testList "UPDATE" [
         let! fromDb =
             select {
                 table "Persons"
-                where (eq "LastName" "UPDATED")
+                where (eq "Position" 2)
             } |> conn.SelectAsync<Persons.View>
         Expect.isNone (fromDb |> Seq.head |> fun (x:Persons.View) -> x.DateOfBirth) ""
         Expect.equal 2 (fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position) ""

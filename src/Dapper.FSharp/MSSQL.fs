@@ -262,7 +262,7 @@ module private Preparators =
     let prepareOutputUpdate<'Input, 'Output> (q:UpdateQuery<'Input>) =
         let fields = typeof<'Input> |> Reflection.getFields
         let outputFields = typeof<'Output> |> Reflection.getFields
-        let values = Reflection.getValues q.Value
+        let values = Reflection.getValues q.Value |> List.map Reflection.boxify
         // extract metadata
         let meta = WhereAnalyzer.getWhereMetadata [] q.Where
         let pars = (WhereAnalyzer.extractWhereParams meta) @ (List.zip fields values) |> Map.ofList

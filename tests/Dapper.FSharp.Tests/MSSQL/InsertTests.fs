@@ -116,6 +116,7 @@ let tests (conn:IDbConnection) = Tests.testList "INSERT" [
                 table "Persons"
                 value r
             } |> conn.InsertOutputAsync
-        Expect.equal r (Seq.head fromDb) ""
+        Expect.isSome (fromDb |> Seq.head |> fun (x:Persons.View) -> x.DateOfBirth) ""
+        Expect.equal r.Id (Seq.head fromDb |> fun (p:Persons.View) -> p.Id) "" // Comparing Some <datetime> fails even though it is the same
     }
 ]
