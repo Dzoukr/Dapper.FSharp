@@ -210,6 +210,15 @@ select {
 } |> conn.SelectAsync<Person>
 ```
 
+To use LIKE operator in `where` condition, use `like`:
+
+```f#
+select {
+    table "Persons"
+    where (like "FirstName" "%partofname%")
+} |> conn.SelectAsync<Person>
+```
+
 Sorting works as you would expect:
 
 ```f#
