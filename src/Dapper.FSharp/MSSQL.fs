@@ -17,6 +17,7 @@ module private WhereAnalyzer =
             | Eq p | Ne p | Gt p
             | Lt p | Ge p | Le p -> (m.ParameterName, p) |> Some
             | In p | NotIn p -> (m.ParameterName, p :> obj) |> Some
+            | Like str -> (m.ParameterName, str :> obj) |> Some
             | IsNull | IsNotNull -> None
         meta
         |> List.choose fn
@@ -65,6 +66,7 @@ module private Evaluators =
             | Le _ -> withField "<="
             | In _ -> withField "IN"
             | NotIn _ -> withField "NOT IN"
+            | Like _ -> withField "LIKE"
             | IsNull -> sprintf "%s IS NULL" fieldMeta.Name
             | IsNotNull -> sprintf "%s IS NOT NULL" fieldMeta.Name
         | Binary(w1, comb, w2) ->

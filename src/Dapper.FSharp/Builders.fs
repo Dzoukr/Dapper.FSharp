@@ -116,6 +116,8 @@ let lt name (o:obj) = column name (Lt o)
 let ge name (o:obj) = column name (Ge o)
 /// WHERE column value lower/equals than
 let le name (o:obj) = column name (Le o)
+/// WHERE column like value
+let like name (str:string) = column name (Like str)
 /// WHERE column is IN values
 let isIn name (os:obj list) = column name (In os)
 /// WHERE column is NOT IN values
