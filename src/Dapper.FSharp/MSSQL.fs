@@ -83,6 +83,11 @@ module private Evaluators =
         |> List.map (fun (n,s) -> sprintf "%s %s" n (evalOrderDirection s))
         |> String.concat ", "
 
+    let evalGroupBy (cols:GroupBy list) =
+        cols
+        |> List.map (fun (GroupByColumn column) -> column)
+        |> String.concat ", "
+
     let evalPagination (pag:Pagination) =
         match pag with
         | Skip x when x <= 0 -> ""
@@ -100,13 +105,17 @@ module private Evaluators =
     let evalSelectQuery fields meta (q:SelectQuery) =
         let fieldNames = fields |> String.concat ", "
         // basic query
-        let sb = StringBuilder(sprintf "SELECT %s FROM %s" fieldNames q.Table)
+        let distinct = if q.Distinct then "DISTINCT " else ""
+        let sb = StringBuilder(sprintf "SELECT %s%s FROM %s" distinct fieldNames q.Table)
         // joins
         let joins = evalJoins q.Joins
         if joins.Length > 0 then sb.Append joins |> ignore
         // where
         let where = evalWhere meta q.Where
         if where.Length > 0 then sb.Append (sprintf " WHERE %s" where) |> ignore
+        // group by
+        let groupBy = evalGroupBy q.GroupBy
+        if groupBy.Length > 0 then sb.Append (sprintf " GROUP BY %s" groupBy) |> ignore
         // order by
         let orderBy = evalOrderBy q.OrderBy
         if orderBy.Length > 0 then sb.Append (sprintf " ORDER BY %s" orderBy) |> ignore
@@ -197,37 +206,70 @@ module private Reflection =
 
 module private Preparators =
 
-    let prepareSelect<'a> (q:SelectQuery) =
-        let fields = typeof<'a> |> Reflection.getFields
+    let prepareAggregates aggr =
+        let comparableName (column:string) (alias:string) =
+            match column.Split '.' with
+            | [| _ |] -> alias.ToLowerInvariant()
+            | [| table; _ |] -> sprintf "%s.%s" (table.ToLowerInvariant()) (alias.ToLowerInvariant())
+            | _ -> failwith "Aggregate column format should be either <table>.<column> or <column>"
+
+        aggr |> Seq.map (function
+        | Count (column,alias) -> comparableName column alias, sprintf "COUNT(%s) AS %s" column alias
+        | Avg (column,alias) -> comparableName column alias, sprintf "AVG(%s) AS %s" column alias
+        | Sum (column,alias) -> comparableName column alias, sprintf "SUM(%s) AS %s" column alias
+        | Min (column,alias) -> comparableName column alias, sprintf "MIN(%s) AS %s" column alias
+        | Max (column,alias) -> comparableName column alias, sprintf "MAX(%s) AS %s" column alias)
+        |> Seq.toList
+
+    let replaceFieldWithAggregate (aggr:(string * string) list) (field:string) =
+        let lowerField = field.ToLowerInvariant()
+        aggr 
+        |> List.tryPick (fun (aggrColumn,func) -> if aggrColumn = lowerField then Some func else None)
+        |> Option.defaultValue field
+
+    let prepareSelect<'a> (aggr:Aggregate seq) (q:SelectQuery) =
+        let aggregates = prepareAggregates aggr
+        let fields =
+            typeof<'a> 
+            |> Reflection.getFields
+            |> Seq.map (replaceFieldWithAggregate aggregates)
         // extract metadata
         let meta = WhereAnalyzer.getWhereMetadata [] q.Where
         let query = Evaluators.evalSelectQuery fields meta q
         let pars = WhereAnalyzer.extractWhereParams meta |> Map.ofList
         query, pars
 
-    let private extractFieldsAndSplit<'a> (j:Join) =
+    let private extractFieldsAndSplit<'a> (j:Join) (aggregates:(string * string) list) =
         let table = j |> Join.tableName
         let f = typeof<'a> |> Reflection.getFields
-        let fieldNames = f |> List.map (sprintf "%s.%s" table)
+        let fieldNames = f |> List.map (sprintf "%s.%s" table >> replaceFieldWithAggregate aggregates)
         fieldNames, f.Head
 
     let private createSplitOn (xs:string list) = xs |> String.concat ","
 
-    let prepareSelectTuple2<'a,'b> (q:SelectQuery) =
+    let prepareSelectTuple2<'a,'b> (aggr:Aggregate seq) (q:SelectQuery) =
+        let aggregates = prepareAggregates aggr
         let joinsArray = q.Joins |> Array.ofList
-        let fieldsOne = typeof<'a> |> Reflection.getFields |> List.map (sprintf "%s.%s" q.Table)
-        let fieldsTwo, splitOn = extractFieldsAndSplit<'b> joinsArray.[0]
+        let fieldsOne = 
+            typeof<'a> 
+            |> Reflection.getFields 
+            |> List.map (sprintf "%s.%s" q.Table >> replaceFieldWithAggregate aggregates)
+        let fieldsTwo, splitOn = extractFieldsAndSplit<'b> joinsArray.[0] aggregates
         // extract metadata
         let meta = WhereAnalyzer.getWhereMetadata [] q.Where
         let query = Evaluators.evalSelectQuery (fieldsOne @ fieldsTwo) meta q
         let pars = WhereAnalyzer.extractWhereParams meta |> Map.ofList
         query, pars, createSplitOn [splitOn]
 
-    let prepareSelectTuple3<'a,'b,'c> (q:SelectQuery) =
+    let prepareSelectTuple3<'a,'b,'c> (aggr:Aggregate seq) (q:SelectQuery) =
+        let aggregates = prepareAggregates aggr
         let joinsArray = q.Joins |> Array.ofList
-        let fieldsOne = typeof<'a> |> Reflection.getFields |> List.map (sprintf "%s.%s" q.Table)
-        let fieldsTwo, splitOn1 = extractFieldsAndSplit<'b> joinsArray.[0]
-        let fieldsThree, splitOn2 = extractFieldsAndSplit<'c> joinsArray.[1]
+        let fieldsOne =
+            typeof<'a> 
+            |> Reflection.getFields 
+            |> List.map (sprintf "%s.%s" q.Table >> replaceFieldWithAggregate aggregates)
+        let fieldsTwo, splitOn1 = extractFieldsAndSplit<'b> joinsArray.[0] aggregates
+        let fieldsThree, splitOn2 = extractFieldsAndSplit<'c> joinsArray.[1] aggregates
         // extract metadata
         let meta = WhereAnalyzer.getWhereMetadata [] q.Where
         let query = Evaluators.evalSelectQuery (fieldsOne @ fieldsTwo @ fieldsThree) meta q
@@ -290,28 +332,28 @@ open Dapper
 
 type System.Data.IDbConnection with
 
-    member this.SelectAsync<'a> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
-        let query, pars = q |> Preparators.prepareSelect<'a>
+    member this.SelectAsync<'a> (q:SelectQuery, ?aggr:Aggregate seq, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
+        let query, pars = q |> Preparators.prepareSelect<'a> (aggr |> Option.defaultValue Seq.empty)
         if logFunction.IsSome then (query, pars) |> logFunction.Value
         this.QueryAsync<'a>(query, pars, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
 
-    member this.SelectAsync<'a,'b> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
-        let query, pars, splitOn = q |> Preparators.prepareSelectTuple2<'a,'b>
+    member this.SelectAsync<'a,'b> (q:SelectQuery, ?aggr:Aggregate seq, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
+        let query, pars, splitOn = q |> Preparators.prepareSelectTuple2<'a,'b> (aggr |> Option.defaultValue Seq.empty)
         if logFunction.IsSome then (query, pars) |> logFunction.Value
         this.QueryAsync<'a,'b,('a * 'b)>(query, (fun x y -> x, y), pars, splitOn = splitOn, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
 
-    member this.SelectAsync<'a,'b,'c> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
-        let query, pars, splitOn = q |> Preparators.prepareSelectTuple3<'a,'b,'c>
+    member this.SelectAsync<'a,'b,'c> (q:SelectQuery, ?aggr:Aggregate seq, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
+        let query, pars, splitOn = q |> Preparators.prepareSelectTuple3<'a,'b,'c> (aggr |> Option.defaultValue Seq.empty)
         if logFunction.IsSome then (query, pars) |> logFunction.Value
         this.QueryAsync<'a,'b,'c,('a * 'b * 'c)>(query, (fun x y z -> x, y, z), pars, splitOn = splitOn, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
 
-    member this.SelectAsyncOption<'a,'b> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
-        let query, pars, splitOn = q |> Preparators.prepareSelectTuple2<'a,'b>
+    member this.SelectAsyncOption<'a,'b> (q:SelectQuery, ?aggr:Aggregate seq, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
+        let query, pars, splitOn = q |> Preparators.prepareSelectTuple2<'a,'b> (aggr |> Option.defaultValue Seq.empty)
         if logFunction.IsSome then (query, pars) |> logFunction.Value
         this.QueryAsync<'a,'b,('a * 'b option)>(query, (fun x y -> x, Reflection.makeOption y), pars, splitOn = splitOn, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
 
-    member this.SelectAsyncOption<'a,'b,'c> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
-        let query, pars, splitOn = q |> Preparators.prepareSelectTuple3<'a,'b,'c>
+    member this.SelectAsyncOption<'a,'b,'c> (q:SelectQuery, ?aggr:Aggregate seq, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
+        let query, pars, splitOn = q |> Preparators.prepareSelectTuple3<'a,'b,'c> (aggr |> Option.defaultValue Seq.empty)
         if logFunction.IsSome then (query, pars) |> logFunction.Value
         this.QueryAsync<'a,'b,'c,('a * 'b option * 'c option)>(query, (fun x y z -> x, Reflection.makeOption y, Reflection.makeOption z), pars, splitOn = splitOn, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
 

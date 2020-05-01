@@ -435,4 +435,445 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT" [
         Expect.equal None wn ""
         Expect.equal 16 (Seq.length fromDb) ""
     }
+
+
+    testTask "Select aggregate count on empty table" {
+        do! Persons.init conn
+        let! fromDb =
+            select {
+                table "Persons"
+            } |> fun query -> conn.SelectAsync<{| count:int |}>(query, aggr = [ count "*" "count" ])
+        Expect.equal 0 (fromDb |> Seq.head |> fun (x:{| count:int |}) -> x.count) ""
+    }
+
+    testTask "Select aggregate count" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+            } |> fun query -> conn.SelectAsync<{| count:int |}>(query, aggr = [ count "*" "count" ])
+        Expect.equal 10 (fromDb |> Seq.head |> fun (x:{| count:int |}) -> x.count) ""
+    }
+
+    testTask "Select aggregate count with column name" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+            } |> fun query -> conn.SelectAsync<{| count:int |}>(query, aggr = [ count "Position" "count" ])
+        Expect.equal 10 (fromDb |> Seq.head |> fun (x:{| count:int |}) -> x.count) ""
+    }
+
+    testTask "Select aggregate count with where condition" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+                where (eq "Position" 1)
+            } |> fun query -> conn.SelectAsync<{| count:int |}>(query, aggr = [ count "*" "count" ])
+        Expect.equal 1 (fromDb |> Seq.head |> fun (x:{| count:int |}) -> x.count) ""
+    }
+
+    testTask "Select aggregate avg with empty table" {
+        do! Persons.init conn
+        let! fromDb =
+            select {
+                table "Persons"
+            } |> fun query -> conn.SelectAsync<{| avg:int option |}>(query, aggr = [ avg "Position" "avg" ])
+        let result = fromDb |> Seq.head |> fun (x:{| avg:int option |}) -> x.avg
+        Expect.isNone result ""
+    }
+
+    testTask "Select aggregate avg" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+            } |> fun query -> conn.SelectAsync<{| avg:int option |}>(query, aggr = [ avg "Position" "avg" ])
+        let result = fromDb |> Seq.head |> fun (x:{| avg:int option |}) -> x.avg
+        Expect.isSome result ""
+        Expect.equal 5 result.Value ""
+    }
+
+    testTask "Select aggregate avg with where condition" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+                where (eq "Position" 1)
+            } |> fun query -> conn.SelectAsync<{| avg:int option |}>(query, aggr = [ avg "Position" "avg" ])
+        let result = fromDb |> Seq.head |> fun (x:{| avg:int option |}) -> x.avg
+        Expect.isSome result ""
+        Expect.equal 1 result.Value ""
+    }
+
+    testTask "Select aggregate sum with empty table" {
+        do! Persons.init conn
+        let! fromDb =
+            select {
+                table "Persons"
+            } |> fun query -> conn.SelectAsync<{| sum:int option |}>(query, aggr = [ sum "Position" "sum" ])
+        let result = fromDb |> Seq.head |> fun (x:{| sum:int option |}) -> x.sum
+        Expect.isNone result ""
+    }
+
+    testTask "Select aggregate sum" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+            } |> fun query -> conn.SelectAsync<{| sum:int option |}>(query, aggr = [ sum "Position" "sum" ])
+        let result = fromDb |> Seq.head |> fun (x:{| sum:int option |}) -> x.sum
+        Expect.isSome result ""
+        Expect.equal 55 result.Value ""
+    }
+
+    testTask "Select aggregate sum with where condition" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+                where (eq "Position" 1)
+            } |> fun query -> conn.SelectAsync<{| sum:int option |}>(query, aggr = [ sum "Position" "sum" ])
+        let result = fromDb |> Seq.head |> fun (x:{| sum:int option |}) -> x.sum
+        Expect.isSome result ""
+        Expect.equal 1 result.Value ""
+    }
+
+    testTask "Select aggregate min with empty table" {
+        do! Persons.init conn
+        let! fromDb =
+            select {
+                table "Persons"
+                where (eq "Position" 1)
+            } |> fun query -> conn.SelectAsync<{| min:int option |}>(query, aggr = [ min "Position" "min" ])
+        let result = fromDb |> Seq.head |> fun (x:{| min:int option |}) -> x.min
+        Expect.isNone result ""
+    }
+
+    testTask "Select aggregate min" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+            } |> fun query -> conn.SelectAsync<{| min:int option |}>(query, aggr = [ min "Position" "min" ])
+        let result = fromDb |> Seq.head |> fun (x:{| min:int option |}) -> x.min
+        Expect.isSome result ""
+        Expect.equal 1 result.Value ""
+    }
+
+    testTask "Select aggregate min with where condition" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+                where (eq "Position" 2) // Set the value not to the smallest one like others to make sure min works
+            } |> fun query -> conn.SelectAsync<{| min:int option |}>(query, aggr = [ min "Position" "min" ])
+        let result = fromDb |> Seq.head |> fun (x:{| min:int option |}) -> x.min
+        Expect.isSome result ""
+        Expect.equal 2 result.Value ""
+    }
+
+    testTask "Select aggregate max with empty table" {
+        do! Persons.init conn
+        let! fromDb =
+            select {
+                table "Persons"
+            } |> fun query -> conn.SelectAsync<{| max:int option |}>(query, aggr = [ max "Position" "max" ])
+        let result = fromDb |> Seq.head |> fun (x:{| max:int option |}) -> x.max
+        Expect.isNone result ""
+    }
+
+    testTask "Select aggregate max" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+            } |> fun query -> conn.SelectAsync<{| max:int option |}>(query, aggr = [ max "Position" "max" ])
+        let result = fromDb |> Seq.head |> fun (x:{| max:int option |}) -> x.max
+        Expect.isSome result ""
+        Expect.equal 10 result.Value ""
+    }
+
+    testTask "Select aggregate max with where condition" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+                where (eq "Position" 1)
+            } |> fun query -> conn.SelectAsync<{| max:int option |}>(query, aggr = [ max "Position" "max" ])
+        let result = fromDb |> Seq.head |> fun (x:{| max:int option |}) -> x.max
+        Expect.isSome result ""
+        Expect.equal 1 result.Value ""
+    }
+
+    testTask "Select aggregate multiple functions" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"               
+            } |> fun query ->
+                conn.SelectAsync<{| count:int; avg:int option; sum:int option; max:int option; min:int option |}>(
+                    query, [ avg "Position" "avg"; count "*" "count"; max "Position" "max"; min "Position" "min"; sum "Position" "sum" ])
+        let count, avg, sum, max, min = 
+            fromDb 
+            |> Seq.head 
+            |> fun (x:{| count:int; avg:int option; sum:int option; max:int option; min:int option |}) -> 
+                x.count, x.avg, x.sum, x.max, x.min
+        Expect.isSome avg ""
+        Expect.isSome sum ""
+        Expect.isSome min ""
+        Expect.isSome max ""
+
+        Expect.equal 10 count ""
+        Expect.equal 5 avg.Value ""
+        Expect.equal 55 sum.Value ""
+        Expect.equal 1 min.Value ""
+        Expect.equal 10 max.Value ""
+    }
+
+    testTask "Select aggregate multiple same function types" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"               
+            } |> fun query ->
+                conn.SelectAsync<{| countPositions1:int; countPositions2:int |}>(
+                    query, [ count "Position" "countPositions1"; count "Position" "countPositions2" ])
+        let pos1, pos2 = 
+            fromDb 
+            |> Seq.head 
+            |> fun (x:{| countPositions1:int; countPositions2:int |}) -> x.countPositions1, x.countPositions2
+
+        Expect.equal 10 pos1 ""
+        Expect.equal 10 pos2 ""
+    }
+
+    testTask "Select aggregate with inner joined query" {
+        do! Persons.init conn
+        do! Dogs.init conn
+
+        let persons = Persons.View.generate 10
+        let dogs = Dogs.View.generate1toN 5 persons.Head
+        let! _ =
+            insert {
+                table "Persons"
+                values persons
+            } |> conn.InsertAsync
+        let! _ =
+            insert {
+                table "Dogs"
+                values dogs
+            } |> conn.InsertAsync
+
+        let! fromDb =
+            select {
+                table "Persons"
+                innerJoin "Dogs" "OwnerId" "Persons.Id"
+            } |> fun query ->
+                conn.SelectAsync<{| count:int |}>(query, [ count "*" "count" ])
+        
+        let result = fromDb |> Seq.head |> fun (x:{| count:int |}) -> x
+        Expect.equal 5 result.count ""
+    }
+
+    testTask "Select aggregate with left joined query" {
+        do! Persons.init conn
+        do! Dogs.init conn
+
+        let persons = Persons.View.generate 10
+        let dogs = Dogs.View.generate1toN 5 persons.Head
+        let! _ =
+            insert {
+                table "Persons"
+                values persons
+            } |> conn.InsertAsync
+        let! _ =
+            insert {
+                table "Dogs"
+                values dogs
+            } |> conn.InsertAsync
+
+        let! fromDb =
+            select {
+                table "Persons"
+                leftJoin "Dogs" "OwnerId" "Persons.Id"
+            } |> fun query ->
+                conn.SelectAsync<{| count:int |}>(query, [ count "*" "count" ])
+        
+        let result = fromDb |> Seq.head |> fun (x:{| count:int |}) -> x
+        Expect.equal 14 result.count ""
+    }
+
+    testTask "Select group by aggregate" {
+        do! Persons.init conn
+        do! Dogs.init conn
+
+        let persons = Persons.View.generate 10
+        let dogs = Dogs.View.generate1toN 5 persons.Head
+        let! _ =
+            insert {
+                table "Persons"
+                values persons
+            } |> conn.InsertAsync
+        let! _ =
+            insert {
+                table "Dogs"
+                values dogs
+            } |> conn.InsertAsync
+
+        let! fromDb =
+            select {
+                table "Persons"
+                leftJoin "Dogs" "OwnerId" "Persons.Id"
+                groupBy [ "Persons.Position" ]
+            } |> fun query ->
+                conn.SelectAsync<{| position:int; count:int |}>(query, [ count "*" "count" ])
+        
+        fromDb 
+        |> Seq.iter (fun (x:{| position:int; count:int |}) -> 
+            if x.position = 1 // Only head has dogs created
+            then Expect.equal 5 x.count ""
+            else Expect.equal 1 x.count ""
+        )
+    }
+
+    testTask "Select group by aggregate with tupled result" {
+        do! Persons.init conn
+        do! Dogs.init conn
+
+        let persons = Persons.View.generate 10
+        let dogs = Dogs.View.generate1toN 5 persons.Head
+        let! _ =
+            insert {
+                table "Persons"
+                values persons
+            } |> conn.InsertAsync
+        let! _ =
+            insert {
+                table "Dogs"
+                values dogs
+            } |> conn.InsertAsync
+
+        let! fromDb =
+            select {
+                table "Persons"
+                leftJoin "Dogs" "OwnerId" "Persons.Id"
+                groupBy [ "Persons.Position"; "Dogs.OwnerId" ]
+            } |> fun query ->
+                conn.SelectAsync<{| position:int; count:int |}, {| ownerId:System.Guid |}>(query, [ count "Persons.Position" "count" ])
+        
+        fromDb 
+        |> Seq.iter (fun (a:{| position:int; count:int |}, _) -> 
+            if a.position = 1 // Only head has dogs created
+            then Expect.equal 5 a.count ""
+            else Expect.equal 1 a.count ""
+        )
+    }
+
+    testTask "Select distinct" {
+        do! Persons.init conn
+        do! Dogs.init conn
+
+        let persons = Persons.View.generate 10
+        let dogs = Dogs.View.generate1toN 5 persons.Head
+        let! _ =
+            insert {
+                table "Persons"
+                values persons
+            } |> conn.InsertAsync
+        let! _ =
+            insert {
+                table "Dogs"
+                values dogs
+            } |> conn.InsertAsync
+
+        let! fromDb =
+            select {
+                table "Persons"
+                distinct
+                leftJoin "Dogs" "OwnerId" "Persons.Id"
+            } |> conn.SelectAsync<{| firstName:string |}>
+        
+        Expect.equal 10 (fromDb |> Seq.length) ""
+        Expect.equal 10 (fromDb |> Seq.distinctBy (fun (x:{| firstName:string |}) -> x.firstName) |> Seq.length) ""
+    }
 ]

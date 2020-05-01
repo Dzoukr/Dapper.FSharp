@@ -59,15 +59,21 @@ type SelectBuilder() =
     member __.Yield _ =
         {
             Table = ""
+            Distinct = false
             Where = Where.Empty
             OrderBy = []
             Pagination = Skip 0
             Joins = []
+            GroupBy = []
         } : SelectQuery
 
     /// Sets the TABLE name for query
     [<CustomOperation "table">]
     member __.Table (state:SelectQuery, name) = { state with Table = name }
+
+    /// Sets query to return distinct values
+    [<CustomOperation "distinct">]
+    member __.Distinct (state:SelectQuery) = { state with Distinct = true }
 
     /// Sets the WHERE condition
     [<CustomOperation "where">]
@@ -96,6 +102,11 @@ type SelectBuilder() =
     /// LEFT JOIN table where COLNAME equals to another COLUMN (including TABLE name)
     [<CustomOperation "leftJoin">]
     member __.LeftJoin (state:SelectQuery, tableName, colName, equalsTo) = { state with Joins = state.Joins @ [LeftJoin(tableName, colName, equalsTo)] }
+
+    /// Sets group by columns
+    [<CustomOperation "groupBy">]
+    member __.GroupBy (state:SelectQuery, columns) = { state with GroupBy = columns |> List.map GroupByColumn }
+
 
 let insert<'a> = InsertBuilder<'a>()
 let delete = DeleteBuilder()
@@ -126,3 +137,10 @@ let isNotIn name (os:obj list) = column name (NotIn os)
 let isNullValue name = column name IsNull
 /// WHERE column IS NOT NULL
 let isNotNullValue name = column name IsNotNull
+
+// Aggregate function builders
+let count column alias = Count (column, alias)
+let avg column alias = Avg (column, alias)
+let sum column alias = Sum (column, alias)
+let min column alias = Min (column, alias)
+let max column alias = Max (column, alias)

@@ -35,6 +35,15 @@ type Where =
     static member (*) (a, b) = Binary(a, Or, b)
     static member (!!) a = Unary (Not, a)
 
+type GroupBy = GroupByColumn of string
+
+type Aggregate =
+    | Count of column:string * alias:string
+    | Avg of column:string * alias:string
+    | Sum of column:string * alias:string
+    | Min of column:string * alias:string
+    | Max of column:string * alias:string
+
 type Pagination =
     | Skip of skip:int
     | SkipTake of skip:int * take:int
@@ -50,10 +59,12 @@ module Join =
 
 type SelectQuery = {
     Table : string
+    Distinct : bool
     Where : Where
     OrderBy : OrderBy list
     Pagination : Pagination
     Joins : Join list
+    GroupBy : GroupBy list
 }
 
 type InsertQuery<'a> = {

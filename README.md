@@ -192,6 +192,15 @@ select {
 } |> conn.SelectAsync<Person>
 ```
 
+Get distinct values with select:
+
+```f#
+select {
+    table "Persons"
+    distinct
+} |> conn.SelectAsync<{| firstName:string |}>
+```
+
 To filter values, use `where` condition as you know it from `update` and `delete`. Where conditions can be also combined with `(+) operator` (logical AND) or `(*) operator` (logical OR):
 
 ```f#
@@ -277,3 +286,46 @@ select {
 
 ## OUTPUT clause support
 From version `1.4.0` this library supports `OUTPUT` clause using special methods: `InsertOutputAsync`, `UpdateOutputAsync` and `DeleteOutputAsync`. Please check tests located under tests/Dapper.FSharp.Tests folder for more examples.
+
+## Aggregate functions
+
+Aggregate functions include `count`, `avg`, `sum`, `min`, and `max`. These functions can be passed as parameters to `SelectAsync`and `SelectAsyncOption` functions. An example using aggregate functions in normal select query:
+
+```f#
+select {
+    table "Persons"
+} |> fun query -> 
+    conn.SelectAsync<{| average:int option; rowCount:int |}>(
+        query, [ avg "Position" "average"; count "*" "rowCount" ])
+```
+
+or with joined query:
+
+```f#
+select {
+    table "Persons"
+    innerJoin "Dogs" "OwnerId" "Persons.Id"
+} |> fun query -> 
+    conn.SelectAsync<{| average:int option; rowCount:int |}>(
+        query, [ avg "Persons.Position" "average"; count "Persons.Position" "rowCount" ])
+```
+
+or with group by clause:
+
+```f#
+select {
+    table "Persons"
+    innerJoin "Dogs" "OwnerId" "Persons.Id"
+    groupBy [ "Persons.Position" ]
+} |> fun query -> 
+    conn.SelectAsync<{| position:int; average:int option; rowCount:int |}>(
+        query, [ avg "Persons.Position" "average"; count "Persons.Position" "rowCount" ])
+```
+
+First parameter for aggregate functions is the column used for aggregation and the second parameter is the alias name for the result, which is used to bind return value to output record field. However, notice that when using multi-table query, we could no longer use `*` in `count` function. Instead an explicit column name is needed.
+
+It is possible to use multiple same type aggregate functions in the same query, as long as the alias names differ and match the fields in output record. Aggregate functions do not need to be in the same order as they are in the output record.
+
+It is the callers responsibility to determine the output types for aggregate functions, but notice that when querying an empty table, `count` returns `0`, but all other aggregate functions return `None`.
+
+For more examples, see tests/Dapper.FSharp.Tests folder.
