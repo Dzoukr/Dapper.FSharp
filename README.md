@@ -296,13 +296,11 @@ let sql, values =
         value r
     } |> Deconstructor.insert
 
-printfn "QUERY: %s" sql 
-// prints:
+printfn "%s" sql 
 // INSERT INTO Persons (Id, FirstName, LastName, Position, DateOfBirth) 
 // VALUES (@Id0, @FirstName0, @LastName0, @Position0, @DateOfBirth0)"
 
-printfn "VALUES: %A" values
-// prints: 
+printfn "%A" values
 // map [("DateOfBirth0", 11.05.2020 0:00:00); 
 //      ("FirstName0", "Works");
 //      ("Id0", 8cc6a7ed-7c17-4bea-a0ca-04a3985d2c7e); 
