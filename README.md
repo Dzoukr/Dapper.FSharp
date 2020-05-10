@@ -276,4 +276,37 @@ select {
 ``` 
 
 ## OUTPUT clause support
-From version `1.4.0` this library supports `OUTPUT` clause using special methods: `InsertOutputAsync`, `UpdateOutputAsync` and `DeleteOutputAsync`. Please check tests located under tests/Dapper.FSharp.Tests folder for more examples.
+This library supports `OUTPUT` clause using special methods: `InsertOutputAsync`, `UpdateOutputAsync` and `DeleteOutputAsync`. Please check tests located under tests/Dapper.FSharp.Tests folder for more examples.
+
+## Deconstructor
+To provide better usage with plain Dapper, this library contains `Deconstructor` converting `Dapper.FSharp` queries to tuple of parametrized SQL query and `Map` of parameter values.
+
+```f#
+let r = {
+    Id = Guid.NewGuid()
+    FirstName = "Works"
+    LastName = "Great"
+    DateOfBirth = DateTime.Today
+    Position = 1
+}
+
+let sql, values =
+    insert {
+        table "Persons"
+        value r
+    } |> Deconstructor.insert
+
+printfn "QUERY: %s" sql 
+// prints:
+// INSERT INTO Persons (Id, FirstName, LastName, Position, DateOfBirth) 
+// VALUES (@Id0, @FirstName0, @LastName0, @Position0, @DateOfBirth0)"
+
+printfn "VALUES: %A" values
+// prints: 
+// map [("DateOfBirth0", 11.05.2020 0:00:00); 
+//      ("FirstName0", "Works");
+//      ("Id0", 8cc6a7ed-7c17-4bea-a0ca-04a3985d2c7e); 
+//      ("LastName0", "Great");
+//      ("Position0", 1)]
+
+```
