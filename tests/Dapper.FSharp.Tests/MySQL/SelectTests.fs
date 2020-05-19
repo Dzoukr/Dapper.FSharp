@@ -1,11 +1,11 @@
-﻿module Dapper.FSharp.Tests.MSSQL.SelectTests
+﻿module Dapper.FSharp.Tests.MySQL.SelectTests
 
 open System.Data
 open Expecto
 open Dapper.FSharp.Tests.Database
-open Dapper.FSharp.Tests.MSSQL.Database
+open Dapper.FSharp.Tests.MySQL.Database
 open Dapper.FSharp
-open Dapper.FSharp.MSSQL
+open Dapper.FSharp.MySQL
 
 let tests (conn:IDbConnection) = Tests.testList "SELECT" [
 
@@ -308,7 +308,7 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT" [
             select {
                 table "Persons"
                 leftJoin "Dogs" "OwnerId" "Persons.Id"
-                orderBy "Persons.Position" Asc
+                orderByMany ["Persons.Position", Asc; "Dogs.Nickname", Asc]
             } |> conn.SelectAsyncOption<Persons.View, Dogs.View>
 
         let byOwner = fromDb |> Seq.groupBy fst
@@ -386,7 +386,7 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT" [
                 table "Persons"
                 innerJoin "Dogs" "OwnerId" "Persons.Id"
                 innerJoin "DogsWeights" "DogNickname" "Dogs.Nickname"
-                orderBy "Persons.Position" Asc
+                orderByMany ["Persons.Position", Asc; "Dogs.Nickname", Asc; "DogsWeights.Year", Asc]
             } |> conn.SelectAsync<Persons.View, Dogs.View, DogsWeights.View>
 
         Expect.equal 3 (Seq.length fromDb) ""
@@ -423,7 +423,7 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT" [
                 table "Persons"
                 leftJoin "Dogs" "OwnerId" "Persons.Id"
                 leftJoin "DogsWeights" "DogNickname" "Dogs.Nickname"
-                orderBy "Persons.Position" Asc
+                orderByMany ["Persons.Position", Asc; "Dogs.Nickname", Asc; "DogsWeights.Year", Asc]
             } |> conn.SelectAsyncOption<Persons.View, Dogs.View, DogsWeights.View>
 
         let p1,d1,w1 = fromDb |> Seq.head

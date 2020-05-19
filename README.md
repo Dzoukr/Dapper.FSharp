@@ -11,9 +11,9 @@ Lightweight F# extension for StackOverflow Dapper
 - No *auto-attribute-based-only-author-maybe-knows-magic* behavior
 - Support for F# records / anonymous records
 - Support for F# options
-- Support for SQL Server 2012 (11.x) and later / Azure SQL Database
+- Support for SQL Server 2012 (11.x) and later / Azure SQL Database, MySQL 8.0
 - Support for SELECT (including JOINs), INSERT, UPDATE (full / partial), DELETE
-- Support for OUTPUT clause
+- Support for OUTPUT clause (MSSQL only)
 - Easy usage thanks to F# computation expressions
 - Keeps things simple
 
@@ -275,8 +275,8 @@ select {
 } |> conn.SelectAsyncOption<Person, Dog, DogsWeight>
 ``` 
 
-## OUTPUT clause support
-This library supports `OUTPUT` clause using special methods: `InsertOutputAsync`, `UpdateOutputAsync` and `DeleteOutputAsync`. Please check tests located under tests/Dapper.FSharp.Tests folder for more examples.
+## OUTPUT clause support (MSSQL only)
+This library supports `OUTPUT` clause for MSSQL using special methods: `InsertOutputAsync`, `UpdateOutputAsync` and `DeleteOutputAsync`. Please check tests located under tests/Dapper.FSharp.Tests folder for more examples.
 
 ## Deconstructor
 To provide better usage with plain Dapper, this library contains `Deconstructor` converting `Dapper.FSharp` queries to tuple of parametrized SQL query and `Map` of parameter values.

@@ -2,6 +2,7 @@
 
 open System.Data
 open Expecto
+open Dapper.FSharp.Tests.Database
 open Dapper.FSharp.Tests.MSSQL.Database
 open Dapper.FSharp
 open Dapper.FSharp.MSSQL

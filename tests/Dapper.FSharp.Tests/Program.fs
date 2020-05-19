@@ -5,27 +5,46 @@ open Expecto
 open Expecto.Logging
 open Microsoft.Data.SqlClient
 open Microsoft.Extensions.Configuration
-open Microsoft.Extensions.Configuration.Json
+open MySql.Data.MySqlClient
 
 let testConfig = 
     { Expecto.Tests.defaultConfig with 
-        parallelWorkers = 1
+        parallelWorkers = 4
         verbosity = LogLevel.Debug }
+
+let mssqlTests connString =
+    let mssql = new SqlConnection(connString)
+    mssql |> Dapper.FSharp.Tests.MSSQL.Database.init
+    [
+        MSSQL.InsertTests.tests mssql
+        MSSQL.UpdateTests.tests mssql
+        MSSQL.DeleteTests.tests mssql
+        MSSQL.SelectTests.tests mssql
+    ]
+    |> Tests.testList "MSSQL"
+    |> Tests.testSequenced
+
+let mysqlTests connString =
+    let mysql = new MySqlConnection(connString)
+    mysql |> Dapper.FSharp.Tests.MySQL.Database.init
+    [
+        MySQL.InsertTests.tests mysql
+        MySQL.UpdateTests.tests mysql
+        MySQL.DeleteTests.tests mysql
+        MySQL.SelectTests.tests mysql
+    ]
+    |> Tests.testList "MySQL"
+    |> Tests.testSequenced
 
 [<EntryPoint>]
 let main _ =
     let conf = (ConfigurationBuilder()).AddJsonFile("local.settings.json").Build()
-    let connectionString = conf.["connectionString"]                      
     
     Dapper.FSharp.OptionTypes.register()
-    let conn = new SqlConnection(connectionString)
     
     [
-        MSSQL.InsertTests.tests conn
-        MSSQL.UpdateTests.tests conn
-        MSSQL.DeleteTests.tests conn
-        MSSQL.SelectTests.tests conn
+        conf.["mssqlConnectionString"] |> mssqlTests
+        conf.["mysqlConnectionString"] |> mysqlTests
     ]
-    |> Tests.testList "MSSQL" 
-    |> Tests.testSequenced
+    |> Tests.testList ""
     |> Tests.runTests testConfig

@@ -10,14 +10,15 @@
     <PackageIconUrl>https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png</PackageIconUrl>
     <PackageTags>fsharp;dapper;database</PackageTags>
     <Authors>Roman Provazník</Authors>
-    <Version>1.6.0</Version>
-    <PackageReleaseNotes>Added query deconstructor #5</PackageReleaseNotes>
+    <Version>1.7.0</Version>
+    <PackageReleaseNotes>Added support for MySQL</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Reflection.fs" />
     <Compile Include="Dapper.FSharp.fs" />
     <Compile Include="WhereAnalyzer.fs" />
     <Compile Include="MSSQL.fs" />
+    <Compile Include="MySQL.fs" />
     <Compile Include="Builders.fs" />
     <Compile Include="OptionTypes.fs" />
   </ItemGroup>

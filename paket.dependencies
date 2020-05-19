@@ -9,6 +9,7 @@ nuget Expecto
 nuget Microsoft.Data.SqlClient
 nuget TaskBuilder.fs
 nuget Microsoft.Extensions.Configuration.Json
+nuget MySql.Data
 
 group Build
     source https://api.nuget.org/v3/index.json
