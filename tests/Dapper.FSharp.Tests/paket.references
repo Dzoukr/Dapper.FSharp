@@ -4,3 +4,4 @@ Expecto
 TaskBuilder.fs
 Microsoft.Extensions.Configuration.Json
 MySql.Data
+Npgsql

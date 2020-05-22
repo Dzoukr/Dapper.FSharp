@@ -23,6 +23,11 @@
     <Compile Include="MySQL\InsertTests.fs" />
     <Compile Include="MySQL\SelectTests.fs" />
     <Compile Include="MySQL\UpdateTests.fs" />
+    <Compile Include="PostgreSQL\Database.fs" />
+    <Compile Include="PostgreSQL\DeleteTests.fs" />
+    <Compile Include="PostgreSQL\InsertTests.fs" />
+    <Compile Include="PostgreSQL\UpdateTests.fs" />
+    <Compile Include="PostgreSQL\SelectTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

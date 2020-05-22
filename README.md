@@ -4,14 +4,14 @@
 <img src="https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png" width="150px"/>
 </p>
 
-Lightweight F# extension for StackOverflow Dapper
+Lightweight F# extension for StackOverflow Dapper with support for MSSQL, MySQL and PostgreSQL
 
 ## Features
 
 - No *auto-attribute-based-only-author-maybe-knows-magic* behavior
 - Support for F# records / anonymous records
 - Support for F# options
-- Support for SQL Server 2012 (11.x) and later / Azure SQL Database, MySQL 8.0
+- Support for SQL Server 2012 (11.x) and later / Azure SQL Database, MySQL 8.0, PostgreSQL 12.0
 - Support for SELECT (including JOINs), INSERT, UPDATE (full / partial), DELETE
 - Support for OUTPUT clause (MSSQL only)
 - Easy usage thanks to F# computation expressions

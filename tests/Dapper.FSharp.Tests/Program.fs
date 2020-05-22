@@ -1,11 +1,11 @@
 ﻿module Dapper.FSharp.Tests.Program
 
-open System
 open Expecto
 open Expecto.Logging
 open Microsoft.Data.SqlClient
 open Microsoft.Extensions.Configuration
 open MySql.Data.MySqlClient
+open Npgsql
 
 let testConfig = 
     { Expecto.Tests.defaultConfig with 
@@ -36,6 +36,18 @@ let mysqlTests connString =
     |> Tests.testList "MySQL"
     |> Tests.testSequenced
 
+let postgresTests connString =
+    let postgres = new NpgsqlConnection(connString)
+    postgres |> Dapper.FSharp.Tests.PostgreSQL.Database.init
+    [
+        PostgreSQL.InsertTests.tests postgres
+        PostgreSQL.UpdateTests.tests postgres
+        PostgreSQL.DeleteTests.tests postgres
+        PostgreSQL.SelectTests.tests postgres
+    ]
+    |> Tests.testList "PostgreSQL"
+    |> Tests.testSequenced
+
 [<EntryPoint>]
 let main _ =
     let conf = (ConfigurationBuilder()).AddJsonFile("local.settings.json").Build()
@@ -45,6 +57,7 @@ let main _ =
     [
         conf.["mssqlConnectionString"] |> mssqlTests
         conf.["mysqlConnectionString"] |> mysqlTests
+        conf.["postgresConnectionString"] |> postgresTests
     ]
     |> Tests.testList ""
     |> Tests.runTests testConfig

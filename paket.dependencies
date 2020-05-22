@@ -10,6 +10,7 @@ nuget Microsoft.Data.SqlClient
 nuget TaskBuilder.fs
 nuget Microsoft.Extensions.Configuration.Json
 nuget MySql.Data
+nuget Npgsql
 
 group Build
     source https://api.nuget.org/v3/index.json

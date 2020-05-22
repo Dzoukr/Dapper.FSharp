@@ -27,3 +27,18 @@ let boxify (x : obj) =
     | _ -> match x.GetType().GetProperty("Value") with
            | null -> x
            | prop -> prop.GetValue(x)
+
+type ReflectiveListBuilder = 
+        static member BuildList<'a> (args: obj list) = 
+            [ for a in args do yield a :?> 'a ]
+        static member BuildResizeArray<'a> args = args |> ReflectiveListBuilder.BuildList<'a> |> ResizeArray            
+        static member BuildTypedList lType (args: obj list) = 
+            typeof<ReflectiveListBuilder>
+                .GetMethod("BuildList")
+                .MakeGenericMethod([|lType|])
+                .Invoke(null, [|args|])
+        static member BuildTypedResizeArray lType (args: obj list) = 
+            typeof<ReflectiveListBuilder>
+                .GetMethod("BuildResizeArray")
+                .MakeGenericMethod([|lType|])
+                .Invoke(null, [|args|])
