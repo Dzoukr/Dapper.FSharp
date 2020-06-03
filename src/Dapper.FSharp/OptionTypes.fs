@@ -33,3 +33,4 @@ let register() =
     SqlMapper.AddTypeHandler (OptionHandler<DateTime>())
     SqlMapper.AddTypeHandler (OptionHandler<DateTimeOffset>())
     SqlMapper.AddTypeHandler (OptionHandler<bool>())
+    SqlMapper.AddTypeHandler (OptionHandler<TimeSpan>())
