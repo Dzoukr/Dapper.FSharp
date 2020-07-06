@@ -69,3 +69,38 @@ module DogsWeights =
                 |> conn.ExecuteIgnore
             return ()
         }
+        
+module Issues =
+    
+    module PersonsSimple =
+        
+        let init (conn:IDbConnection) =
+            task {
+                do! "drop table if exists \"PersonsSimple\"" |> conn.ExecuteCatchIgnore
+                do!
+                    """
+                    create table "PersonsSimple" (
+	                "Id" int not null,
+	                "Name" varchar(255) not null,
+	                "Desc" varchar(255) not null
+                    )
+                    """
+                    |> conn.ExecuteIgnore
+                return ()
+            }
+            
+    module PersonsSimpleDescs =
+        
+        let init (conn:IDbConnection) =
+            task {
+                do! "drop table if exists \"PersonsSimpleDescs\"" |> conn.ExecuteCatchIgnore
+                do!
+                    """
+                    create table "PersonsSimpleDescs" (
+	                "Id" int not null,
+	                "Desc" varchar(255) not null
+                    )
+                    """
+                    |> conn.ExecuteIgnore
+                return ()
+            }            

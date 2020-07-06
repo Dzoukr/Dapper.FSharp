@@ -87,3 +87,41 @@ module DogsWeights =
                 }
 
             )
+            
+module Issues =
+    
+    module PersonsSimple =
+    
+        type View = {
+            Id : int
+            Name : string
+            Desc : string
+        }
+        
+        module View =
+            let generate x =
+                [1..x]
+                |> List.map (fun x ->
+                    {
+                        Id = x
+                        Name = sprintf "Name_%i" x
+                        Desc = sprintf "Desc_%i" x
+                    }
+                )
+                
+    module PersonsSimpleDescs =
+    
+        type View = {
+            Id : int
+            Desc : string
+        }
+        
+        module View =
+            let generate x =
+                [1..x]
+                |> List.map (fun x ->
+                    {
+                        Id = x
+                        Desc = sprintf "Desc_%i" x
+                    }
+                )                

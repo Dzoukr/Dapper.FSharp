@@ -3,6 +3,11 @@
 open System.Text
 open Dapper.FSharp
 
+let private inBrackets (s:string) =
+    s.Split('.')
+    |> Array.map (sprintf "[%s]")
+    |> String.concat "."
+
 module private Evaluators =
 
     let evalBinary = function
@@ -18,7 +23,7 @@ module private Evaluators =
         | Empty -> ""
         | Column (field, comp) ->
             let fieldMeta = meta |> List.find (fun x -> x.Key = (field,comp))
-            let withField op = sprintf "%s %s @%s" fieldMeta.Name op fieldMeta.ParameterName
+            let withField op = sprintf "%s %s @%s" (inBrackets fieldMeta.Name) op fieldMeta.ParameterName
             match comp with
             | Eq _ -> withField "="
             | Ne _ -> withField "<>"
@@ -50,17 +55,17 @@ module private Evaluators =
         | Skip x when x <= 0 -> ""
         | Skip o -> sprintf "OFFSET %i ROWS" o
         | SkipTake(o,f) -> sprintf "OFFSET %i ROWS FETCH NEXT %i ROWS ONLY" o f
-
+    
     let evalJoins (joins:Join list) =
         let sb = StringBuilder()
         let evalJoin = function
-            | InnerJoin(table,colName,equalsTo) -> sprintf " INNER JOIN %s ON %s.%s=%s" table table colName equalsTo
-            | LeftJoin(table,colName,equalsTo) -> sprintf " LEFT JOIN %s ON %s.%s=%s" table table colName equalsTo
+            | InnerJoin(table,colName,equalsTo) -> sprintf " INNER JOIN %s ON %s.%s=%s" (inBrackets table) (inBrackets table) (inBrackets colName) (inBrackets equalsTo)
+            | LeftJoin(table,colName,equalsTo) -> sprintf " LEFT JOIN %s ON %s.%s=%s" (inBrackets table) (inBrackets table) (inBrackets colName) (inBrackets equalsTo)
         joins |> List.map evalJoin |> List.iter (sb.Append >> ignore)
         sb.ToString()
-
+    
     let evalSelectQuery fields meta (q:SelectQuery) =
-        let fieldNames = fields |> String.concat ", "
+        let fieldNames = fields |> List.map inBrackets |> String.concat ", "
         // basic query
         let sb = StringBuilder(sprintf "SELECT %s FROM %s" fieldNames q.Table)
         // joins
@@ -78,7 +83,7 @@ module private Evaluators =
         sb.ToString()
     
     let evalOutputInsertQuery fields outputFields (q:InsertQuery<_>) =
-        let fieldNames = fields |> String.concat ", " |> sprintf "(%s)"
+        let fieldNames = fields |> List.map inBrackets |> String.concat ", " |> sprintf "(%s)"
         let values =
             q.Values
             |> List.mapi (fun i _ -> fields |> List.map (fun field -> sprintf "@%s%i" field i ) |> String.concat ", " |> sprintf "(%s)")
@@ -92,7 +97,7 @@ module private Evaluators =
 
     let evalUpdateQuery fields outputFields meta (q:UpdateQuery<'a>) =
         // basic query
-        let pairs = fields |> List.map (fun x -> sprintf "%s=@%s" x x) |> String.concat ", "
+        let pairs = fields |> List.map (fun x -> sprintf "%s=@%s" (inBrackets x) x) |> String.concat ", "
         let baseQuery =
             match outputFields with
             | [] ->

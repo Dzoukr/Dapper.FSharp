@@ -70,3 +70,39 @@ module DogsWeights =
                 |> conn.ExecuteIgnore
             return ()
         }
+
+module Issues =
+    
+    module PersonsSimple =
+        
+        let init (conn:IDbConnection) =
+            task {
+                do! "DROP TABLE PersonsSimple" |> conn.ExecuteCatchIgnore
+                do!
+                    """
+                    CREATE TABLE [dbo].[PersonsSimple](
+	                [Id] [int] NOT NULL,
+	                [Name] [nvarchar](max) NOT NULL,
+	                [Desc] [nvarchar](max) NOT NULL
+                    )
+                    """
+                    |> conn.ExecuteIgnore
+                return ()
+            }
+    
+    module PersonsSimpleDescs =
+        
+        let init (conn:IDbConnection) =
+            task {
+                do! "DROP TABLE PersonsSimpleDescs" |> conn.ExecuteCatchIgnore
+                do!
+                    """
+                    CREATE TABLE [dbo].[PersonsSimpleDescs](
+	                [Id] [int] NOT NULL,
+	                [Desc] [nvarchar](max) NOT NULL
+                    )
+                    """
+                    |> conn.ExecuteIgnore
+                return ()
+            }
+        
