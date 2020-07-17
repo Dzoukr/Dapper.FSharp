@@ -52,9 +52,9 @@ module private Evaluators =
 
     let evalPagination (pag:Pagination) =
         match pag with
-        | Skip x when x <= 0 -> ""
-        | Skip o -> sprintf "OFFSET %i ROWS" o
-        | SkipTake(o,f) -> sprintf "OFFSET %i ROWS FETCH NEXT %i ROWS ONLY" o f
+        | { Take = None; Skip = x } when x <= 0 -> ""
+        | { Take = None; Skip = o } -> sprintf "OFFSET %i ROWS" o
+        | { Take = Some f; Skip = o } -> sprintf "OFFSET %i ROWS FETCH NEXT %i ROWS ONLY" o f
     
     let evalJoins (joins:Join list) =
         let sb = StringBuilder()

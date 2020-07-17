@@ -61,7 +61,7 @@ type SelectBuilder() =
             Table = ""
             Where = Where.Empty
             OrderBy = []
-            Pagination = Skip 0
+            Pagination = { Skip = 0; Take = None }
             Joins = []
         } : SelectQuery
 
@@ -83,11 +83,15 @@ type SelectBuilder() =
 
     /// Sets the SKIP value for query
     [<CustomOperation "skip">]
-    member __.Skip (state:SelectQuery, skip) = { state with Pagination = Pagination.Skip skip }
+    member __.Skip (state:SelectQuery, skip) = { state with Pagination = { state.Pagination with Skip = skip } }
+    
+    /// Sets the TAKE value for query
+    [<CustomOperation "take">]
+    member __.Take (state:SelectQuery, take) = { state with Pagination = { state.Pagination with Take = Some take } }
 
     /// Sets the SKIP and TAKE value for query
     [<CustomOperation "skipTake">]
-    member __.SkipTake (state:SelectQuery, skip, take) = { state with Pagination = Pagination.SkipTake(skip, take) }
+    member __.SkipTake (state:SelectQuery, skip, take) = { state with Pagination = { state.Pagination with Skip = skip; Take = Some take } }
 
     /// INNER JOIN table where COLNAME equals to another COLUMN (including TABLE name)
     [<CustomOperation "innerJoin">]

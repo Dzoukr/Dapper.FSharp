@@ -233,6 +233,25 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT" [
         Expect.equal 6 (fromDb |> Seq.head |> (fun (x:Persons.View) -> x.Position)) ""
         Expect.equal 2 (fromDb |> Seq.length) ""
     }
+    
+    testTask "Selects with skip and take parameters" {
+        do! Persons.init conn
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> conn.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+                skip 5
+                take 2
+                orderBy "Position" Asc
+            } |> conn.SelectAsync<Persons.View>
+        Expect.equal 6 (fromDb |> Seq.head |> (fun (x:Persons.View) -> x.Position)) ""
+        Expect.equal 2 (fromDb |> Seq.length) ""
+    }
 
     testTask "Selects with one inner join - 1:1" {
         do! Persons.init conn

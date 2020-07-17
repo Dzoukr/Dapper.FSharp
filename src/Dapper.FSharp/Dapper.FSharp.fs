@@ -35,10 +35,11 @@ type Where =
     static member (*) (a, b) = Binary(a, Or, b)
     static member (!!) a = Unary (Not, a)
 
-type Pagination =
-    | Skip of skip:int
-    | SkipTake of skip:int * take:int
-
+type Pagination = {
+    Skip : int
+    Take : int option
+}
+    
 type Join =
     | InnerJoin of table:string * colName:string * equalsToColumn:string
     | LeftJoin of table:string * colName:string * equalsToColumn:string

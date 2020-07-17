@@ -51,13 +51,13 @@ module private Evaluators =
         xs
         |> List.map (fun (n,s) -> sprintf "%s %s" (inQuotes n) (evalOrderDirection s))
         |> String.concat ", "
-
+    
     let evalPagination (pag:Pagination) =
         match pag with
-        | Skip x when x <= 0 -> ""
-        | Skip o -> sprintf "LIMIT ALL OFFSET %i" o
-        | SkipTake(o,f) -> sprintf "LIMIT %i OFFSET %i" f o
-
+        | { Take = None; Skip = x } when x <= 0 -> ""
+        | { Take = None; Skip = o } -> sprintf "LIMIT ALL OFFSET %i" o
+        | { Take = Some f; Skip = o } -> sprintf "LIMIT %i OFFSET %i" f o
+    
     let evalJoins (joins:Join list) =
         let sb = StringBuilder()
         let evalJoin = function
