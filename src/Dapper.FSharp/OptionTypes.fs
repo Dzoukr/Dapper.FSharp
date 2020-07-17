@@ -27,7 +27,7 @@ let register() =
     SqlMapper.AddTypeHandler (OptionHandler<int64>())
     SqlMapper.AddTypeHandler (OptionHandler<float>())
     SqlMapper.AddTypeHandler (OptionHandler<decimal>())
-    SqlMapper.AddTypeHandler (OptionHandler<double>())
+    SqlMapper.AddTypeHandler (OptionHandler<float32>())
     SqlMapper.AddTypeHandler (OptionHandler<string>())
     SqlMapper.AddTypeHandler (OptionHandler<char>())
     SqlMapper.AddTypeHandler (OptionHandler<DateTime>())
