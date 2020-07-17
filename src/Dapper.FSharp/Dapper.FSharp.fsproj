@@ -10,8 +10,8 @@
     <PackageIconUrl>https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png</PackageIconUrl>
     <PackageTags>fsharp;dapper;database;mssql;mysql;postgresql</PackageTags>
     <Authors>Roman Provazník</Authors>
-    <Version>1.10.0</Version>
-    <PackageReleaseNotes>Improved escaping for reserved keywords as columns #8</PackageReleaseNotes>
+    <Version>1.11.0</Version>
+    <PackageReleaseNotes>Adding take keyword, handle float32/single option type #9</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Reflection.fs" />

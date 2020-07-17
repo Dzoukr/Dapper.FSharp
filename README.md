@@ -229,7 +229,7 @@ select {
 } |> conn.SelectAsync<Person>
 ```
 
-If you need to skip some values or take only subset of results, use `skip` and `skipTake`. Keep in mind that for correct paging, you need to order results as well.
+If you need to skip some values or take only subset of results, use `skip`, `take` and `skipTake`. Keep in mind that for correct paging, you need to order results as well.
 
 ```f#
 select {
@@ -237,6 +237,16 @@ select {
     where (gt "Position" 5 + lt "Position" 10)
     orderBy "Position" Asc
     skipTake 2 3 // skip first 2 rows, take next 3
+} |> conn.SelectAsync<Person>
+```
+
+```f#
+select {
+    table "Persons"
+    where (gt "Position" 5 + lt "Position" 10)
+    orderBy "Position" Asc
+    skip 10 // skip first 10 rows
+    take 10 // take next 10 rows
 } |> conn.SelectAsync<Person>
 ```
 
