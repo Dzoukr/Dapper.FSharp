@@ -1,7 +1,6 @@
 ﻿module Dapper.FSharp.Tests.MSSQL.Database
 
 open Dapper.FSharp.Tests.Extensions
-open System
 open System.Data
 open FSharp.Control.Tasks
 
@@ -38,6 +37,24 @@ module Persons =
             return ()
         }
 
+module Articles =
+    
+    let init (conn:IDbConnection) =
+        task {
+            do! "DROP TABLE Articles" |> conn.ExecuteCatchIgnore
+            do!
+                """
+                create table Articles
+                (
+                    Id int identity
+                        constraint Articles_pk
+                            primary key nonclustered,
+                    Title nvarchar(255) not null
+                )
+                """
+                |> conn.ExecuteIgnore
+        }
+
 module Dogs =
    
     let init (conn:IDbConnection) =
@@ -62,9 +79,9 @@ module DogsWeights =
             do!
                 """
                 CREATE TABLE [dbo].[DogsWeights](
-	            [DogNickname] [nvarchar](max) NOT NULL,
-	            [Year] [smallint] NOT NULL,
-	            [Weight] [smallint] NOT NULL
+                [DogNickname] [nvarchar](max) NOT NULL,
+                [Year] [smallint] NOT NULL,
+                [Weight] [smallint] NOT NULL
                 )
                 """
                 |> conn.ExecuteIgnore
@@ -81,9 +98,9 @@ module Issues =
                 do!
                     """
                     CREATE TABLE [dbo].[PersonsSimple](
-	                [Id] [int] NOT NULL,
-	                [Name] [nvarchar](max) NOT NULL,
-	                [Desc] [nvarchar](max) NOT NULL
+                    [Id] [int] NOT NULL,
+                    [Name] [nvarchar](max) NOT NULL,
+                    [Desc] [nvarchar](max) NOT NULL
                     )
                     """
                     |> conn.ExecuteIgnore
@@ -98,8 +115,8 @@ module Issues =
                 do!
                     """
                     CREATE TABLE [dbo].[PersonsSimpleDescs](
-	                [Id] [int] NOT NULL,
-	                [Desc] [nvarchar](max) NOT NULL
+                    [Id] [int] NOT NULL,
+                    [Desc] [nvarchar](max) NOT NULL
                     )
                     """
                     |> conn.ExecuteIgnore

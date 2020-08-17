@@ -124,4 +124,11 @@ module Issues =
                         Id = x
                         Desc = sprintf "Desc_%i" x
                     }
-                )                
+                )
+
+module Articles =
+    
+    type View = {
+        Id : int option
+        Title : string
+    }
