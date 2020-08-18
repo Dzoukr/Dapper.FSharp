@@ -37,6 +37,24 @@ module Persons =
             return ()
         }
 
+module Articles =
+    
+    let init (conn:IDbConnection) =
+        task {
+            do! "drop table if exists \"Articles\"" |> conn.ExecuteCatchIgnore
+            do!
+                """
+                create table "Articles"
+                (
+                    "Id" serial not null
+                        constraint table_name_pk
+                        primary key,
+                    "Title" varchar(255) not null
+                )
+                """
+                |> conn.ExecuteIgnore
+        }
+
 module Dogs =
    
     let init (conn:IDbConnection) =

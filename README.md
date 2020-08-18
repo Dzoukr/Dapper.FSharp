@@ -285,8 +285,8 @@ select {
 } |> conn.SelectAsyncOption<Person, Dog, DogsWeight>
 ``` 
 
-## OUTPUT clause support (MSSQL only)
-This library supports `OUTPUT` clause for MSSQL using special methods: `InsertOutputAsync`, `UpdateOutputAsync` and `DeleteOutputAsync`. Please check tests located under tests/Dapper.FSharp.Tests folder for more examples.
+## OUTPUT clause support (MSSQL & PostgreSQL only)
+This library supports `OUTPUT` clause for MSSQL & PostgreSQL using special methods: `InsertOutputAsync`, `UpdateOutputAsync` and `DeleteOutputAsync`. Please check tests located under tests/Dapper.FSharp.Tests folder for more examples.
 
 ## Deconstructor
 To provide better usage with plain Dapper, this library contains `Deconstructor` converting `Dapper.FSharp` queries to tuple of parametrized SQL query and `Map` of parameter values.

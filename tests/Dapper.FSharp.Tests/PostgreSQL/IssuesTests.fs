@@ -86,4 +86,15 @@ let tests (conn:IDbConnection) = Tests.testList "Issues" [
         Expect.equal row.Id 5 ""
         Expect.equal desc.Desc row.Desc ""
     }
+    
+    testTask "Returns auto-increment value back" {
+        do! Articles.init conn
+        let! ins =
+            insert {
+                table "Articles"
+                value ({| Title = "MyTitle" |})
+            } |> conn.InsertOutputAsync<{| Title : string |}, {| Id : int |}>
+        let lastInserted = ins |> Seq.head |> (fun (x:{| Id : int |}) -> x.Id)
+        Expect.equal 1 lastInserted ""
+    }
 ]

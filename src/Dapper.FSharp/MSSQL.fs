@@ -82,7 +82,7 @@ module private Evaluators =
         if pagination.Length > 0 then sb.Append (sprintf " %s" pagination) |> ignore
         sb.ToString()
     
-    let evalOutputInsertQuery fields outputFields (q:InsertQuery<_>) =
+    let evalInsertQuery fields outputFields (q:InsertQuery<_>) =
         let fieldNames = fields |> List.map inBrackets |> String.concat ", " |> sprintf "(%s)"
         let values =
             q.Values
@@ -169,7 +169,7 @@ type Deconstructor() =
         query, pars, createSplitOn [splitOn1;splitOn2]
     
     static member internal insert (q:InsertQuery<_>,fields, outputFields) =
-        let query = Evaluators.evalOutputInsertQuery fields outputFields q
+        let query = Evaluators.evalInsertQuery fields outputFields q
         let pars =
             q.Values
             |> List.map (Reflection.getValues >> List.zip fields)

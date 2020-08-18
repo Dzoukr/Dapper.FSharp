@@ -83,16 +83,21 @@ module private Evaluators =
         let pagination = evalPagination q.Pagination
         if pagination.Length > 0 then sb.Append (sprintf " %s" pagination) |> ignore
         sb.ToString()
-    
-    let evalInsertQuery fields (q:InsertQuery<_>) =
+
+    let evalInsertQuery fields outputFields (q:InsertQuery<_>) =
         let fieldNames = fields |> List.map inQuotes |> String.concat ", " |> sprintf "(%s)"
         let values =
             q.Values
             |> List.mapi (fun i _ -> fields |> List.map (fun field -> sprintf "@%s%i" field i ) |> String.concat ", " |> sprintf "(%s)")
             |> String.concat ", "
-        sprintf "INSERT INTO %s %s VALUES %s" (inQuotes q.Table) fieldNames values
-        
-    let evalUpdateQuery fields meta (q:UpdateQuery<'a>) =
+        match outputFields with
+        | [] ->
+            sprintf "INSERT INTO %s %s VALUES %s" (inQuotes q.Table) fieldNames values
+        | outputFields ->
+            let outputFieldNames = outputFields |> List.map inQuotes |> String.concat ", "
+            sprintf "INSERT INTO %s %s VALUES %s RETURNING %s" (inQuotes q.Table) fieldNames values outputFieldNames
+
+    let evalUpdateQuery fields outputFields meta (q:UpdateQuery<'a>) =
         // basic query
         let pairs = fields |> List.map (fun x -> sprintf "%s=@%s" (inQuotes x) x) |> String.concat ", "
         let baseQuery = sprintf "UPDATE %s SET %s" (inQuotes q.Table) pairs
@@ -100,16 +105,28 @@ module private Evaluators =
         // where
         let where = evalWhere meta q.Where
         if where.Length > 0 then sb.Append (sprintf " WHERE %s" where) |> ignore
-        sb.ToString()
+        match outputFields with
+        | [] -> sb.ToString()
+        | outputFields ->
+            let outputFieldNames = outputFields |> List.map inQuotes |> String.concat ", "
+            sprintf " RETURNING %s" outputFieldNames
+            |> sb.Append
+            |> string
 
-    let evalDeleteQuery meta (q:DeleteQuery) =
+    let evalDeleteQuery outputFields meta (q:DeleteQuery) =
         let baseQuery = sprintf "DELETE FROM %s" (inQuotes q.Table)
         // basic query
         let sb = StringBuilder(baseQuery)
         // where
         let where = evalWhere meta q.Where
         if where.Length > 0 then sb.Append (sprintf " WHERE %s" where) |> ignore
-        sb.ToString()
+        match outputFields with
+        | [] -> sb.ToString()
+        | outputFields ->
+            let outputFieldNames = outputFields |> List.map inQuotes |> String.concat ", "
+            sprintf " RETURNING %s" outputFieldNames
+            |> sb.Append
+            |> string
 
 module internal WhereAnalyzer =
     open WhereAnalyzer
@@ -172,9 +189,8 @@ type Deconstructor() =
         let pars = WhereAnalyzer.extractWhereParams meta |> Map.ofList
         query, pars, createSplitOn [splitOn1;splitOn2]
     
-    static member insert (q:InsertQuery<'a>) =
-        let fields = typeof<'a> |> Reflection.getFields
-        let query = Evaluators.evalInsertQuery fields q
+    static member internal insert (q:InsertQuery<_>,fields, outputFields) =
+        let query = Evaluators.evalInsertQuery fields outputFields q
         let pars =
             q.Values
             |> List.map (Reflection.getValues >> List.zip fields)
@@ -183,21 +199,45 @@ type Deconstructor() =
             |> List.collect id
             |> Map.ofList
         query, pars
-       
-    static member update (q:UpdateQuery<'a>) =
+    
+    static member insert (q:InsertQuery<'a>) =
         let fields = typeof<'a> |> Reflection.getFields
+        Deconstructor.insert(q, fields, []) 
+        
+    static member insertOutput<'Input, 'Output> (q:InsertQuery<'Input>) =
+        let fields = typeof<'Input> |> Reflection.getFields
+        let outputFields = typeof<'Output> |> Reflection.getFields
+        Deconstructor.insert(q, fields, outputFields) 
+       
+    static member internal update (q:UpdateQuery<_>, fields, outputFields) =
         let values = Reflection.getValues q.Value |> List.map Reflection.boxify
         // extract metadata
         let meta = WhereAnalyzer.getWhereMetadata [] q.Where
         let pars = (WhereAnalyzer.extractWhereParams meta) @ (List.zip fields values) |> Map.ofList
-        let query = Evaluators.evalUpdateQuery fields meta q
+        let query = Evaluators.evalUpdateQuery fields outputFields meta q
         query, pars
+        
+    static member update<'a> (q:UpdateQuery<'a>) =
+        let fields = typeof<'a> |> Reflection.getFields
+        Deconstructor.update(q, fields, []) 
+        
+    static member updateOutput<'Input, 'Output> (q:UpdateQuery<'Input>) =
+        let fields = typeof<'Input> |> Reflection.getFields
+        let outputFields = typeof<'Output> |> Reflection.getFields
+        Deconstructor.update(q, fields, outputFields)
     
-    static member delete (q:DeleteQuery) =
+    static member internal delete (q:DeleteQuery, outputFields) =
         let meta = WhereAnalyzer.getWhereMetadata [] q.Where
         let pars = (WhereAnalyzer.extractWhereParams meta) |> Map.ofList
-        let query = Evaluators.evalDeleteQuery meta q
+        let query = Evaluators.evalDeleteQuery outputFields meta q
         query, pars
+        
+    static member delete (q:DeleteQuery) =
+        Deconstructor.delete(q, [])
+
+    static member deleteOutput<'Output> (q:DeleteQuery) =
+        let outputFields = typeof<'Output> |> Reflection.getFields
+        Deconstructor.delete(q, outputFields)
 
 type System.Data.IDbConnection with
 
@@ -230,13 +270,28 @@ type System.Data.IDbConnection with
         let query, values = q |> Deconstructor.insert<'a>
         if logFunction.IsSome then (query, values) |> logFunction.Value
         this.ExecuteAsync(query, values, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
+    
+    member this.InsertOutputAsync<'Input, 'Output> (q:InsertQuery<'Input>, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
+        let query, pars = q |> Deconstructor.insertOutput<'Input, 'Output>
+        if logFunction.IsSome then (query, pars) |> logFunction.Value
+        this.QueryAsync<'Output>(query, pars, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
 
     member this.UpdateAsync<'a> (q:UpdateQuery<'a>, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         let query, pars = q |> Deconstructor.update<'a>
         if logFunction.IsSome then (query, pars) |> logFunction.Value
         this.ExecuteAsync(query, pars, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
 
+    member this.UpdateOutputAsync<'Input, 'Output> (q:UpdateQuery<'Input>, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
+        let query, pars = q |> Deconstructor.updateOutput<'Input, 'Output>
+        if logFunction.IsSome then (query, pars) |> logFunction.Value
+        this.QueryAsync<'Output>(query, pars, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
+
     member this.DeleteAsync (q:DeleteQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         let query, pars = q |> Deconstructor.delete
         if logFunction.IsSome then (query, pars) |> logFunction.Value
         this.ExecuteAsync(query, pars, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
+
+    member this.DeleteOutputAsync<'Output> (q:DeleteQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
+        let query, pars = q |> Deconstructor.deleteOutput<'Output>
+        if logFunction.IsSome then (query, pars) |> logFunction.Value
+        this.QueryAsync<'Output>(query, pars, transaction = Option.toObj trans, commandTimeout = Option.toNullable timeout)
