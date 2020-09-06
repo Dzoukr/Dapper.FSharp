@@ -10,8 +10,8 @@
     <PackageIconUrl>https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png</PackageIconUrl>
     <PackageTags>fsharp;dapper;database;mssql;mysql;postgresql</PackageTags>
     <Authors>Roman Provazník</Authors>
-    <Version>1.12.0</Version>
-    <PackageReleaseNotes>Added output clause support for PostgreSQL</PackageReleaseNotes>
+    <Version>1.12.1</Version>
+    <PackageReleaseNotes>Fixing issue with table names with reserved keywords #11</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Reflection.fs" />

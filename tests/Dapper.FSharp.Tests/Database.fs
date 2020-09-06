@@ -132,3 +132,10 @@ module Articles =
         Id : int option
         Title : string
     }
+    
+module Group =
+    
+    type View = {
+        Id : int
+        Name : string
+    }

@@ -24,13 +24,13 @@ module Persons =
                 """
                 create table "Persons"
                 (
-	                "Id" uuid not null
-		                constraint persons_pk
-			                primary key,
-	                "FirstName" varchar(255) not null,
-	                "LastName" text not null,
-	                "Position" int not null,
-	                "DateOfBirth" date
+                    "Id" uuid not null
+                        constraint persons_pk
+                            primary key,
+                    "FirstName" varchar(255) not null,
+                    "LastName" text not null,
+                    "Position" int not null,
+                    "DateOfBirth" date
                 );
                 """
                 |> conn.ExecuteIgnore
@@ -79,9 +79,9 @@ module DogsWeights =
             do!
                 """
                 create table "DogsWeights" (
-	            "DogNickname" text not null,
-	            "Year" smallint not null,
-	            "Weight" smallint not null
+                "DogNickname" text not null,
+                "Year" smallint not null,
+                "Weight" smallint not null
                 )
                 """
                 |> conn.ExecuteIgnore
@@ -98,9 +98,9 @@ module Issues =
                 do!
                     """
                     create table "PersonsSimple" (
-	                "Id" int not null,
-	                "Name" varchar(255) not null,
-	                "Desc" varchar(255) not null
+                    "Id" int not null,
+                    "Name" varchar(255) not null,
+                    "Desc" varchar(255) not null
                     )
                     """
                     |> conn.ExecuteIgnore
@@ -115,10 +115,25 @@ module Issues =
                 do!
                     """
                     create table "PersonsSimpleDescs" (
-	                "Id" int not null,
-	                "Desc" varchar(255) not null
+                    "Id" int not null,
+                    "Desc" varchar(255) not null
                     )
                     """
                     |> conn.ExecuteIgnore
                 return ()
-            }            
+            }
+            
+    module Group =
+        let init (conn:IDbConnection) =
+            task {
+                do! "drop table if exists \"Group\"" |> conn.ExecuteCatchIgnore
+                do!
+                    """
+                    create table "Group"(
+                    "Id" int not null,
+                    "Name" varchar(255) not null
+                    )
+                    """
+                    |> conn.ExecuteIgnore
+                return ()
+            }    

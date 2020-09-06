@@ -122,4 +122,18 @@ module Issues =
                     |> conn.ExecuteIgnore
                 return ()
             }
-        
+    
+    module Group =
+        let init (conn:IDbConnection) =
+            task {
+                do! "DROP TABLE Group" |> conn.ExecuteCatchIgnore
+                do!
+                    """
+                    CREATE TABLE [dbo].[Group](
+                    [Id] [int] NOT NULL,
+                    [Name] [nvarchar](max) NOT NULL
+                    )
+                    """
+                    |> conn.ExecuteIgnore
+                return ()
+            }

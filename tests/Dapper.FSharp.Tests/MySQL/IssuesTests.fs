@@ -1,11 +1,13 @@
 ﻿module Dapper.FSharp.Tests.MySQL.IssuesTests
 
 open System.Data
+open System.Threading.Tasks
 open Expecto
 open Dapper.FSharp.Tests.Database
 open Dapper.FSharp.Tests.MySQL.Database
 open Dapper.FSharp
 open Dapper.FSharp.MySQL
+open FSharp.Control.Tasks.V2
 
 let tests (conn:IDbConnection) = Tests.testList "Issues" [
 
@@ -85,5 +87,33 @@ let tests (conn:IDbConnection) = Tests.testList "Issues" [
         let (row:Issues.PersonsSimple.View), (desc:Issues.PersonsSimpleDescs.View) = Seq.head fromDb            
         Expect.equal row.Id 5 ""
         Expect.equal desc.Desc row.Desc ""
+    }
+    
+    testTask "Works for tables with reserved names #11" {
+        let getFirst () : Task<Group.View option> =
+            task {
+                let! rows = select { table "Group" } |> conn.SelectAsync<Group.View>
+                return rows |> Seq.tryHead
+            }
+        
+        do! Issues.Group.init conn
+        let! _ =
+            insert {
+                table "Group"
+                value ({ Id = 1; Name = "My" } : Group.View)
+            } |> conn.InsertAsync
+        let! (row:Group.View option) = getFirst()
+        Expect.equal "My" row.Value.Name ""
+        let! _ =
+            update {
+                table "Group"
+                set {| Name = "Updated" |}
+                where (eq "Id" 1)
+            } |> conn.UpdateAsync
+        let! (row:Group.View option) = getFirst()
+        Expect.equal "Updated" row.Value.Name ""
+        let! _ = delete { table "Group" } |> conn.DeleteAsync
+        let! (row:Group.View option) = getFirst()
+        Expect.isNone row ""
     }
 ]

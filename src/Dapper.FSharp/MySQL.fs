@@ -67,7 +67,7 @@ module private Evaluators =
     let evalSelectQuery fields meta (q:SelectQuery) =
         let fieldNames = fields |> List.map inQuotes |> String.concat ", "
         // basic query
-        let sb = StringBuilder(sprintf "SELECT %s FROM %s" fieldNames q.Table)
+        let sb = StringBuilder(sprintf "SELECT %s FROM %s" fieldNames (inQuotes q.Table))
         // joins
         let joins = evalJoins q.Joins
         if joins.Length > 0 then sb.Append joins |> ignore
@@ -88,12 +88,12 @@ module private Evaluators =
             q.Values
             |> List.mapi (fun i _ -> fields |> List.map (fun field -> sprintf "@%s%i" field i ) |> String.concat ", " |> sprintf "(%s)")
             |> String.concat ", "
-        sprintf "INSERT INTO %s %s VALUES %s" q.Table fieldNames values
+        sprintf "INSERT INTO %s %s VALUES %s" (inQuotes q.Table) fieldNames values
         
     let evalUpdateQuery fields meta (q:UpdateQuery<'a>) =
         // basic query
         let pairs = fields |> List.map (fun x -> sprintf "%s=@%s" (inQuotes x) x) |> String.concat ", "
-        let baseQuery = sprintf "UPDATE %s SET %s" q.Table pairs
+        let baseQuery = sprintf "UPDATE %s SET %s" (inQuotes q.Table) pairs
         let sb = StringBuilder(baseQuery)
         // where
         let where = evalWhere meta q.Where
@@ -101,7 +101,7 @@ module private Evaluators =
         sb.ToString()
 
     let evalDeleteQuery meta (q:DeleteQuery) =
-        let baseQuery = sprintf "DELETE FROM %s" q.Table
+        let baseQuery = sprintf "DELETE FROM %s" (inQuotes q.Table)
         // basic query
         let sb = StringBuilder(baseQuery)
         // where

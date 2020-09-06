@@ -1,11 +1,13 @@
 ﻿module Dapper.FSharp.Tests.PostgreSQL.IssuesTests
 
 open System.Data
+open System.Threading.Tasks
 open Expecto
 open Dapper.FSharp.Tests.Database
 open Dapper.FSharp.Tests.PostgreSQL.Database
 open Dapper.FSharp
 open Dapper.FSharp.PostgreSQL
+open FSharp.Control.Tasks.V2
 
 let tests (conn:IDbConnection) = Tests.testList "Issues" [
 
@@ -96,5 +98,33 @@ let tests (conn:IDbConnection) = Tests.testList "Issues" [
             } |> conn.InsertOutputAsync<{| Title : string |}, {| Id : int |}>
         let lastInserted = ins |> Seq.head |> (fun (x:{| Id : int |}) -> x.Id)
         Expect.equal 1 lastInserted ""
+    }
+    
+    testTask "Works for tables with reserved names #11" {
+        let getFirst () : Task<Group.View option> =
+            task {
+                let! rows = select { table "Group" } |> conn.SelectAsync<Group.View>
+                return rows |> Seq.tryHead
+            }
+        
+        do! Issues.Group.init conn
+        let! _ =
+            insert {
+                table "Group"
+                value ({ Id = 1; Name = "My" } : Group.View)
+            } |> conn.InsertAsync
+        let! (row:Group.View option) = getFirst()
+        Expect.equal "My" row.Value.Name ""
+        let! _ =
+            update {
+                table "Group"
+                set {| Name = "Updated" |}
+                where (eq "Id" 1)
+            } |> conn.UpdateAsync
+        let! (row:Group.View option) = getFirst()
+        Expect.equal "Updated" row.Value.Name ""
+        let! _ = delete { table "Group" } |> conn.DeleteAsync
+        let! (row:Group.View option) = getFirst()
+        Expect.isNone row ""
     }
 ]

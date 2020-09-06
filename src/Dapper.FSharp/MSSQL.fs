@@ -67,7 +67,7 @@ module private Evaluators =
     let evalSelectQuery fields meta (q:SelectQuery) =
         let fieldNames = fields |> List.map inBrackets |> String.concat ", "
         // basic query
-        let sb = StringBuilder(sprintf "SELECT %s FROM %s" fieldNames q.Table)
+        let sb = StringBuilder(sprintf "SELECT %s FROM %s" fieldNames (inBrackets q.Table))
         // joins
         let joins = evalJoins q.Joins
         if joins.Length > 0 then sb.Append joins |> ignore
@@ -90,10 +90,10 @@ module private Evaluators =
             |> String.concat ", "
         match outputFields with
         | [] ->
-            sprintf "INSERT INTO %s %s VALUES %s" q.Table fieldNames values
+            sprintf "INSERT INTO %s %s VALUES %s" (inBrackets q.Table) fieldNames values
         | outputFields ->
             let outputFieldNames = outputFields |> List.map (sprintf "INSERTED.%s") |> String.concat ", "
-            sprintf "INSERT INTO %s %s OUTPUT %s VALUES %s" q.Table fieldNames outputFieldNames values
+            sprintf "INSERT INTO %s %s OUTPUT %s VALUES %s" (inBrackets q.Table) fieldNames outputFieldNames values
 
     let evalUpdateQuery fields outputFields meta (q:UpdateQuery<'a>) =
         // basic query
@@ -101,10 +101,10 @@ module private Evaluators =
         let baseQuery =
             match outputFields with
             | [] ->
-                sprintf "UPDATE %s SET %s" q.Table pairs
+                sprintf "UPDATE %s SET %s" (inBrackets q.Table) pairs
             | outputFields ->
                 let outputFieldNames = outputFields |> List.map (sprintf "INSERTED.%s") |> String.concat ", "
-                sprintf "UPDATE %s SET %s OUTPUT %s" q.Table pairs outputFieldNames
+                sprintf "UPDATE %s SET %s OUTPUT %s" (inBrackets q.Table) pairs outputFieldNames
         let sb = StringBuilder(baseQuery)
         // where
         let where = evalWhere meta q.Where
@@ -115,10 +115,10 @@ module private Evaluators =
         let baseQuery =
             match outputFields with
             | [] ->
-                sprintf "DELETE FROM %s" q.Table
+                sprintf "DELETE FROM %s" (inBrackets q.Table)
             | outputFields ->
                 let outputFieldNames = outputFields |> List.map (sprintf "DELETED.%s") |> String.concat ", "
-                sprintf "DELETE FROM %s OUTPUT %s" q.Table outputFieldNames
+                sprintf "DELETE FROM %s OUTPUT %s" (inBrackets q.Table) outputFieldNames
         // basic query
         let sb = StringBuilder(baseQuery)
         // where
