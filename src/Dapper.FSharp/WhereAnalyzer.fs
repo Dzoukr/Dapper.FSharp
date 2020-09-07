@@ -24,7 +24,6 @@ let rec getWhereMetadata (meta:FieldWhereMetadata list) (w:Where)  =
     match w with
     | Empty -> meta
     | Column (field, comp) ->
-
         let parName =
             meta
             |> List.filter (fun x -> System.String.Equals(x.Name, field, System.StringComparison.OrdinalIgnoreCase))
@@ -32,6 +31,7 @@ let rec getWhereMetadata (meta:FieldWhereMetadata list) (w:Where)  =
             |> fun l -> sprintf "Where_%s%i" field (l + 1)
             |> normalizeParamName
 
-        meta @ [{ Key = (field, comp); Name = field; ParameterName = parName }]
+        { Key = (field, comp); Name = field; ParameterName = parName } :: meta
+        |> List.rev
     | Binary(w1, _, w2) -> [w1;w2] |> List.fold getWhereMetadata meta
     | Unary(_, w) -> w |> getWhereMetadata meta
