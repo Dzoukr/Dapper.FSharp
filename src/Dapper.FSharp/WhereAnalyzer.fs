@@ -27,7 +27,7 @@ let rec getWhereMetadata (meta:FieldWhereMetadata list) (w:Where)  =
 
         let parName =
             meta
-            |> List.filter (fun x -> x.Name = field)
+            |> List.filter (fun x -> System.String.Equals(x.Name, field, System.StringComparison.OrdinalIgnoreCase))
             |> List.length
             |> fun l -> sprintf "Where_%s%i" field (l + 1)
             |> normalizeParamName
