@@ -10,13 +10,15 @@
     <PackageIconUrl>https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png</PackageIconUrl>
     <PackageTags>fsharp;dapper;database;mssql;mysql;postgresql</PackageTags>
     <Authors>Roman Provazník</Authors>
-    <Version>1.12.2</Version>
-    <PackageReleaseNotes>Fixing case sensitivity in creation of where parameter names #13</PackageReleaseNotes>
+    <Version>1.13.0</Version>
+    <PackageReleaseNotes>Added support for basic aggregate functions</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Reflection.fs" />
     <Compile Include="Dapper.FSharp.fs" />
     <Compile Include="WhereAnalyzer.fs" />
+    <Compile Include="GenericDeconstructor.fs" />
+    <Compile Include="IDbConnection.fs" />
     <Compile Include="MSSQL.fs" />
     <Compile Include="MySQL.fs" />
     <Compile Include="PostgreSQL.fs" />

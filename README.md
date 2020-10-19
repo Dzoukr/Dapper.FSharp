@@ -129,7 +129,7 @@ insert {
 
 ### WHERE condition
 
-Since version `1.1` there are few helper functions available to make syntax shorter.
+There are few helper functions available to make syntax shorter.
 
 Longer syntax:
 
@@ -283,7 +283,45 @@ select {
     leftJoin "DogsWeights" "DogNickname" "Dogs.Nickname"
     orderBy "Persons.Position" Asc
 } |> conn.SelectAsyncOption<Person, Dog, DogsWeight>
-``` 
+```
+
+### Aggregate functions
+
+Aggregate functions include `count`, `avg`, `sum`, `min`, and `max`. To fully support these functions in builder syntax, the `groupBy`, `groupByMany` and `distinct` keywords are supported as well.
+
+See this example how to get amount of persons having position value greater than 5:
+
+```f#
+select {
+    table "Persons"
+    count "*" "Value" // column name and alias (must match the view record property!!!)
+    where (gt "Position" 5)
+} |> conn.SelectAsync<{| Value : int |}>
+```
+
+Or get the maximum value of Position column from table:
+
+```f#
+select {
+    table "Persons"
+    max "Position" "Value"
+} |> conn.SelectAsync<{| Value : int |}>
+```
+
+Or something more complex:
+
+```f#
+select {
+    table "Persons"
+    leftJoin "Dogs" "OwnerId" "Persons.Id"
+    count "Persons.Position" "Count"
+    groupByMany ["Persons.Id"; "Persons.Position"; "Dogs.OwnerId"]
+    orderBy "Persons.Position" Asc
+} |> conn.SelectAsync<{| Id: Guid; Position:int; Count:int |}, {| OwnerId : Guid |}>
+```
+
+Please keep in mind that work with aggregate functions can quickly turn into the nightmare. Use them wisely and if you'll find something hard to achieve using this library, better fallback to plain Dapper and good old hand written queries™.
+
 
 ## OUTPUT clause support (MSSQL & PostgreSQL only)
 This library supports `OUTPUT` clause for MSSQL & PostgreSQL using special methods: `InsertOutputAsync`, `UpdateOutputAsync` and `DeleteOutputAsync`. Please check tests located under tests/Dapper.FSharp.Tests folder for more examples.
@@ -316,5 +354,4 @@ printfn "%A" values
 //      ("Id0", 8cc6a7ed-7c17-4bea-a0ca-04a3985d2c7e); 
 //      ("LastName0", "Great");
 //      ("Position0", 1)]
-
 ```

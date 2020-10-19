@@ -1,6 +1,9 @@
 ﻿module Dapper.FSharp.Tests.Database
 
 open System
+open System.Threading.Tasks
+
+let taskToList (t:Task<seq<'a>>) = t |> Async.AwaitTask |> Async.RunSynchronously |> Seq.toList
 
 module Persons =
 

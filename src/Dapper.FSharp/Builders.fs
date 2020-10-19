@@ -63,6 +63,9 @@ type SelectBuilder() =
             OrderBy = []
             Pagination = { Skip = 0; Take = None }
             Joins = []
+            Aggregates = []
+            GroupBy = []
+            Distinct = false
         } : SelectQuery
 
     /// Sets the TABLE name for query
@@ -100,7 +103,39 @@ type SelectBuilder() =
     /// LEFT JOIN table where COLNAME equals to another COLUMN (including TABLE name)
     [<CustomOperation "leftJoin">]
     member __.LeftJoin (state:SelectQuery, tableName, colName, equalsTo) = { state with Joins = state.Joins @ [LeftJoin(tableName, colName, equalsTo)] }
+    
+    /// Sets the ORDER BY for multiple columns
+    [<CustomOperation "groupByMany">]
+    member __.GroupByMany (state:SelectQuery, values) = { state with GroupBy = values }
 
+    /// Sets the ORDER BY for single column
+    [<CustomOperation "groupBy">]
+    member __.GroupBy (state:SelectQuery, colName) = { state with GroupBy = [colName] }
+
+    /// COUNT aggregate function for COLNAME (or * symbol) and map it to ALIAS
+    [<CustomOperation "count">]
+    member __.Count (state:SelectQuery, colName, alias) = { state with Aggregates = state.Aggregates @ [Aggregate.Count(colName, alias)] }
+
+    /// AVG aggregate function for COLNAME (or * symbol) and map it to ALIAS
+    [<CustomOperation "avg">]
+    member __.Avg (state:SelectQuery, colName, alias) = { state with Aggregates = state.Aggregates @ [Aggregate.Avg(colName, alias)] }
+    
+    /// SUM aggregate function for COLNAME (or * symbol) and map it to ALIAS
+    [<CustomOperation "sum">]
+    member __.Sum (state:SelectQuery, colName, alias) = { state with Aggregates = state.Aggregates @ [Aggregate.Sum(colName, alias)] }
+    
+    /// MIN aggregate function for COLNAME (or * symbol) and map it to ALIAS
+    [<CustomOperation "min">]
+    member __.Min (state:SelectQuery, colName, alias) = { state with Aggregates = state.Aggregates @ [Aggregate.Min(colName, alias)] }
+    
+    /// MIN aggregate function for COLNAME (or * symbol) and map it to ALIAS
+    [<CustomOperation "max">]
+    member __.Max (state:SelectQuery, colName, alias) = { state with Aggregates = state.Aggregates @ [Aggregate.Max(colName, alias)] }
+    
+    /// Sets query to return DISTINCT values
+    [<CustomOperation "distinct">]
+    member __.Distinct (state:SelectQuery) = { state with Distinct = true }
+    
 let insert<'a> = InsertBuilder<'a>()
 let delete = DeleteBuilder()
 let update<'a> = UpdateBuilder<'a>()

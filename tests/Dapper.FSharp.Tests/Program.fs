@@ -21,6 +21,7 @@ let mssqlTests connString =
         MSSQL.DeleteTests.tests mssql
         MSSQL.SelectTests.tests mssql
         MSSQL.IssuesTests.tests mssql
+        MSSQL.AggregatesTests.tests mssql
     ]
     |> Tests.testList "MSSQL"
     |> Tests.testSequenced
@@ -34,6 +35,7 @@ let mysqlTests connString =
         MySQL.DeleteTests.tests mysql
         MySQL.SelectTests.tests mysql
         MySQL.IssuesTests.tests mysql
+        MySQL.AggregatesTests.tests mysql
     ]
     |> Tests.testList "MySQL"
     |> Tests.testSequenced
@@ -47,6 +49,7 @@ let postgresTests connString =
         PostgreSQL.DeleteTests.tests postgres
         PostgreSQL.SelectTests.tests postgres
         PostgreSQL.IssuesTests.tests postgres
+        PostgreSQL.AggregatesTests.tests postgres
     ]
     |> Tests.testList "PostgreSQL"
     |> Tests.testSequenced

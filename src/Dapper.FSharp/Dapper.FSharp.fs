@@ -49,12 +49,22 @@ module Join =
         | InnerJoin (t,_,_)
         | LeftJoin (t,_,_) -> t
 
+type Aggregate =
+    | Count of columnName:string * alias:string
+    | Avg of columnName:string * alias:string
+    | Sum of columnName:string * alias:string
+    | Min of columnName:string * alias:string
+    | Max of columnName:string * alias:string
+
 type SelectQuery = {
     Table : string
     Where : Where
     OrderBy : OrderBy list
     Pagination : Pagination
     Joins : Join list
+    Aggregates : Aggregate list
+    GroupBy : string list
+    Distinct : bool
 }
 
 type InsertQuery<'a> = {

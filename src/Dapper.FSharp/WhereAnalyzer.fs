@@ -1,5 +1,7 @@
 ﻿module internal Dapper.FSharp.WhereAnalyzer
 
+open System.Linq
+
 type FieldWhereMetadata = {
     Key : string * ColumnComparison
     Name : string
@@ -11,14 +13,18 @@ let extractWhereParams (meta:FieldWhereMetadata list) =
         match m.Key |> snd with
         | Eq p | Ne p | Gt p
         | Lt p | Ge p | Le p -> (m.ParameterName, p) |> Some
-        | In p | NotIn p -> (m.ParameterName, p :> obj) |> Some
+        | In p | NotIn p ->
+            match p |> Seq.tryHead with
+            | Some h ->
+                let x = Reflection.ReflectiveListBuilder.BuildTypedResizeArray (h.GetType()) p
+                (m.ParameterName, x) |> Some
+            | None -> (m.ParameterName, p.ToArray() :> obj) |> Some
         | Like str -> (m.ParameterName, str :> obj) |> Some
         | IsNull | IsNotNull -> None
     meta
     |> List.choose fn
 
-let normalizeParamName (s:string) =
-    s.Replace(".","_")
+let normalizeParamName (s:string) = s.Replace(".","_")
 
 let rec getWhereMetadata (meta:FieldWhereMetadata list) (w:Where)  =
     match w with
