@@ -38,6 +38,7 @@ module private Evaluators =
             | In _ -> withField "= ANY"
             | NotIn _ -> withField "<> ALL"
             | Like _ -> withField "LIKE"
+            | NotLike _ -> withField "NOT LIKE"
             | IsNull -> sprintf "%s IS NULL" fieldName
             | IsNotNull -> sprintf "%s IS NOT NULL" fieldName
         | Binary(w1, comb, w2) ->

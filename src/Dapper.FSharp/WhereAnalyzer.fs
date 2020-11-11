@@ -20,6 +20,7 @@ let extractWhereParams (meta:FieldWhereMetadata list) =
                 (m.ParameterName, x) |> Some
             | None -> (m.ParameterName, p.ToArray() :> obj) |> Some
         | Like str -> (m.ParameterName, str :> obj) |> Some
+        | NotLike str -> (m.ParameterName, str :> obj) |> Some
         | IsNull | IsNotNull -> None
     meta
     |> List.choose fn

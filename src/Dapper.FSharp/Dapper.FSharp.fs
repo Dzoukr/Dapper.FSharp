@@ -16,6 +16,7 @@ type ColumnComparison =
     | In of obj list
     | NotIn of obj list
     | Like of string
+    | NotLike of string
     | IsNull
     | IsNotNull
 
