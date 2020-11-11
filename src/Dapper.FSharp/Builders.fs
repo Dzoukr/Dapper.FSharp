@@ -155,12 +155,14 @@ let lt name (o:obj) = column name (Lt o)
 let ge name (o:obj) = column name (Ge o)
 /// WHERE column value lower/equals than
 let le name (o:obj) = column name (Le o)
-/// WHERE column like value
+/// WHERE column like value   
 let like name (str:string) = column name (Like str)
+/// WHERE column not like value   
+let notLike name (str:string) = column name (NotLike str)
 /// WHERE column is IN values
 let isIn name (os:obj list) = column name (In os)
 /// WHERE column is NOT IN values
-let isNotIn name (os:obj list) = column name (NotIn os)
+let isNotIn name (os:obj list) = column name (NotIn os)   
 /// WHERE column IS NULL
 let isNullValue name = column name IsNull
 /// WHERE column IS NOT NULL
