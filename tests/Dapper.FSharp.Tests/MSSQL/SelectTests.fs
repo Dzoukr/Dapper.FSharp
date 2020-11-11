@@ -131,7 +131,8 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT" [
         Expect.hasLength fromDb 2 ""
         Expect.isTrue (fromDb |> Seq.forall (fun (p:Persons.View) -> p.FirstName.StartsWith "First")) ""
     }
-    testTask "Selects by LIKE where condition return matching rows" {
+    
+    testTask "Selects by NOT LIKE where condition return matching rows" {
         do! Persons.init conn
         let rs = Persons.View.generate 10
         let! _ =
@@ -142,11 +143,10 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT" [
         let! fromDb =
             select {
                 table "Persons"
-                where (like "FirstName" "First_1%")
-            } |> conn.SelectAsync<Persons.View>
-        Expect.isNonEmpty fromDb ""
-        Expect.hasLength fromDb 2 ""
-        Expect.isTrue (fromDb |> Seq.forall (fun (p:Persons.View) -> p.FirstName.StartsWith "First")) ""
+                where (notLike "FirstName" "First_1%")
+            }
+            |> conn.SelectAsync<Persons.View>
+        Expect.hasLength fromDb 8 ""
     }
 
     testTask "Selects by NOT LIKE where condition do not return non-matching rows" {
@@ -162,7 +162,7 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT" [
                 table "Persons"
                 where (notLike "FirstName" "NonExistingName%")
             } |> conn.SelectAsync<Persons.View>
-        Expect.isEmpty fromDb ""
+        Expect.hasLength fromDb 10 ""
     }
 
     testTask "Selects by UNARY NOT where condition" {

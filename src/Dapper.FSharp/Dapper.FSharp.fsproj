@@ -10,8 +10,8 @@
     <PackageIconUrl>https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png</PackageIconUrl>
     <PackageTags>fsharp;dapper;database;mssql;mysql;postgresql</PackageTags>
     <Authors>Roman Provazník</Authors>
-    <Version>1.13.1</Version>
-    <PackageReleaseNotes>Fixing issue with different signature for logging function #14</PackageReleaseNotes>
+    <Version>1.14.0</Version>
+    <PackageReleaseNotes>Add support for NOT LIKE operator #15</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Reflection.fs" />

@@ -144,9 +144,7 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT" [
                 table "Persons"
                 where (notLike "FirstName" "First_1%")
             } |> conn.SelectAsync<Persons.View>
-        Expect.isNonEmpty fromDb ""
-        Expect.hasLength fromDb 2 ""
-        Expect.isTrue (fromDb |> Seq.forall (fun (p:Persons.View) -> p.FirstName.StartsWith "First")) ""
+        Expect.hasLength fromDb 8 ""
     }
 
     testTask "Selects by LIKE where condition do not return non-matching rows" {
