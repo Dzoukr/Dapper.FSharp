@@ -6,6 +6,7 @@ open System.Data
 open FSharp.Control.Tasks
 
 let [<Literal>] DbName = "DapperFSharpTests"
+let [<Literal>] TestSchema = "tests"
 
 let init (conn:IDbConnection) =
     task {
@@ -13,6 +14,8 @@ let init (conn:IDbConnection) =
         do! DbName |> sprintf "CREATE DATABASE %s;" |> conn.ExecuteIgnore
         conn.Open()
         conn.ChangeDatabase DbName
+        do! TestSchema |> sprintf "DROP SCHEMA IF EXISTS %s;" |> conn.ExecuteIgnore
+        do! TestSchema |> sprintf "CREATE SCHEMA %s;" |> conn.ExecuteIgnore
     } |> Async.AwaitTask |> Async.RunSynchronously
 
 module Persons =
@@ -119,4 +122,19 @@ module Issues =
                     """
                     |> conn.ExecuteIgnore
                 return ()
-            }           
+            }
+    
+    module SchemedGroup =
+        let init (conn:IDbConnection) =
+            task {
+                do! (sprintf "drop table `%s`.`SchemedGroup`" TestSchema) |> conn.ExecuteCatchIgnore
+                do!
+                    sprintf """
+                    create table `%s`.`SchemedGroup`(
+                    Id int not null,
+                    SchemedName nvarchar(255) not null
+                    )
+                    """ TestSchema
+                    |> conn.ExecuteIgnore
+                return ()
+            }

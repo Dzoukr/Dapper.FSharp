@@ -322,6 +322,16 @@ select {
 
 Please keep in mind that work with aggregate functions can quickly turn into the nightmare. Use them wisely and if you'll find something hard to achieve using this library, better fallback to plain Dapper and good old hand written queries™.
 
+## Different Schema
+
+In case you need to work with other than default database schema, you can use `schema` keyword which is supported for all query builders:
+
+```f#
+select {
+    schema "MySchema"
+    table "Persons"
+} |> conn.SelectAsync<Person>
+```
 
 ## OUTPUT clause support (MSSQL & PostgreSQL only)
 This library supports `OUTPUT` clause for MSSQL & PostgreSQL using special methods: `InsertOutputAsync`, `UpdateOutputAsync` and `DeleteOutputAsync`. Please check tests located under tests/Dapper.FSharp.Tests folder for more examples.

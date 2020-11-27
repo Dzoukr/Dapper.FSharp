@@ -5,6 +5,7 @@ open System.Data
 open FSharp.Control.Tasks
 
 let [<Literal>] DbName = "DapperFSharpTests"
+let [<Literal>] TestSchema = "tests"
 
 let init (conn:IDbConnection) =
     task {
@@ -12,13 +13,15 @@ let init (conn:IDbConnection) =
         do! DbName |> sprintf "CREATE DATABASE %s;" |> conn.ExecuteIgnore
         conn.Open()
         conn.ChangeDatabase DbName
+        do! TestSchema |> sprintf "DROP SCHEMA IF EXISTS %s;" |> conn.ExecuteIgnore
+        do! TestSchema |> sprintf "CREATE SCHEMA %s;" |> conn.ExecuteIgnore
     } |> Async.AwaitTask |> Async.RunSynchronously
 
 module Persons =
 
     let init (conn:IDbConnection) =
         task {
-            do! "DROP TABLE Persons" |> conn.ExecuteCatchIgnore
+            do! "DROP TABLE [dbo].Persons" |> conn.ExecuteCatchIgnore
             do!
                 """
                 CREATE TABLE [dbo].[Persons](
@@ -134,6 +137,21 @@ module Issues =
                     [Name] [nvarchar](max) NOT NULL
                     )
                     """
+                    |> conn.ExecuteIgnore
+                return ()
+            }
+            
+    module SchemedGroup =
+        let init (conn:IDbConnection) =
+            task {
+                do! (sprintf "DROP TABLE [%s].SchemedGroup" TestSchema) |> conn.ExecuteCatchIgnore
+                do!
+                    sprintf """
+                    CREATE TABLE [%s].[SchemedGroup](
+                    [Id] [int] NOT NULL,
+                    [SchemedName] [nvarchar](max) NOT NULL
+                    )
+                    """ TestSchema
                     |> conn.ExecuteIgnore
                 return ()
             }

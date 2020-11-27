@@ -116,4 +116,30 @@ let tests (conn:IDbConnection) = Tests.testList "Issues" [
         let! (row:Group.View option) = getFirst()
         Expect.isNone row ""
     }
+    
+    testTask "Works in different schema" {
+        do! Issues.SchemedGroup.init conn
+        let! _ =
+            insert {
+                schema TestSchema
+                table "SchemedGroup"
+                value {| Id = 1; SchemedName = "Hi" |}
+            } |> conn.InsertAsync
+        let! _ =
+            update {
+                schema TestSchema
+                table "SchemedGroup"
+                set {| SchemedName = "UPDATED" |}
+                where (eq "Id" 1)
+            } |> conn.UpdateAsync
+        let res =
+            select {
+                schema TestSchema
+                table "SchemedGroup"
+                where (eq "Id" 1)
+            }
+            |> conn.SelectAsync<{| Id : int; SchemedName : string |}>
+            |> taskToList
+        Expect.equal res.Head.SchemedName "UPDATED" ""
+    }
 ]

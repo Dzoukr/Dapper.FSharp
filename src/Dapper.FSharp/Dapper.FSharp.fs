@@ -58,6 +58,7 @@ type Aggregate =
     | Max of columnName:string * alias:string
 
 type SelectQuery = {
+    Schema : string option
     Table : string
     Where : Where
     OrderBy : OrderBy list
@@ -69,17 +70,20 @@ type SelectQuery = {
 }
 
 type InsertQuery<'a> = {
+    Schema : string option
     Table : string
     Values : 'a list
 }
 
 type UpdateQuery<'a> = {
+    Schema : string option
     Table : string
     Value : 'a
     Where : Where
 }
 
 type DeleteQuery = {
+    Schema : string option
     Table : string
     Where : Where
 }

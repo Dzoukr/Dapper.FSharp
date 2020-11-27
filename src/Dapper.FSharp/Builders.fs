@@ -4,10 +4,15 @@ module Dapper.FSharp.Builders
 type InsertBuilder<'a>() =
     member __.Yield _ =
         {
+            Schema = None
             Table = ""
             Values = []
         } : InsertQuery<'a>
 
+    /// Sets the SCHEMA
+    [<CustomOperation "schema">]
+    member __.Schema (state:InsertQuery<_>, name) = { state with Schema = Some name }
+    
     /// Sets the TABLE name for query
     [<CustomOperation "table">]
     member __.Table (state:InsertQuery<_>, name) = { state with Table = name }
@@ -23,10 +28,15 @@ type InsertBuilder<'a>() =
 type DeleteBuilder() =
     member __.Yield _ =
         {
+            Schema = None
             Table = ""
             Where = Where.Empty
         } : DeleteQuery
 
+    /// Sets the SCHEMA
+    [<CustomOperation "schema">]
+    member __.Schema (state:DeleteQuery, name) = { state with Schema = Some name }
+    
     /// Sets the TABLE name for query
     [<CustomOperation "table">]
     member __.Table (state:DeleteQuery, name) = { state with Table = name }
@@ -38,11 +48,16 @@ type DeleteBuilder() =
 type UpdateBuilder<'a>() =
     member __.Yield _ =
         {
+            Schema = None
             Table = ""
             Value = Unchecked.defaultof<'a>
             Where = Where.Empty
         } : UpdateQuery<'a>
 
+    /// Sets the SCHEMA
+    [<CustomOperation "schema">]
+    member __.Schema (state:UpdateQuery<_>, name) = { state with Schema = Some name }
+    
     /// Sets the TABLE name for query
     [<CustomOperation "table">]
     member __.Table (state:UpdateQuery<_>, name) = { state with Table = name }
@@ -58,6 +73,7 @@ type UpdateBuilder<'a>() =
 type SelectBuilder() =
     member __.Yield _ =
         {
+            Schema = None
             Table = ""
             Where = Where.Empty
             OrderBy = []
@@ -67,6 +83,10 @@ type SelectBuilder() =
             GroupBy = []
             Distinct = false
         } : SelectQuery
+
+    /// Sets the TABLE name for query
+    [<CustomOperation "schema">]
+    member __.Schema (state:SelectQuery, name) = { state with Schema = Some name }
 
     /// Sets the TABLE name for query
     [<CustomOperation "table">]

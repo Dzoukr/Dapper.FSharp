@@ -8,6 +8,11 @@ let private inBrackets (s:string) =
     |> Array.map (sprintf "[%s]")
     |> String.concat "."
 
+let private safeTableName schema table =
+    match schema, table with
+    | None, table -> table |> inBrackets
+    | Some schema, table -> (schema |> inBrackets) + "." + (table |> inBrackets)
+
 module private Evaluators =
 
     let evalBinary = function
@@ -99,7 +104,7 @@ module private Evaluators =
         // distinct
         let distinct = if q.Distinct then "DISTINCT " else ""
         // basic query
-        let sb = StringBuilder(sprintf "SELECT %s%s FROM %s" distinct fieldNames (inBrackets q.Table))
+        let sb = StringBuilder(sprintf "SELECT %s%s FROM %s" distinct fieldNames (safeTableName q.Schema q.Table))
         // joins
         let joins = evalJoins q.Joins
         if joins.Length > 0 then sb.Append joins |> ignore
@@ -125,10 +130,10 @@ module private Evaluators =
             |> String.concat ", "
         match outputFields with
         | [] ->
-            sprintf "INSERT INTO %s %s VALUES %s" (inBrackets q.Table) fieldNames values
+            sprintf "INSERT INTO %s %s VALUES %s" (safeTableName q.Schema q.Table) fieldNames values
         | outputFields ->
             let outputFieldNames = outputFields |> List.map (sprintf "INSERTED.%s") |> String.concat ", "
-            sprintf "INSERT INTO %s %s OUTPUT %s VALUES %s" (inBrackets q.Table) fieldNames outputFieldNames values
+            sprintf "INSERT INTO %s %s OUTPUT %s VALUES %s" (safeTableName q.Schema q.Table) fieldNames outputFieldNames values
 
     let evalUpdateQuery fields outputFields meta (q:UpdateQuery<'a>) =
         // basic query
@@ -136,10 +141,10 @@ module private Evaluators =
         let baseQuery =
             match outputFields with
             | [] ->
-                sprintf "UPDATE %s SET %s" (inBrackets q.Table) pairs
+                sprintf "UPDATE %s SET %s" (safeTableName q.Schema q.Table) pairs
             | outputFields ->
                 let outputFieldNames = outputFields |> List.map (sprintf "INSERTED.%s") |> String.concat ", "
-                sprintf "UPDATE %s SET %s OUTPUT %s" (inBrackets q.Table) pairs outputFieldNames
+                sprintf "UPDATE %s SET %s OUTPUT %s" (safeTableName q.Schema q.Table) pairs outputFieldNames
         let sb = StringBuilder(baseQuery)
         // where
         let where = evalWhere meta q.Where
@@ -150,10 +155,10 @@ module private Evaluators =
         let baseQuery =
             match outputFields with
             | [] ->
-                sprintf "DELETE FROM %s" (inBrackets q.Table)
+                sprintf "DELETE FROM %s" (safeTableName q.Schema q.Table)
             | outputFields ->
                 let outputFieldNames = outputFields |> List.map (sprintf "DELETED.%s") |> String.concat ", "
-                sprintf "DELETE FROM %s OUTPUT %s" (inBrackets q.Table) outputFieldNames
+                sprintf "DELETE FROM %s OUTPUT %s" (safeTableName q.Schema q.Table) outputFieldNames
         // basic query
         let sb = StringBuilder(baseQuery)
         // where

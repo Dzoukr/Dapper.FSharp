@@ -11,6 +11,11 @@ let private inQuotes (s:string) =
     |> Array.map (fun x -> if specialStrings.Contains(x) then x else sprintf "`%s`" x)
     |> String.concat "."
 
+let private safeTableName schema table =
+    match schema, table with
+    | None, table -> table |> inQuotes
+    | Some schema, table -> (schema |> inQuotes) + "." + (table |> inQuotes)
+
 module private Evaluators =
 
     let evalBinary = function
@@ -102,7 +107,7 @@ module private Evaluators =
         // distinct
         let distinct = if q.Distinct then "DISTINCT " else ""
         // basic query
-        let sb = StringBuilder(sprintf "SELECT %s%s FROM %s" distinct fieldNames (inQuotes q.Table))
+        let sb = StringBuilder(sprintf "SELECT %s%s FROM %s" distinct fieldNames (safeTableName q.Schema q.Table))
         // joins
         let joins = evalJoins q.Joins
         if joins.Length > 0 then sb.Append joins |> ignore
@@ -126,12 +131,12 @@ module private Evaluators =
             q.Values
             |> List.mapi (fun i _ -> fields |> List.map (fun field -> sprintf "@%s%i" field i ) |> String.concat ", " |> sprintf "(%s)")
             |> String.concat ", "
-        sprintf "INSERT INTO %s %s VALUES %s" (inQuotes q.Table) fieldNames values
+        sprintf "INSERT INTO %s %s VALUES %s" (safeTableName q.Schema q.Table) fieldNames values
         
     let evalUpdateQuery fields _ meta (q:UpdateQuery<'a>) =
         // basic query
         let pairs = fields |> List.map (fun x -> sprintf "%s=@%s" (inQuotes x) x) |> String.concat ", "
-        let baseQuery = sprintf "UPDATE %s SET %s" (inQuotes q.Table) pairs
+        let baseQuery = sprintf "UPDATE %s SET %s" (safeTableName q.Schema q.Table) pairs
         let sb = StringBuilder(baseQuery)
         // where
         let where = evalWhere meta q.Where
@@ -139,7 +144,7 @@ module private Evaluators =
         sb.ToString()
 
     let evalDeleteQuery _ meta (q:DeleteQuery) =
-        let baseQuery = sprintf "DELETE FROM %s" (inQuotes q.Table)
+        let baseQuery = sprintf "DELETE FROM %s" (safeTableName q.Schema q.Table)
         // basic query
         let sb = StringBuilder(baseQuery)
         // where
