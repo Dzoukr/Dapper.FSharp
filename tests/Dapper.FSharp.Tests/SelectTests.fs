@@ -1,278 +1,277 @@
-﻿module Dapper.FSharp.Tests.MSSQL.SelectTests
+﻿module Dapper.FSharp.Tests.SelectTests
 
-open System.Data
-open Expecto
-open Dapper.FSharp.Tests.Database
-open Dapper.FSharp.Tests.MSSQL.Database
+open System.Threading.Tasks
 open Dapper.FSharp
-open Dapper.FSharp.MSSQL
+open Dapper.FSharp.Tests.Database
+open Expecto
+open FSharp.Control.Tasks.V2
 
-let tests (conn:IDbConnection) = Tests.testList "SELECT" [
-
+let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
+    
     testTask "Selects by single where condition" {
-        do! Persons.init conn
+        do! init.InitPersons()
         let rs = Persons.View.generate 10
         let! _ =
             insert {
                 table "Persons"
                 values rs
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! fromDb =
             select {
                 table "Persons"
                 where (eq "Position" 5)
-            } |> conn.SelectAsync<Persons.View>
+            } |> crud.SelectAsync<Persons.View>
         Expect.equal (rs |> List.find (fun x -> x.Position = 5)) (Seq.head fromDb) ""
     }
 
     testTask "Selects by single where condition with table name used" {
-        do! Persons.init conn
+        do! init.InitPersons()
         let rs = Persons.View.generate 10
         let! _ =
             insert {
                 table "Persons"
                 values rs
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! fromDb =
             select {
                 table "Persons"
                 where (eq "Persons.Position" 5)
-            } |> conn.SelectAsync<Persons.View>
+            } |> crud.SelectAsync<Persons.View>
         Expect.equal (rs |> List.find (fun x -> x.Position = 5)) (Seq.head fromDb) ""
     }
 
     testTask "Selects by IN where condition" {
-        do! Persons.init conn
+        do! init.InitPersons()
         let rs = Persons.View.generate 10
         let! _ =
             insert {
                 table "Persons"
                 values rs
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! fromDb =
             select {
                 table "Persons"
                 where (isIn "Position" [5;6])
                 orderBy "Position" Asc
-            } |> conn.SelectAsync<Persons.View>
+            } |> crud.SelectAsync<Persons.View>
         Expect.equal (rs |> List.find (fun x -> x.Position = 5)) (Seq.head fromDb) ""
         Expect.equal (rs |> List.find (fun x -> x.Position = 6)) (Seq.last fromDb) ""
     }
 
     testTask "Selects by NOT IN where condition" {
-        do! Persons.init conn
+        do! init.InitPersons()
         let rs = Persons.View.generate 10
         let! _ =
             insert {
                 table "Persons"
                 values rs
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! fromDb =
             select {
                 table "Persons"
                 where (isNotIn "Position" [1;2;3])
                 orderBy "Position" Asc
-            } |> conn.SelectAsync<Persons.View>
+            } |> crud.SelectAsync<Persons.View>
         Expect.equal (rs |> List.find (fun x -> x.Position = 4)) (Seq.head fromDb) ""
         Expect.equal (rs |> List.find (fun x -> x.Position = 10)) (Seq.last fromDb) ""
         Expect.equal 7 (Seq.length fromDb) ""
     }
 
     testTask "Selects by IS NULL where condition" {
-        do! Persons.init conn
+        do! init.InitPersons()
         let rs = Persons.View.generate 10
         let! _ =
             insert {
                 table "Persons"
                 values rs
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! fromDb =
             select {
                 table "Persons"
                 where (isNullValue "DateOfBirth")
                 orderBy "Position" Asc
-            } |> conn.SelectAsync<Persons.View>
+            } |> crud.SelectAsync<Persons.View>
         Expect.equal (rs |> List.find (fun x -> x.Position = 2)) (Seq.head fromDb) ""
         Expect.equal 5 (Seq.length fromDb) ""
     }
 
     testTask "Selects by IS NOT NULL where condition" {
-        do! Persons.init conn
+        do! init.InitPersons()
         let rs = Persons.View.generate 10
         let! _ =
             insert {
                 table "Persons"
                 values rs
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! fromDb =
             select {
                 table "Persons"
                 where (isNotNullValue "DateOfBirth")
                 orderBy "Position" Asc
-            } |> conn.SelectAsync<Persons.View>
+            } |> crud.SelectAsync<Persons.View>
         Expect.equal (rs |> List.find (fun x -> x.Position = 1)) (Seq.head fromDb) ""
         Expect.equal 5 (Seq.length fromDb) ""
     }
 
     testTask "Selects by LIKE where condition return matching rows" {
-        do! Persons.init conn
+        do! init.InitPersons()
         let rs = Persons.View.generate 10
         let! _ =
             insert {
                 table "Persons"
                 values rs
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! fromDb =
             select {
                 table "Persons"
                 where (like "FirstName" "First_1%")
-            } |> conn.SelectAsync<Persons.View>
+            } |> crud.SelectAsync<Persons.View>
         Expect.isNonEmpty fromDb ""
         Expect.hasLength fromDb 2 ""
         Expect.isTrue (fromDb |> Seq.forall (fun (p:Persons.View) -> p.FirstName.StartsWith "First")) ""
     }
     
     testTask "Selects by NOT LIKE where condition return matching rows" {
-        do! Persons.init conn
+        do! init.InitPersons()
         let rs = Persons.View.generate 10
         let! _ =
             insert {
                 table "Persons"
                 values rs
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! fromDb =
             select {
                 table "Persons"
                 where (notLike "FirstName" "First_1%")
             }
-            |> conn.SelectAsync<Persons.View>
+            |> crud.SelectAsync<Persons.View>
         Expect.hasLength fromDb 8 ""
     }
 
     testTask "Selects by NOT LIKE where condition do not return non-matching rows" {
-        do! Persons.init conn
+        do! init.InitPersons()
         let rs = Persons.View.generate 10
         let! _ =
             insert {
                 table "Persons"
                 values rs
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! fromDb =
             select {
                 table "Persons"
                 where (notLike "FirstName" "NonExistingName%")
-            } |> conn.SelectAsync<Persons.View>
+            } |> crud.SelectAsync<Persons.View>
         Expect.hasLength fromDb 10 ""
     }
 
     testTask "Selects by UNARY NOT where condition" {
-        do! Persons.init conn
+        do! init.InitPersons()
         let rs = Persons.View.generate 10
         let! _ =
             insert {
                 table "Persons"
                 values rs
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! fromDb =
             select {
                 table "Persons"
                 where !! (gt "Position" 5 + isNullValue "DateOfBirth")
                 orderBy "Position" Asc
-            } |> conn.SelectAsync<Persons.View>
+            } |> crud.SelectAsync<Persons.View>
         Expect.equal (rs |> List.find (fun x -> x.Position = 9)) (Seq.last fromDb) ""
         Expect.equal 7 (Seq.length fromDb) ""
     }
 
     testTask "Selects by multiple where conditions" {
-        do! Persons.init conn
+        do! init.InitPersons()
         let rs = Persons.View.generate 10
         let! _ =
             insert {
                 table "Persons"
                 values rs
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! fromDb =
             select {
                 table "Persons"
                 where (gt "Position" 2 + lt "Position" 4)
-            } |> conn.SelectAsync<Persons.View>
+            } |> crud.SelectAsync<Persons.View>
         Expect.equal (rs |> List.find (fun x -> x.Position = 3)) (Seq.head fromDb) ""
     }
 
     testTask "Selects with order by" {
-        do! Persons.init conn
+        do! init.InitPersons()
         let rs = Persons.View.generate 10
         let! _ =
             insert {
                 table "Persons"
                 values rs
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! fromDb =
             select {
                 table "Persons"
                 orderBy "Position" Desc
-            } |> conn.SelectAsync<Persons.View>
+            } |> crud.SelectAsync<Persons.View>
         Expect.equal 10 (fromDb |> Seq.head |> (fun (x:Persons.View) -> x.Position)) ""
     }
 
     testTask "Selects with skip parameter" {
-        do! Persons.init conn
+        do! init.InitPersons()
         let rs = Persons.View.generate 10
         let! _ =
             insert {
                 table "Persons"
                 values rs
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! fromDb =
             select {
                 table "Persons"
                 skip 5
                 orderBy "Position" Asc
-            } |> conn.SelectAsync<Persons.View>
+            } |> crud.SelectAsync<Persons.View>
         Expect.equal 6 (fromDb |> Seq.head |> (fun (x:Persons.View) -> x.Position)) ""
         Expect.equal 5 (fromDb |> Seq.length) ""
     }
 
     testTask "Selects with skipTake parameter" {
-        do! Persons.init conn
+        do! init.InitPersons()
         let rs = Persons.View.generate 10
         let! _ =
             insert {
                 table "Persons"
                 values rs
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! fromDb =
             select {
                 table "Persons"
                 skipTake 5 2
                 orderBy "Position" Asc
-            } |> conn.SelectAsync<Persons.View>
+            } |> crud.SelectAsync<Persons.View>
         Expect.equal 6 (fromDb |> Seq.head |> (fun (x:Persons.View) -> x.Position)) ""
         Expect.equal 2 (fromDb |> Seq.length) ""
     }
     
     testTask "Selects with skip and take parameters" {
-        do! Persons.init conn
+        do! init.InitPersons()
         let rs = Persons.View.generate 10
         let! _ =
             insert {
                 table "Persons"
                 values rs
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! fromDb =
             select {
                 table "Persons"
                 skip 5
                 take 2
                 orderBy "Position" Asc
-            } |> conn.SelectAsync<Persons.View>
+            } |> crud.SelectAsync<Persons.View>
         Expect.equal 6 (fromDb |> Seq.head |> (fun (x:Persons.View) -> x.Position)) ""
         Expect.equal 2 (fromDb |> Seq.length) ""
     }
 
     testTask "Selects with one inner join - 1:1" {
-        do! Persons.init conn
-        do! Dogs.init conn
+        do! init.InitPersons()
+        do! init.InitDogs()
 
         let persons = Persons.View.generate 10
         let dogs = Dogs.View.generate1to1 persons
@@ -280,42 +279,42 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT" [
             insert {
                 table "Persons"
                 values persons
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! _ =
             insert {
                 table "Dogs"
                 values dogs
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! fromDb =
             select {
                 table "Persons"
                 innerJoin "Dogs" "OwnerId" "Persons.Id"
-            } |> conn.SelectAsync<Persons.View, Dogs.View>
+            } |> crud.SelectAsync<Persons.View, Dogs.View>
 
         Expect.equal 10 (Seq.length fromDb) ""
         Expect.equal (persons.Head, dogs.Head) (Seq.head fromDb) ""
     }
 
     testTask "Selects with one inner join - 1:N" {
-        do! Persons.init conn
-        do! Dogs.init conn
+        do! init.InitPersons()
+        do! init.InitDogs()
         let persons = Persons.View.generate 10
         let dogs = Dogs.View.generate1toN 5 persons.Head
         let! _ =
             insert {
                 table "Persons"
                 values persons
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! _ =
             insert {
                 table "Dogs"
                 values dogs
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! fromDb =
             select {
                 table "Persons"
                 innerJoin "Dogs" "OwnerId" "Persons.Id"
-            } |> conn.SelectAsync<Persons.View, Dogs.View>
+            } |> crud.SelectAsync<Persons.View, Dogs.View>
 
         let byOwner = fromDb |> Seq.groupBy fst
 
@@ -326,26 +325,26 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT" [
     }
 
     testTask "Selects with one left join" {
-        do! Persons.init conn
-        do! Dogs.init conn
+        do! init.InitPersons()
+        do! init.InitDogs()
         let persons = Persons.View.generate 10
         let dogs = Dogs.View.generate1toN 5 persons.Head
         let! _ =
             insert {
                 table "Persons"
                 values persons
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! _ =
             insert {
                 table "Dogs"
                 values dogs
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! fromDb =
             select {
                 table "Persons"
                 leftJoin "Dogs" "OwnerId" "Persons.Id"
-                orderBy "Persons.Position" Asc
-            } |> conn.SelectAsyncOption<Persons.View, Dogs.View>
+                orderByMany ["Persons.Position", Asc; "Dogs.Nickname", Asc]
+            } |> crud.SelectAsyncOption<Persons.View, Dogs.View>
 
         let byOwner = fromDb |> Seq.groupBy fst
 
@@ -356,9 +355,9 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT" [
     }
 
     testTask "Selects with two inner joins - 1:1" {
-        do! Persons.init conn
-        do! Dogs.init conn
-        do! DogsWeights.init conn
+        do! init.InitPersons()
+        do! init.InitDogs()
+        do! init.InitDogsWeights()
 
         let persons = Persons.View.generate 10
         let dogs = Dogs.View.generate1to1 persons
@@ -368,17 +367,17 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT" [
             insert {
                 table "Persons"
                 values persons
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! _ =
             insert {
                 table "Dogs"
                 values dogs
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! _ =
             insert {
                 table "DogsWeights"
                 values weights
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
 
         let! fromDb =
             select {
@@ -386,16 +385,16 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT" [
                 innerJoin "Dogs" "OwnerId" "Persons.Id"
                 innerJoin "DogsWeights" "DogNickname" "Dogs.Nickname"
                 orderBy "Persons.Position" Asc
-            } |> conn.SelectAsync<Persons.View, Dogs.View, DogsWeights.View>
+            } |> crud.SelectAsync<Persons.View, Dogs.View, DogsWeights.View>
 
         Expect.equal 10 (Seq.length fromDb) ""
         Expect.equal (persons.Head, dogs.Head, weights.Head) (Seq.head fromDb) ""
     }
 
     testTask "Selects with two inner joins - 1:N" {
-        do! Persons.init conn
-        do! Dogs.init conn
-        do! DogsWeights.init conn
+        do! init.InitPersons()
+        do! init.InitDogs()
+        do! init.InitDogsWeights()
 
         let persons = Persons.View.generate 10
         let dogs = Dogs.View.generate1toN 5 persons.Head
@@ -405,34 +404,34 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT" [
             insert {
                 table "Persons"
                 values persons
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! _ =
             insert {
                 table "Dogs"
                 values dogs
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! _ =
             insert {
                 table "DogsWeights"
                 values weights
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
 
         let! fromDb =
             select {
                 table "Persons"
                 innerJoin "Dogs" "OwnerId" "Persons.Id"
                 innerJoin "DogsWeights" "DogNickname" "Dogs.Nickname"
-                orderBy "Persons.Position" Asc
-            } |> conn.SelectAsync<Persons.View, Dogs.View, DogsWeights.View>
+                orderByMany ["Persons.Position", Asc; "Dogs.Nickname", Asc; "DogsWeights.Year", Asc]
+            } |> crud.SelectAsync<Persons.View, Dogs.View, DogsWeights.View>
 
         Expect.equal 3 (Seq.length fromDb) ""
         Expect.equal (persons.Head, dogs.Head, weights.Head) (Seq.head fromDb) ""
     }
 
     testTask "Selects with two left joins" {
-        do! Persons.init conn
-        do! Dogs.init conn
-        do! DogsWeights.init conn
+        do! init.InitPersons()
+        do! init.InitDogs()
+        do! init.InitDogsWeights()
 
         let persons = Persons.View.generate 10
         let dogs = Dogs.View.generate1toN 5 persons.Head
@@ -442,25 +441,25 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT" [
             insert {
                 table "Persons"
                 values persons
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! _ =
             insert {
                 table "Dogs"
                 values dogs
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
         let! _ =
             insert {
                 table "DogsWeights"
                 values weights
-            } |> conn.InsertAsync
+            } |> crud.InsertAsync
 
         let! fromDb =
             select {
                 table "Persons"
                 leftJoin "Dogs" "OwnerId" "Persons.Id"
                 leftJoin "DogsWeights" "DogNickname" "Dogs.Nickname"
-                orderBy "Persons.Position" Asc
-            } |> conn.SelectAsyncOption<Persons.View, Dogs.View, DogsWeights.View>
+                orderByMany ["Persons.Position", Asc; "Dogs.Nickname", Asc; "DogsWeights.Year", Asc]
+            } |> crud.SelectAsyncOption<Persons.View, Dogs.View, DogsWeights.View>
 
         let p1,d1,w1 = fromDb |> Seq.head
         Expect.equal persons.Head p1 ""
@@ -473,4 +472,5 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT" [
         Expect.equal None wn ""
         Expect.equal 16 (Seq.length fromDb) ""
     }
+    
 ]

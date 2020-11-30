@@ -1,11 +1,9 @@
 ﻿module Dapper.FSharp.Tests.MSSQL.Database
 
+open Dapper.FSharp.Tests.Database
 open Dapper.FSharp.Tests.Extensions
 open System.Data
 open FSharp.Control.Tasks
-
-let [<Literal>] DbName = "DapperFSharpTests"
-let [<Literal>] TestSchema = "tests"
 
 let init (conn:IDbConnection) =
     task {
@@ -155,3 +153,32 @@ module Issues =
                     |> conn.ExecuteIgnore
                 return ()
             }
+
+open Dapper.FSharp.MSSQL
+
+let getCrud (conn:IDbConnection) =
+    { new ICrudOutput with
+        member x.SelectAsync<'a> q = conn.SelectAsync<'a>(q)
+        member x.SelectAsync<'a,'b> q = conn.SelectAsync<'a,'b>(q)
+        member x.SelectAsync<'a,'b,'c> q = conn.SelectAsync<'a,'b,'c>(q)
+        member x.SelectAsyncOption<'a,'b> q = conn.SelectAsyncOption<'a,'b>(q)
+        member x.SelectAsyncOption<'a,'b,'c> q = conn.SelectAsyncOption<'a,'b,'c>(q)
+        member x.InsertAsync<'a> q = conn.InsertAsync<'a>(q)
+        member x.DeleteAsync q = conn.DeleteAsync(q)
+        member x.UpdateAsync q = conn.UpdateAsync(q)
+        member x.InsertOutputAsync q = conn.InsertOutputAsync(q)
+        member x.DeleteOutputAsync q = conn.DeleteOutputAsync(q)
+        member x.UpdateOutputAsync q = conn.UpdateOutputAsync(q)
+    }
+
+let getInitializer (conn:IDbConnection) =
+    { new ICrudInitializer with
+        member x.InitPersons () = Persons.init conn
+        member x.InitPersonsSimple () = Issues.PersonsSimple.init conn
+        member x.InitPersonsSimpleDescs () = Issues.PersonsSimpleDescs.init conn
+        member x.InitArticles () = Articles.init conn
+        member x.InitGroups () = Issues.Group.init conn
+        member x.InitSchemedGroups () = Issues.SchemedGroup.init conn
+        member x.InitDogs () = Dogs.init conn
+        member x.InitDogsWeights () = DogsWeights.init conn
+    }

@@ -1,19 +1,18 @@
 ﻿module Dapper.FSharp.Tests.PostgreSQL.Database
 
+open Dapper.FSharp.Tests.Database
 open Dapper.FSharp.Tests.Extensions
 open System
 open System.Data
 open FSharp.Control.Tasks
 
-let [<Literal>] DbName = "dapperfsharptests"
-let [<Literal>] TestSchema = "tests"
-
 let init (conn:IDbConnection) =
     task {
-        do! DbName |> sprintf "drop database if exists %s;" |> conn.ExecuteCatchIgnore
-        do! DbName |> sprintf "create database %s;" |> conn.ExecuteIgnore
+        let dbName = DbName.ToLowerInvariant()
+        do! dbName |> sprintf "drop database if exists %s;" |> conn.ExecuteCatchIgnore
+        do! dbName |> sprintf "create database %s;" |> conn.ExecuteIgnore
         conn.Open()
-        conn.ChangeDatabase DbName
+        conn.ChangeDatabase dbName
         do! TestSchema |> sprintf "drop schema if exists %s;" |> conn.ExecuteIgnore
         do! TestSchema |> sprintf "create schema %s;" |> conn.ExecuteIgnore
     } |> Async.AwaitTask |> Async.RunSynchronously
@@ -154,4 +153,33 @@ module Issues =
                     """ TestSchema
                     |> conn.ExecuteIgnore
                 return ()
-            }    
+            }
+
+open Dapper.FSharp.PostgreSQL
+
+let getCrud (conn:IDbConnection) =
+    { new ICrudOutput with
+        member x.SelectAsync<'a> q = conn.SelectAsync<'a>(q)
+        member x.SelectAsync<'a,'b> q = conn.SelectAsync<'a,'b>(q)
+        member x.SelectAsync<'a,'b,'c> q = conn.SelectAsync<'a,'b,'c>(q)
+        member x.SelectAsyncOption<'a,'b> q = conn.SelectAsyncOption<'a,'b>(q)
+        member x.SelectAsyncOption<'a,'b,'c> q = conn.SelectAsyncOption<'a,'b,'c>(q)
+        member x.InsertAsync<'a> q = conn.InsertAsync<'a>(q)
+        member x.DeleteAsync q = conn.DeleteAsync(q)
+        member x.UpdateAsync q = conn.UpdateAsync(q)
+        member x.InsertOutputAsync q = conn.InsertOutputAsync(q)
+        member x.DeleteOutputAsync q = conn.DeleteOutputAsync(q)
+        member x.UpdateOutputAsync q = conn.UpdateOutputAsync(q)
+    }
+
+let getInitializer (conn:IDbConnection) =
+    { new ICrudInitializer with
+        member x.InitPersons () = Persons.init conn
+        member x.InitPersonsSimple () = Issues.PersonsSimple.init conn
+        member x.InitPersonsSimpleDescs () = Issues.PersonsSimpleDescs.init conn
+        member x.InitArticles () = Articles.init conn
+        member x.InitGroups () = Issues.Group.init conn
+        member x.InitSchemedGroups () = Issues.SchemedGroup.init conn
+        member x.InitDogs () = Dogs.init conn
+        member x.InitDogsWeights () = DogsWeights.init conn
+    }

@@ -8,51 +8,65 @@ open MySql.Data.MySqlClient
 open Npgsql
 
 let testConfig = 
-    { Expecto.Tests.defaultConfig with 
+    { defaultConfig with 
         parallelWorkers = 4
         verbosity = LogLevel.Debug }
 
 let mssqlTests connString =
-    let mssql = new SqlConnection(connString)
-    mssql |> Dapper.FSharp.Tests.MSSQL.Database.init
+    let conn = new SqlConnection(connString)
+    conn |> Dapper.FSharp.Tests.MSSQL.Database.init
+    let crud = MSSQL.Database.getCrud conn
+    let init = MSSQL.Database.getInitializer conn
     [
-        MSSQL.InsertTests.tests mssql
-        MSSQL.UpdateTests.tests mssql
-        MSSQL.DeleteTests.tests mssql
-        MSSQL.SelectTests.tests mssql
-        MSSQL.IssuesTests.tests mssql
-        MSSQL.AggregatesTests.tests mssql
+        DeleteTests.testsBasic crud init
+        DeleteTests.testsOutput crud init
+        InsertTests.testsBasic crud init
+        InsertTests.testsOutput crud init
+        IssuesTests.testsBasic crud init
+        IssuesTests.testsOutput crud init
+        UpdateTests.testsBasic crud init
+        UpdateTests.testsOutput crud init
+        SelectTests.testsBasic crud init
+        MSSQL.AggregatesTests.tests conn
     ]
-    |> Tests.testList "MSSQL"
-    |> Tests.testSequenced
+    |> testList "MSSQL"
+    |> testSequenced
 
 let mysqlTests connString =
-    let mysql = new MySqlConnection(connString)
-    mysql |> Dapper.FSharp.Tests.MySQL.Database.init
+    let conn = new MySqlConnection(connString)
+    conn |> Dapper.FSharp.Tests.MySQL.Database.init
+    let crud = MySQL.Database.getCrud conn
+    let init = MySQL.Database.getInitializer conn
     [
-        MySQL.InsertTests.tests mysql
-        MySQL.UpdateTests.tests mysql
-        MySQL.DeleteTests.tests mysql
-        MySQL.SelectTests.tests mysql
-        MySQL.IssuesTests.tests mysql
-        MySQL.AggregatesTests.tests mysql
+        DeleteTests.testsBasic crud init
+        InsertTests.testsBasic crud init
+        IssuesTests.testsBasic crud init
+        UpdateTests.testsBasic crud init
+        SelectTests.testsBasic crud init
+        MySQL.AggregatesTests.tests conn
     ]
-    |> Tests.testList "MySQL"
-    |> Tests.testSequenced
+    |> testList "MySQL"
+    |> testSequenced
 
 let postgresTests connString =
-    let postgres = new NpgsqlConnection(connString)
-    postgres |> Dapper.FSharp.Tests.PostgreSQL.Database.init
+    let conn = new NpgsqlConnection(connString)
+    conn |> Dapper.FSharp.Tests.PostgreSQL.Database.init
+    let crud = PostgreSQL.Database.getCrud conn
+    let init = PostgreSQL.Database.getInitializer conn
     [
-        PostgreSQL.InsertTests.tests postgres
-        PostgreSQL.UpdateTests.tests postgres
-        PostgreSQL.DeleteTests.tests postgres
-        PostgreSQL.SelectTests.tests postgres
-        PostgreSQL.IssuesTests.tests postgres
-        PostgreSQL.AggregatesTests.tests postgres
+        DeleteTests.testsBasic crud init
+        DeleteTests.testsOutput crud init
+        InsertTests.testsBasic crud init
+        InsertTests.testsOutput crud init
+        IssuesTests.testsBasic crud init
+        IssuesTests.testsOutput crud init
+        UpdateTests.testsBasic crud init
+        UpdateTests.testsOutput crud init
+        SelectTests.testsBasic crud init
+        PostgreSQL.AggregatesTests.tests conn
     ]
-    |> Tests.testList "PostgreSQL"
-    |> Tests.testSequenced
+    |> testList "PostgreSQL"
+    |> testSequenced
 
 [<EntryPoint>]
 let main _ =
@@ -65,5 +79,5 @@ let main _ =
         conf.["mysqlConnectionString"] |> mysqlTests
         conf.["postgresConnectionString"] |> postgresTests
     ]
-    |> Tests.testList ""
-    |> Tests.runTests testConfig
+    |> testList ""
+    |> runTests testConfig

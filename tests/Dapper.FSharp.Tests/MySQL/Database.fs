@@ -1,12 +1,10 @@
 ﻿module Dapper.FSharp.Tests.MySQL.Database
 
+open Dapper.FSharp.Tests.Database
 open Dapper.FSharp.Tests.Extensions
 open System
 open System.Data
 open FSharp.Control.Tasks
-
-let [<Literal>] DbName = "DapperFSharpTests"
-let [<Literal>] TestSchema = "tests"
 
 let init (conn:IDbConnection) =
     task {
@@ -39,6 +37,25 @@ module Persons =
                 """
                 |> conn.ExecuteIgnore
             return ()
+        }
+
+module Articles =
+    
+    let init (conn:IDbConnection) =
+        task {
+            do! "drop table Articles" |> conn.ExecuteCatchIgnore
+            do!
+                """
+                create table Articles
+                (
+                    Id char(36) not null,
+                    Title nvarchar(255) not null,
+                );
+
+                create unique index Articles_Id_uindex
+                    on Articles (Id);
+                """
+                |> conn.ExecuteIgnore
         }
 
 module Dogs =
@@ -138,3 +155,29 @@ module Issues =
                     |> conn.ExecuteIgnore
                 return ()
             }
+            
+open Dapper.FSharp.MySQL
+
+let getCrud (conn:IDbConnection) =
+    { new ICrud with
+        member x.SelectAsync<'a> q = conn.SelectAsync<'a>(q)
+        member x.SelectAsync<'a,'b> q = conn.SelectAsync<'a,'b>(q)
+        member x.SelectAsync<'a,'b,'c> q = conn.SelectAsync<'a,'b,'c>(q)
+        member x.SelectAsyncOption<'a,'b> q = conn.SelectAsyncOption<'a,'b>(q)
+        member x.SelectAsyncOption<'a,'b,'c> q = conn.SelectAsyncOption<'a,'b,'c>(q)
+        member x.InsertAsync<'a> q = conn.InsertAsync<'a>(q)
+        member x.DeleteAsync q = conn.DeleteAsync(q)
+        member x.UpdateAsync q = conn.UpdateAsync(q)
+    }
+
+let getInitializer (conn:IDbConnection) =
+    { new ICrudInitializer with
+        member x.InitPersons () = Persons.init conn
+        member x.InitPersonsSimple () = Issues.PersonsSimple.init conn
+        member x.InitPersonsSimpleDescs () = Issues.PersonsSimpleDescs.init conn
+        member x.InitArticles () = Articles.init conn
+        member x.InitGroups () = Issues.Group.init conn
+        member x.InitSchemedGroups () = Issues.SchemedGroup.init conn
+        member x.InitDogs () = Dogs.init conn
+        member x.InitDogsWeights () = DogsWeights.init conn
+    }            
