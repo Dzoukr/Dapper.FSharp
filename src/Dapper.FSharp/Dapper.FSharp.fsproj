@@ -10,7 +10,7 @@
     <PackageIconUrl>https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png</PackageIconUrl>
     <PackageTags>fsharp;dapper;database;mssql;mysql;postgresql</PackageTags>
     <Authors>Roman Provazník</Authors>
-    <Version>1.15.0</Version>
+    <Version>1.16.0</Version>
     <PackageReleaseNotes>Allow specifying database schema in builders #16</PackageReleaseNotes>
 
       <PublishRepositoryUrl>true</PublishRepositoryUrl>
