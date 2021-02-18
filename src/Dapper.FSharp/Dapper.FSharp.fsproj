@@ -12,6 +12,11 @@
     <Authors>Roman Provazník</Authors>
     <Version>1.15.0</Version>
     <PackageReleaseNotes>Allow specifying database schema in builders #16</PackageReleaseNotes>
+
+      <PublishRepositoryUrl>true</PublishRepositoryUrl>
+      <EmbedUntrackedSources>true</EmbedUntrackedSources>
+      <DebugType>embedded</DebugType>
+
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Reflection.fs" />
@@ -25,5 +30,11 @@
     <Compile Include="Builders.fs" />
     <Compile Include="OptionTypes.fs" />
   </ItemGroup>
+
+    <ItemGroup>
+  <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
+</ItemGroup>
+
+
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>
