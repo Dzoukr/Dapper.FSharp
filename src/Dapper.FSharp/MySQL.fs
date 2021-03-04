@@ -58,21 +58,22 @@ module private Evaluators =
         xs
         |> List.map (fun (n,s) -> sprintf "%s %s" n (evalOrderDirection s))
         |> String.concat ", "
-    
+
     let evalPagination (pag:Pagination) =
         match pag with
         | { Take = None; Skip = x } when x <= 0 -> ""
         | { Take = None; Skip = o } -> sprintf "LIMIT %i, %i" o (System.UInt64.MaxValue)
         | { Take = Some f; Skip = o } -> sprintf "LIMIT %i, %i" o f
-    
+
     let evalJoins (joins:Join list) =
         let sb = StringBuilder()
         let evalJoin = function
             | InnerJoin(table,colName,equalsTo) -> sprintf " INNER JOIN %s ON %s.%s=%s" (inQuotes table) (inQuotes table) (inQuotes colName) (inQuotes equalsTo)
             | LeftJoin(table,colName,equalsTo) -> sprintf " LEFT JOIN %s ON %s.%s=%s" (inQuotes table) (inQuotes table) (inQuotes colName) (inQuotes equalsTo)
+            | InnerJoin2Col(table, col1Name, eqToCol1, col2Name, eqToCol2) -> sprintf " INNER JOIN %s ON %s.%s=%s AND %s.%s=%s" (inQuotes table) (inQuotes table) (inQuotes col1Name) (inQuotes eqToCol1) (inQuotes table) (inQuotes col2Name) (inQuotes eqToCol2)
         joins |> List.map evalJoin |> List.iter (sb.Append >> ignore)
         sb.ToString()
-    
+
     let evalAggregates (ags:Aggregate list) =
         let comparableName (column:string) (alias:string) =
             match column.Split '.' with
@@ -89,15 +90,15 @@ module private Evaluators =
         )
 
     let replaceFieldWithAggregate (aggr:(string * string) list) (field:string) =
-        aggr 
+        aggr
         |> List.tryPick (fun (aggrColumn, replace) -> if aggrColumn = field then Some replace else None)
         |> Option.defaultValue (inQuotes field)
-    
+
     let evalGroupBy (cols:string list) =
         cols
         |> List.map inQuotes
         |> String.concat ", "
-        
+
     let evalSelectQuery fields meta (q:SelectQuery) =
         let aggregates = q.Aggregates |> evalAggregates
         let fieldNames =
@@ -124,7 +125,7 @@ module private Evaluators =
         let pagination = evalPagination q.Pagination
         if pagination.Length > 0 then sb.Append (sprintf " %s" pagination) |> ignore
         sb.ToString()
-    
+
     let evalInsertQuery fields _ (q:InsertQuery<_>) =
         let fieldNames = fields |> List.map inQuotes |> String.concat ", " |> sprintf "(%s)"
         let values =
@@ -132,7 +133,7 @@ module private Evaluators =
             |> List.mapi (fun i _ -> fields |> List.map (fun field -> sprintf "@%s%i" field i ) |> String.concat ", " |> sprintf "(%s)")
             |> String.concat ", "
         sprintf "INSERT INTO %s %s VALUES %s" (safeTableName q.Schema q.Table) fieldNames values
-        
+
     let evalUpdateQuery fields _ meta (q:UpdateQuery<'a>) =
         // basic query
         let pairs = fields |> List.map (fun x -> sprintf "%s=@%s" (inQuotes x) x) |> String.concat ", "
@@ -167,7 +168,7 @@ type IDbConnection with
 
     member this.SelectAsync<'a> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.select<'a> |> IDbConnection.query1<'a> this trans timeout logFunction
-      
+
     member this.SelectAsync<'a,'b> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.select<'a,'b> |> IDbConnection.query2<'a,'b> this trans timeout logFunction
 
@@ -182,7 +183,7 @@ type IDbConnection with
 
     member this.InsertAsync<'a> (q:InsertQuery<'a>, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.insert<'a> |> IDbConnection.execute this trans timeout logFunction
-        
+
     member this.UpdateAsync<'a> (q:UpdateQuery<'a>, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.update<'a> |> IDbConnection.execute this trans timeout logFunction
 

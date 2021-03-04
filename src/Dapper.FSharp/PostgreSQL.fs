@@ -59,21 +59,22 @@ module private Evaluators =
         xs
         |> List.map (fun (n,s) -> sprintf "%s %s" (inQuotes n) (evalOrderDirection s))
         |> String.concat ", "
-    
+
     let evalPagination (pag:Pagination) =
         match pag with
         | { Take = None; Skip = x } when x <= 0 -> ""
         | { Take = None; Skip = o } -> sprintf "LIMIT ALL OFFSET %i" o
         | { Take = Some f; Skip = o } -> sprintf "LIMIT %i OFFSET %i" f o
-    
+
     let evalJoins (joins:Join list) =
         let sb = StringBuilder()
         let evalJoin = function
             | InnerJoin(table,colName,equalsTo) -> sprintf " INNER JOIN %s ON %s.%s=%s" (inQuotes table) (inQuotes table) (inQuotes colName) (inQuotes equalsTo)
             | LeftJoin(table,colName,equalsTo) -> sprintf " LEFT JOIN %s ON %s.%s=%s" (inQuotes table) (inQuotes table) (inQuotes colName) (inQuotes equalsTo)
+            | InnerJoin2Col(table, col1Name, eqToCol1, col2Name, eqToCol2) -> sprintf " INNER JOIN %s ON %s.%s=%s AND %s.%s=%s" (inQuotes table) (inQuotes table) (inQuotes col1Name) (inQuotes eqToCol1) (inQuotes table) (inQuotes col2Name) (inQuotes eqToCol2)
         joins |> List.map evalJoin |> List.iter (sb.Append >> ignore)
         sb.ToString()
-    
+
     let evalAggregates (ags:Aggregate list) =
         let comparableName (column:string) (alias:string) =
             match column.Split '.' with
@@ -88,17 +89,17 @@ module private Evaluators =
         | Min (column,alias) -> comparableName column alias, sprintf "MIN(%s) AS %s" (inQuotes column) (inQuotes alias)
         | Max (column,alias) -> comparableName column alias, sprintf "MAX(%s) AS %s" (inQuotes column) (inQuotes alias)
         )
-    
+
     let replaceFieldWithAggregate (aggr:(string * string) list) (field:string) =
-        aggr 
+        aggr
         |> List.tryPick (fun (aggrColumn, replace) -> if aggrColumn = field then Some replace else None)
         |> Option.defaultValue (inQuotes field)
-    
+
     let evalGroupBy (cols:string list) =
         cols
         |> List.map inQuotes
         |> String.concat ", "
-    
+
     let evalSelectQuery fields meta (q:SelectQuery) =
         let aggregates = q.Aggregates |> evalAggregates
         let fieldNames =
@@ -190,7 +191,7 @@ type IDbConnection with
 
     member this.SelectAsync<'a> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.select<'a> |> IDbConnection.query1<'a> this trans timeout logFunction
-      
+
     member this.SelectAsync<'a,'b> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.select<'a,'b> |> IDbConnection.query2<'a,'b> this trans timeout logFunction
 
@@ -205,10 +206,10 @@ type IDbConnection with
 
     member this.InsertAsync<'a> (q:InsertQuery<'a>, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.insert<'a> |> IDbConnection.execute this trans timeout logFunction
-        
+
     member this.InsertOutputAsync<'Input, 'Output> (q:InsertQuery<'Input>, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.insertOutput<'Input, 'Output> |> IDbConnection.query1<'Output> this trans timeout logFunction
-        
+
     member this.UpdateAsync<'a> (q:UpdateQuery<'a>, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.update<'a> |> IDbConnection.execute this trans timeout logFunction
 

@@ -61,15 +61,16 @@ module private Evaluators =
         | { Take = None; Skip = x } when x <= 0 -> ""
         | { Take = None; Skip = o } -> sprintf "OFFSET %i ROWS" o
         | { Take = Some f; Skip = o } -> sprintf "OFFSET %i ROWS FETCH NEXT %i ROWS ONLY" o f
-    
+
     let evalJoins (joins:Join list) =
         let sb = StringBuilder()
         let evalJoin = function
             | InnerJoin(table,colName,equalsTo) -> sprintf " INNER JOIN %s ON %s.%s=%s" (inBrackets table) (inBrackets table) (inBrackets colName) (inBrackets equalsTo)
             | LeftJoin(table,colName,equalsTo) -> sprintf " LEFT JOIN %s ON %s.%s=%s" (inBrackets table) (inBrackets table) (inBrackets colName) (inBrackets equalsTo)
+            | InnerJoin2Col(table, col1Name, eqToCol1, col2Name, eqToCol2) -> sprintf " INNER JOIN %s ON %s.%s=%s AND %s.%s=%s" (inBrackets table) (inBrackets table) (inBrackets col1Name) (inBrackets eqToCol1) (inBrackets table) (inBrackets col2Name) (inBrackets eqToCol2)
         joins |> List.map evalJoin |> List.iter (sb.Append >> ignore)
         sb.ToString()
-    
+
     let evalAggregates (ags:Aggregate list) =
         let comparableName (column:string) (alias:string) =
             match column.Split '.' with
@@ -84,23 +85,23 @@ module private Evaluators =
         | Min (column,alias) -> comparableName column alias, sprintf "MIN(%s) AS %s" column alias
         | Max (column,alias) -> comparableName column alias, sprintf "MAX(%s) AS %s" column alias
         )
-    
+
     let replaceFieldWithAggregate (aggr:(string * string) list) (field:string) =
-        aggr 
+        aggr
         |> List.tryPick (fun (aggrColumn, replace) -> if aggrColumn = field then Some replace else None)
         |> Option.defaultValue (inBrackets field)
-    
+
     let evalGroupBy (cols:string list) =
         cols
         |> String.concat ", "
-    
+
     let evalSelectQuery fields meta (q:SelectQuery) =
         let aggregates = q.Aggregates |> evalAggregates
         let fieldNames =
             fields
             |> List.map (replaceFieldWithAggregate aggregates)
             |> String.concat ", "
-            
+
         // distinct
         let distinct = if q.Distinct then "DISTINCT " else ""
         // basic query
@@ -121,7 +122,7 @@ module private Evaluators =
         let pagination = evalPagination q.Pagination
         if pagination.Length > 0 then sb.Append (sprintf " %s" pagination) |> ignore
         sb.ToString()
-    
+
     let evalInsertQuery fields outputFields (q:InsertQuery<_>) =
         let fieldNames = fields |> List.map inBrackets |> String.concat ", " |> sprintf "(%s)"
         let values =
@@ -168,10 +169,10 @@ module private Evaluators =
 
 [<AbstractClass;Sealed>]
 type Deconstructor =
-    static member select<'a> (q:SelectQuery) = q |> GenericDeconstructor.select1<'a> Evaluators.evalSelectQuery
-    static member select<'a,'b> (q:SelectQuery) = q |> GenericDeconstructor.select2<'a,'b> Evaluators.evalSelectQuery
+    static member select<'a> (q:SelectQuery)       = q |> GenericDeconstructor.select1<'a> Evaluators.evalSelectQuery
+    static member select<'a,'b> (q:SelectQuery)    = q |> GenericDeconstructor.select2<'a,'b> Evaluators.evalSelectQuery
     static member select<'a,'b,'c> (q:SelectQuery) = q |> GenericDeconstructor.select3<'a,'b,'c> Evaluators.evalSelectQuery
-    static member insert (q:InsertQuery<'a>) = q |> GenericDeconstructor.insert Evaluators.evalInsertQuery
+    static member insert (q:InsertQuery<'a>)       = q |> GenericDeconstructor.insert Evaluators.evalInsertQuery
     static member insertOutput<'Input, 'Output> (q:InsertQuery<'Input>) = q |> GenericDeconstructor.insertOutput<'Input, 'Output> Evaluators.evalInsertQuery
     static member update<'a> (q:UpdateQuery<'a>) = q |> GenericDeconstructor.update<'a> Evaluators.evalUpdateQuery
     static member updateOutput<'Input, 'Output> (q:UpdateQuery<'Input>) = q |> GenericDeconstructor.updateOutput<'Input, 'Output> Evaluators.evalUpdateQuery
@@ -184,7 +185,7 @@ type IDbConnection with
 
     member this.SelectAsync<'a> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.select<'a> |> IDbConnection.query1<'a> this trans timeout logFunction
-      
+
     member this.SelectAsync<'a,'b> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.select<'a,'b> |> IDbConnection.query2<'a,'b> this trans timeout logFunction
 
@@ -199,10 +200,10 @@ type IDbConnection with
 
     member this.InsertAsync<'a> (q:InsertQuery<'a>, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.insert<'a> |> IDbConnection.execute this trans timeout logFunction
-        
+
     member this.InsertOutputAsync<'Input, 'Output> (q:InsertQuery<'Input>, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.insertOutput<'Input, 'Output> |> IDbConnection.query1<'Output> this trans timeout logFunction
-        
+
     member this.UpdateAsync<'a> (q:UpdateQuery<'a>, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.update<'a> |> IDbConnection.execute this trans timeout logFunction
 

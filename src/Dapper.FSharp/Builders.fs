@@ -12,7 +12,7 @@ type InsertBuilder<'a>() =
     /// Sets the SCHEMA
     [<CustomOperation "schema">]
     member __.Schema (state:InsertQuery<_>, name) = { state with Schema = Some name }
-    
+
     /// Sets the TABLE name for query
     [<CustomOperation "table">]
     member __.Table (state:InsertQuery<_>, name) = { state with Table = name }
@@ -36,7 +36,7 @@ type DeleteBuilder() =
     /// Sets the SCHEMA
     [<CustomOperation "schema">]
     member __.Schema (state:DeleteQuery, name) = { state with Schema = Some name }
-    
+
     /// Sets the TABLE name for query
     [<CustomOperation "table">]
     member __.Table (state:DeleteQuery, name) = { state with Table = name }
@@ -57,7 +57,7 @@ type UpdateBuilder<'a>() =
     /// Sets the SCHEMA
     [<CustomOperation "schema">]
     member __.Schema (state:UpdateQuery<_>, name) = { state with Schema = Some name }
-    
+
     /// Sets the TABLE name for query
     [<CustomOperation "table">]
     member __.Table (state:UpdateQuery<_>, name) = { state with Table = name }
@@ -107,7 +107,7 @@ type SelectBuilder() =
     /// Sets the SKIP value for query
     [<CustomOperation "skip">]
     member __.Skip (state:SelectQuery, skip) = { state with Pagination = { state.Pagination with Skip = skip } }
-    
+
     /// Sets the TAKE value for query
     [<CustomOperation "take">]
     member __.Take (state:SelectQuery, take) = { state with Pagination = { state.Pagination with Take = Some take } }
@@ -120,10 +120,14 @@ type SelectBuilder() =
     [<CustomOperation "innerJoin">]
     member __.InnerJoin (state:SelectQuery, tableName, colName, equalsTo) = { state with Joins = state.Joins @ [InnerJoin(tableName, colName, equalsTo)] }
 
+    /// INNER JOIN table where COLNAME1 equals to another COLUMN (including TABLE name) AND COLNAME2 equals another COLUMN (including TABLE name)
+    [<CustomOperation "innerJoin2Columns">]
+    member __.InnerJoin2Columns (state:SelectQuery, tableName, col1Name, eq1Col, col2Name, eq2Col) = { state with Joins = state.Joins @ [InnerJoin2Col(tableName, col1Name, eq1Col, col2Name, eq2Col)] }
+
     /// LEFT JOIN table where COLNAME equals to another COLUMN (including TABLE name)
     [<CustomOperation "leftJoin">]
     member __.LeftJoin (state:SelectQuery, tableName, colName, equalsTo) = { state with Joins = state.Joins @ [LeftJoin(tableName, colName, equalsTo)] }
-    
+
     /// Sets the ORDER BY for multiple columns
     [<CustomOperation "groupByMany">]
     member __.GroupByMany (state:SelectQuery, values) = { state with GroupBy = values }
@@ -139,23 +143,23 @@ type SelectBuilder() =
     /// AVG aggregate function for COLNAME (or * symbol) and map it to ALIAS
     [<CustomOperation "avg">]
     member __.Avg (state:SelectQuery, colName, alias) = { state with Aggregates = state.Aggregates @ [Aggregate.Avg(colName, alias)] }
-    
+
     /// SUM aggregate function for COLNAME (or * symbol) and map it to ALIAS
     [<CustomOperation "sum">]
     member __.Sum (state:SelectQuery, colName, alias) = { state with Aggregates = state.Aggregates @ [Aggregate.Sum(colName, alias)] }
-    
+
     /// MIN aggregate function for COLNAME (or * symbol) and map it to ALIAS
     [<CustomOperation "min">]
     member __.Min (state:SelectQuery, colName, alias) = { state with Aggregates = state.Aggregates @ [Aggregate.Min(colName, alias)] }
-    
+
     /// MIN aggregate function for COLNAME (or * symbol) and map it to ALIAS
     [<CustomOperation "max">]
     member __.Max (state:SelectQuery, colName, alias) = { state with Aggregates = state.Aggregates @ [Aggregate.Max(colName, alias)] }
-    
+
     /// Sets query to return DISTINCT values
     [<CustomOperation "distinct">]
     member __.Distinct (state:SelectQuery) = { state with Distinct = true }
-    
+
 let insert<'a> = InsertBuilder<'a>()
 let delete = DeleteBuilder()
 let update<'a> = UpdateBuilder<'a>()
@@ -175,14 +179,14 @@ let lt name (o:obj) = column name (Lt o)
 let ge name (o:obj) = column name (Ge o)
 /// WHERE column value lower/equals than
 let le name (o:obj) = column name (Le o)
-/// WHERE column like value   
+/// WHERE column like value
 let like name (str:string) = column name (Like str)
-/// WHERE column not like value   
+/// WHERE column not like value
 let notLike name (str:string) = column name (NotLike str)
 /// WHERE column is IN values
 let isIn name (os:obj list) = column name (In os)
 /// WHERE column is NOT IN values
-let isNotIn name (os:obj list) = column name (NotIn os)   
+let isNotIn name (os:obj list) = column name (NotIn os)
 /// WHERE column IS NULL
 let isNullValue name = column name IsNull
 /// WHERE column IS NOT NULL
