@@ -66,12 +66,18 @@ module private Evaluators =
         | { Take = None; Skip = o } -> sprintf "LIMIT ALL OFFSET %i" o
         | { Take = Some f; Skip = o } -> sprintf "LIMIT %i OFFSET %i" f o
 
+    let buildInnerJoinOnMany tableName (joinList: List<string * string>) =
+        joinList
+        |> List.map (fun (colName, eqToCol) -> sprintf "%s.%s=%s" (inQuotes tableName) (inQuotes colName) (inQuotes eqToCol))
+        |> List.reduce (fun s1 s2 -> s1 + " AND " + s2 )
+        |> sprintf " INNER JOIN %s ON %s" tableName
+
     let evalJoins (joins:Join list) =
         let sb = StringBuilder()
         let evalJoin = function
             | InnerJoin(table,colName,equalsTo) -> sprintf " INNER JOIN %s ON %s.%s=%s" (inQuotes table) (inQuotes table) (inQuotes colName) (inQuotes equalsTo)
             | LeftJoin(table,colName,equalsTo) -> sprintf " LEFT JOIN %s ON %s.%s=%s" (inQuotes table) (inQuotes table) (inQuotes colName) (inQuotes equalsTo)
-            | InnerJoin2Col(table, col1Name, eqToCol1, col2Name, eqToCol2) -> sprintf " INNER JOIN %s ON %s.%s=%s AND %s.%s=%s" (inQuotes table) (inQuotes table) (inQuotes col1Name) (inQuotes eqToCol1) (inQuotes table) (inQuotes col2Name) (inQuotes eqToCol2)
+            | InnerJoinOnMany(table, list) -> buildInnerJoinOnMany table list
         joins |> List.map evalJoin |> List.iter (sb.Append >> ignore)
         sb.ToString()
 

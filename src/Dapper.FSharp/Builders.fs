@@ -121,8 +121,8 @@ type SelectBuilder() =
     member __.InnerJoin (state:SelectQuery, tableName, colName, equalsTo) = { state with Joins = state.Joins @ [InnerJoin(tableName, colName, equalsTo)] }
 
     /// INNER JOIN table where COLNAME1 equals to another COLUMN (including TABLE name) AND COLNAME2 equals another COLUMN (including TABLE name)
-    [<CustomOperation "innerJoin2Columns">]
-    member __.InnerJoin2Columns (state:SelectQuery, tableName, col1Name, eq1Col, col2Name, eq2Col) = { state with Joins = state.Joins @ [InnerJoin2Col(tableName, col1Name, eq1Col, col2Name, eq2Col)] }
+    [<CustomOperation "innerJoinOnMany">]
+    member __.InnerJoinOnMany (state:SelectQuery, tableName, joinList) = { state with Joins = state.Joins @ [InnerJoinOnMany(tableName, joinList)] }
 
     /// LEFT JOIN table where COLNAME equals to another COLUMN (including TABLE name)
     [<CustomOperation "leftJoin">]
