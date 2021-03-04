@@ -11,6 +11,7 @@ nuget TaskBuilder.fs
 nuget Microsoft.Extensions.Configuration.Json
 nuget MySql.Data
 nuget Npgsql
+nuget Microsoft.SourceLink.GitHub copy_local: true
 
 group Build
     source https://api.nuget.org/v3/index.json
@@ -19,4 +20,3 @@ group Build
     nuget Fake.DotNet.Cli
     nuget Fake.Core.Target
     nuget Fake.IO.FileSystem
-    nuget Microsoft.SourceLink.GitHub
