@@ -175,10 +175,10 @@ module private Evaluators =
 
 [<AbstractClass;Sealed>]
 type Deconstructor =
-    static member select<'a> (q:SelectQuery)       = q |> GenericDeconstructor.select1<'a> Evaluators.evalSelectQuery
-    static member select<'a,'b> (q:SelectQuery)    = q |> GenericDeconstructor.select2<'a,'b> Evaluators.evalSelectQuery
+    static member select<'a> (q:SelectQuery) = q |> GenericDeconstructor.select1<'a> Evaluators.evalSelectQuery
+    static member select<'a,'b> (q:SelectQuery) = q |> GenericDeconstructor.select2<'a,'b> Evaluators.evalSelectQuery
     static member select<'a,'b,'c> (q:SelectQuery) = q |> GenericDeconstructor.select3<'a,'b,'c> Evaluators.evalSelectQuery
-    static member insert (q:InsertQuery<'a>)       = q |> GenericDeconstructor.insert Evaluators.evalInsertQuery
+    static member insert (q:InsertQuery<'a>) = q |> GenericDeconstructor.insert Evaluators.evalInsertQuery
     static member insertOutput<'Input, 'Output> (q:InsertQuery<'Input>) = q |> GenericDeconstructor.insertOutput<'Input, 'Output> Evaluators.evalInsertQuery
     static member update<'a> (q:UpdateQuery<'a>) = q |> GenericDeconstructor.update<'a> Evaluators.evalUpdateQuery
     static member updateOutput<'Input, 'Output> (q:UpdateQuery<'Input>) = q |> GenericDeconstructor.updateOutput<'Input, 'Output> Evaluators.evalUpdateQuery

@@ -7,7 +7,7 @@ open Expecto
 open FSharp.Control.Tasks.V2
 
 let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
-    
+
     testTask "Selects by single where condition" {
         do! init.InitPersons()
         let rs = Persons.View.generate 10
@@ -130,7 +130,7 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
         Expect.hasLength fromDb 2 ""
         Expect.isTrue (fromDb |> Seq.forall (fun (p:Persons.View) -> p.FirstName.StartsWith "First")) ""
     }
-    
+
     testTask "Selects by NOT LIKE where condition return matching rows" {
         do! init.InitPersons()
         let rs = Persons.View.generate 10
@@ -249,7 +249,7 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
         Expect.equal 6 (fromDb |> Seq.head |> (fun (x:Persons.View) -> x.Position)) ""
         Expect.equal 2 (fromDb |> Seq.length) ""
     }
-    
+
     testTask "Selects with skip and take parameters" {
         do! init.InitPersons()
         let rs = Persons.View.generate 10
@@ -295,6 +295,40 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
         Expect.equal (persons.Head, dogs.Head) (Seq.head fromDb) ""
     }
 
+    testTask "Selects with one inner join on two columns - 1:1" {
+        do! init.InitPersons()
+        do! init.InitDogs()
+
+        let persons = Persons.View.generate 10
+        let dogs = Dogs.View.generate1to1 persons
+        let vaccinations = DogVaccinationHistory.View.generate1to1 dogs
+
+        let! _ =
+            insert {
+                table "Persons"
+                values persons
+            } |> crud.InsertAsync
+        let! _ =
+            insert {
+                table "Dogs"
+                values dogs
+            } |> crud.InsertAsync
+
+        let! _ =
+            insert {
+                table "VaccinationHistory"
+                values vaccinations
+            } |> crud.InsertAsync
+
+        let! fromDb =
+            select {
+                table "Dogs"
+                innerJoinOnMany "VaccinationHistory" ["PetOwnerId", "Dogs.OwnerId"; "DogNickname", "Dogs.Nickname"]
+            } |> crud.SelectAsync<Persons.View, Dogs.View>
+
+        Expect.equal 10 (Seq.length fromDb) ""
+        Expect.equal (persons.Head, dogs.Head) (Seq.head fromDb) ""
+    }
     testTask "Selects with one inner join - 1:N" {
         do! init.InitPersons()
         do! init.InitDogs()
@@ -472,5 +506,5 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
         Expect.equal None wn ""
         Expect.equal 16 (Seq.length fromDb) ""
     }
-    
+
 ]
