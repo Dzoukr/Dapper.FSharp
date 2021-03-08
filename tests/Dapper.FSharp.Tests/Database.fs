@@ -32,6 +32,7 @@ type ICrudInitializer =
     abstract member InitSchemedGroups : unit -> Task<unit>
     abstract member InitDogs : unit -> Task<unit>
     abstract member InitDogsWeights : unit -> Task<unit>
+    abstract member InitVaccinationHistory : unit -> Task<unit>
 
 let taskToList (t:Task<seq<'a>>) = t |> Async.AwaitTask |> Async.RunSynchronously |> Seq.toList
 

@@ -298,6 +298,7 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
     testTask "Selects with one inner join on two columns - 1:1" {
         do! init.InitPersons()
         do! init.InitDogs()
+        do! init.InitVaccinationHistory()
 
         let persons = Persons.View.generate 10
         let dogs = Dogs.View.generate1to1 persons
@@ -324,10 +325,11 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
             select {
                 table "Dogs"
                 innerJoinOnMany "VaccinationHistory" ["PetOwnerId", "Dogs.OwnerId"; "DogNickname", "Dogs.Nickname"]
-            } |> crud.SelectAsync<Persons.View, Dogs.View>
+                orderBy "Dogs.Nickname" Asc
+            } |> crud.SelectAsync<Dogs.View>
 
         Expect.equal 10 (Seq.length fromDb) ""
-        Expect.equal (persons.Head, dogs.Head) (Seq.head fromDb) ""
+        Expect.equal (dogs.Head) (Seq.head fromDb) ""
     }
     testTask "Selects with one inner join - 1:N" {
         do! init.InitPersons()
