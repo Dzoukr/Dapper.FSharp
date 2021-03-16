@@ -295,6 +295,35 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
         Expect.equal (persons.Head, dogs.Head) (Seq.head fromDb) ""
     }
 
+    testTask "Selects with one inner join - 1:N" {
+        do! init.InitPersons()
+        do! init.InitDogs()
+        let persons = Persons.View.generate 10
+        let dogs = Dogs.View.generate1toN 5 persons.Head
+        let! _ =
+            insert {
+                table "Persons"
+                values persons
+            } |> crud.InsertAsync
+        let! _ =
+            insert {
+                table "Dogs"
+                values dogs
+            } |> crud.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+                innerJoin "Dogs" "OwnerId" "Persons.Id"
+            } |> crud.SelectAsync<Persons.View, Dogs.View>
+
+        let byOwner = fromDb |> Seq.groupBy fst
+
+        Expect.equal 5 (Seq.length fromDb) ""
+        Expect.equal (persons.Head, dogs.Head) (Seq.head fromDb) ""
+        Expect.equal 1 (Seq.length byOwner) ""
+        Expect.equal 5 (byOwner |> Seq.head |> snd |> Seq.length) ""
+    }
+
     testTask "Selects with one inner join on two columns - 1:1" {
         do! init.InitPersons()
         do! init.InitDogs()
@@ -331,11 +360,13 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
         Expect.equal 10 (Seq.length fromDb) ""
         Expect.equal (dogs.Head) (Seq.head fromDb) ""
     }
-    testTask "Selects with one inner join - 1:N" {
+
+    testTask "Selects with one inner join on 2 columns - 1:N" {
         do! init.InitPersons()
         do! init.InitDogs()
         let persons = Persons.View.generate 10
         let dogs = Dogs.View.generate1toN 5 persons.Head
+        let vaccinations = DogVaccinationHistory.View.generate1toN 20 dogs.Head
         let! _ =
             insert {
                 table "Persons"
@@ -346,20 +377,26 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
                 table "Dogs"
                 values dogs
             } |> crud.InsertAsync
+        let! _ =
+            insert {
+                table "VaccinationHistory"
+                values vaccinations
+            } |> crud.InsertAsync
+
         let! fromDb =
             select {
-                table "Persons"
-                innerJoin "Dogs" "OwnerId" "Persons.Id"
-            } |> crud.SelectAsync<Persons.View, Dogs.View>
+                table "Dogs"
+                innerJoinOnMany "VaccinationHistory" ["PetOwnerId", "Dogs.OwnerId"; "DogNickname", "Dogs.Nickname"]
+                orderByMany ["Dogs.Nickname", Asc; "VaccinationHistory.VaccinationDate", Asc]
+            } |> crud.SelectAsync<Dogs.View, DogVaccinationHistory.View>
 
-        let byOwner = fromDb |> Seq.groupBy fst
+        let byDog = fromDb |> Seq.groupBy fst
 
-        Expect.equal 5 (Seq.length fromDb) ""
-        Expect.equal (persons.Head, dogs.Head) (Seq.head fromDb) ""
-        Expect.equal 1 (Seq.length byOwner) ""
-        Expect.equal 5 (byOwner |> Seq.head |> snd |> Seq.length) ""
+        Expect.equal (Seq.length fromDb) 20 ""
+        Expect.equal (Seq.length byDog) 1 ""
+        Expect.equal (byDog |> Seq.head |> snd |> Seq.length) 20 ""
+        Expect.equal (Seq.head fromDb) (dogs.Head, vaccinations.Head) "First record from db matches generated data"
     }
-
     testTask "Selects with one left join" {
         do! init.InitPersons()
         do! init.InitDogs()
