@@ -1,29 +1,34 @@
 ﻿module Dapper.FSharp.ExpressionBuilders
 
 open System.Linq.Expressions
-
-type ExpressionVisitor() =
-
-    member __.VisitLambda(exp: LambdaExpression) =
-        __.Visit(exp.Body) |> ignore
-        exp :> Expression
-
-    member __.VisitUnary(exp: UnaryExpression) =
-        __.Visit(exp.Operand) |> ignore
-        exp :> Expression
-
-    member __.VisitBinary(exp: BinaryExpression) =
-        __.Visit(exp.Left) |> ignore
-        __.Visit(exp.Right) |> ignore
-        exp :> Expression
-
-    member __.Visit(exp: Expression) : Expression =
-        match exp.NodeType with
-        | ExpressionType.Lambda -> __.VisitLambda(exp :?> LambdaExpression)
-        | ExpressionType.TypeAs -> __.VisitUnary(exp :?> UnaryExpression)
-        | ExpressionType.SubtractChecked -> __.VisitBinary(exp :?> BinaryExpression)
-        | _ -> raise (new System.NotImplementedException())
                     
+let rec visit (exp: Expression) (where: Where) : Where =
+    match exp.NodeType with
+    | ExpressionType.Lambda -> 
+        let x = exp :?> LambdaExpression
+        visit x.Body where
+
+    | ExpressionType.TypeAs ->
+        let x = exp :?> UnaryExpression
+        visit x.Operand where
+
+    //| ExpressionType.SubtractChecked -> 
+    //    let x = exp :?> BinaryExpression
+    //    let l = visit x.Left Where.Empty
+    //    let r = visit x.Right Where.Empty
+
+    //    let isRightSideNullConstant = 
+    //        x.Right.NodeType = (ExpressionType.Constant && (x.Right :?> ConstantExpression).Value = null)
+
+    //    match x.NodeType with
+    //    | ExpressionType.Equal when isRightSideNullConstant -> "IS"
+    //    | ExpressionType.NotEqual when isRightSideNullConstant -> "IS NOT"
+    //    | ExpressionType
+
+
+    | _ ->
+        failwith "Not Implemented"
+    
 
 type SelectBuilder() =
     member __.Yield _ =
