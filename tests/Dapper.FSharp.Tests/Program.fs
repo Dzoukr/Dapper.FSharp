@@ -12,6 +12,11 @@ let testConfig =
         parallelWorkers = 4
         verbosity = LogLevel.Debug }
 
+let selectExprTests = 
+    [SelectExpressionTests.testsBasic()]
+    |> testList "EXPR"
+    |> testSequenced
+
 let mssqlTests connString =
     let conn = new SqlConnection(connString)
     conn |> Dapper.FSharp.Tests.MSSQL.Database.init
@@ -26,7 +31,7 @@ let mssqlTests connString =
         IssuesTests.testsOutput crud init
         UpdateTests.testsBasic crud init
         UpdateTests.testsOutput crud init
-        SelectTests.testsBasic crud init
+        SelectTests.testsBasic crud init        
         MSSQL.AggregatesTests.tests conn
     ]
     |> testList "MSSQL"
@@ -68,16 +73,22 @@ let postgresTests connString =
     |> testList "PostgreSQL"
     |> testSequenced
 
+//[<EntryPoint>]
+//let main _ =
+//    let conf = (ConfigurationBuilder()).AddJsonFile("local.settings.json").Build()
+    
+//    Dapper.FSharp.OptionTypes.register()
+    
+//    [
+//        conf.["mssqlConnectionString"] |> mssqlTests
+//        conf.["mysqlConnectionString"] |> mysqlTests
+//        conf.["postgresConnectionString"] |> postgresTests
+//    ]
+//    |> testList ""
+//    |> runTests testConfig
+
 [<EntryPoint>]
 let main _ =
-    let conf = (ConfigurationBuilder()).AddJsonFile("local.settings.json").Build()
-    
-    Dapper.FSharp.OptionTypes.register()
-    
-    [
-        conf.["mssqlConnectionString"] |> mssqlTests
-        conf.["mysqlConnectionString"] |> mysqlTests
-        conf.["postgresConnectionString"] |> postgresTests
-    ]
+    [selectExprTests]
     |> testList ""
     |> runTests testConfig
