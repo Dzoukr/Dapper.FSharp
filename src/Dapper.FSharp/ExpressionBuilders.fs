@@ -62,13 +62,15 @@ let rec visit (exp: Expression) : Where =
         visit x.Operand
 
     | Binary x -> 
-        //let lt = visit x.Left
-
+        //match x.NodeType with
+        //| ExpressionType.Equal ->
+        //    let lt = visit x.Left
+        //    let rt = visit x.Right
+            
         //let middle : BinaryOperation =
         //    match x.Type with
         //    | ExpressionType.Equal -> 
 
-        //let rt = visit x.Right
 
         
         //let isRightSideNullConstant = 
@@ -95,9 +97,9 @@ let rec visit (exp: Expression) : Where =
 let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
     visit (filter :> Expression)
 
-let tbl = Array.empty
+let tbl<'T> = Array.empty<'T>
 
-type SelectExpressionBuilder<'T>() =
+type SelectExpressionBuilder() =
 
     let def = 
         { Schema = None
@@ -201,4 +203,4 @@ type SelectExpressionBuilder<'T>() =
     member __.Distinct (state:SelectQuery) = { state with Distinct = true }
 
 
-let select<'T> = SelectExpressionBuilder<'T>()
+let select = SelectExpressionBuilder()

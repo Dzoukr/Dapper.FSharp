@@ -18,12 +18,13 @@ let testsBasic() = testList "SELECT EXPRESSION" [
     ftestTask "Visitor" {
 
         let query = 
-            select<Person> {
-                for p in tbl do                
-                where (p.FName = "Bob")
+            select {
+                for p in tbl<Person> do                
+                where (p.FName = "John")
             }
 
-        Expect.equal 9 9 ""
+        Expect.equal (query.Where) (eq "FName" "John") "Expected FName = 'John'"
+        
     }
 
 ]
