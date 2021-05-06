@@ -5,13 +5,12 @@ open Dapper.FSharp
 open Dapper.FSharp.Tests.Database
 open Expecto
 open FSharp.Control.Tasks.V2
+open ExpressionBuilders
 
 type Person = {
     FName: string
     LName: string
 }
-
-open ExpressionBuilders
 
 let testsBasic() = testList "SELECT EXPRESSION" [
     
