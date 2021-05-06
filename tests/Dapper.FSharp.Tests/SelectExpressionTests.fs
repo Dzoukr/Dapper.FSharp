@@ -19,7 +19,7 @@ let testsBasic() = testList "SELECT EXPRESSION" [
 
         let query = 
             select {
-                for p in tbl<Person> do                
+                for p in entity<Person> do
                 where (p.FName = "John")
             }
 
@@ -30,7 +30,7 @@ let testsBasic() = testList "SELECT EXPRESSION" [
     
             let query = 
                 select {
-                    for p in tbl<Person> do                
+                    for p in entity<Person> do
                     where (p.FName = "John" && p.LName = "Doe")
                 }
     

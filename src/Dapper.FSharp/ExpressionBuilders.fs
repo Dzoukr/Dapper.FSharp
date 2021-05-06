@@ -127,7 +127,7 @@ let rec visit (exp: Expression) : Where =
 let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
     visit (filter :> Expression)
 
-let tbl<'T> = Array.empty<'T>
+let entity<'T> = Array.empty<'T>
 
 type SelectExpressionBuilder() =
 
@@ -146,17 +146,7 @@ type SelectExpressionBuilder() =
         def
 
     member __.Yield _ =
-        {
-            Schema = None
-            Table = ""
-            Where = Where.Empty
-            OrderBy = []
-            Pagination = { Skip = 0; Take = None }
-            Joins = []
-            Aggregates = []
-            GroupBy = []
-            Distinct = false
-        } : SelectQuery
+        def
 
     /// Sets the TABLE name for query
     [<CustomOperation("schema", MaintainsVariableSpace = true)>]
