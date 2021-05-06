@@ -22,7 +22,8 @@ let testsBasic() = testList "SELECT EXPRESSION" [
                 where (p.FName = "John")
             }
 
-        Expect.equal (query.Where) (eq "FName" "John") "Expected FName = 'John'"
+        Expect.equal query.Table "Person" "Expected table = 'Person'"
+        Expect.equal query.Where (eq "FName" "John") "Expected FName = 'John'"
     }
 
     testTask "Compound Where" {
@@ -33,7 +34,8 @@ let testsBasic() = testList "SELECT EXPRESSION" [
                     where (p.FName = "John" && p.LName = "Doe")
                 }
     
-            Expect.equal (query.Where) (eq "FName" "John" + eq "LName" "Doe") "Expected FName = 'John' && LName = 'Doe'"
+            Expect.equal query.Table "Person" "Expected table = 'Person'"
+            Expect.equal query.Where (eq "FName" "John" + eq "LName" "Doe") "Expected FName = 'John' && LName = 'Doe'"
         }
 
 ]

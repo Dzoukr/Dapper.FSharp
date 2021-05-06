@@ -17,7 +17,8 @@ type SelectExpressionBuilder() =
           Distinct = false } : SelectQuery
 
     member this.For (rows: seq<'T>, f: 'T -> SelectQuery) =
-        def
+        let t = typeof<'T>
+        { def with Table = t.Name }
 
     member __.Yield _ =
         def
