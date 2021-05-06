@@ -3,10 +3,13 @@
 open System.Linq.Expressions
 open System
 
-let (|Lambda|Unary|Binary|MethodCall|Constant|Member|Parameter|) (exp: Expression) =
+let (|Lambda|_|) (exp: Expression) =
     match exp.NodeType with
-    | ExpressionType.Lambda -> 
-        Lambda (exp :?> LambdaExpression)
+    | ExpressionType.Lambda -> Some (exp :?> LambdaExpression)
+    | _ -> None
+
+let (|Unary|_|) (exp: Expression) =
+    match exp.NodeType with
     | ExpressionType.ArrayLength
     | ExpressionType.Convert
     | ExpressionType.ConvertChecked
@@ -15,8 +18,11 @@ let (|Lambda|Unary|Binary|MethodCall|Constant|Member|Parameter|) (exp: Expressio
     | ExpressionType.NegateChecked
     | ExpressionType.Not
     | ExpressionType.Quote
-    | ExpressionType.TypeAs ->
-        Unary (exp :?> UnaryExpression)
+    | ExpressionType.TypeAs -> Some (exp :?> UnaryExpression)
+    | _ -> None
+
+let (|Binary|_|) (exp: Expression) =
+    match exp.NodeType with
     | ExpressionType.Add
     | ExpressionType.AddChecked
     | ExpressionType.And
@@ -40,18 +46,38 @@ let (|Lambda|Unary|Binary|MethodCall|Constant|Member|Parameter|) (exp: Expressio
     | ExpressionType.Power
     | ExpressionType.RightShift
     | ExpressionType.Subtract
-    | ExpressionType.SubtractChecked -> 
-        Binary (exp :?> BinaryExpression)
-    | ExpressionType.Call -> 
-        MethodCall (exp :?> MethodCallExpression)
-    | ExpressionType.Constant ->
-        Constant (exp :?> ConstantExpression)
-    | ExpressionType.MemberAccess ->
-        Member (exp :?> MemberExpression)
-    | ExpressionType.Parameter ->
-        Parameter (exp :?> ParameterExpression)
-    | _ ->
-        failwithf "Not implemented expression type: %A" exp.NodeType
+    | ExpressionType.SubtractChecked -> Some (exp :?> BinaryExpression)
+    | _ -> None
+
+let (|MethodCall|_|) (exp: Expression) =
+    match exp.NodeType with
+    | ExpressionType.Call -> Some (exp :?> MethodCallExpression)
+    | _ -> None
+
+let (|Constant|_|) (exp: Expression) =
+    match exp.NodeType with
+    | ExpressionType.Constant -> Some (exp :?> ConstantExpression)
+    | _ -> None
+
+let (|Member|_|) (exp: Expression) =
+    match exp.NodeType with
+    | ExpressionType.MemberAccess -> Some (exp :?> MemberExpression)
+    | _ -> None
+
+let (|Parameter|_|) (exp: Expression) =
+    match exp.NodeType with
+    | ExpressionType.Parameter -> Some (exp :?> ParameterExpression)
+    | _ -> None
+
+let getColumnComparison (expType: ExpressionType, value: obj) =
+    match expType with
+    | ExpressionType.Equal -> Eq value
+    | ExpressionType.NotEqual -> Ne value
+    | ExpressionType.GreaterThan -> Gt value
+    | ExpressionType.GreaterThanOrEqual -> Ge value
+    | ExpressionType.LessThan -> Lt value
+    | ExpressionType.LessThanOrEqual -> Le value
+    | _ -> failwith "Unsupported statement"
 
 let rec visit (exp: Expression) : Where =
     match exp with
@@ -62,25 +88,26 @@ let rec visit (exp: Expression) : Where =
         visit x.Operand
 
     | Binary x -> 
-        //match x.NodeType with
-        //| ExpressionType.Equal ->
-        //    let lt = visit x.Left
-        //    let rt = visit x.Right
-            
-        //let middle : BinaryOperation =
-        //    match x.Type with
-        //    | ExpressionType.Equal -> 
-
-
-        
-        //let isRightSideNullConstant = 
-        //    x.Right.NodeType = (ExpressionType.Constant && (x.Right :?> ConstantExpression).Value = null)
-
-        //match x.NodeType with
-        //| ExpressionType.Equal when isRightSideNullConstant -> "IS"
-        //| ExpressionType.NotEqual when isRightSideNullConstant -> "IS NOT"
-        //| ExpressionType
-        failwith "Not Implemented"
+        match exp.NodeType with
+        | ExpressionType.And
+        | ExpressionType.AndAlso ->
+            let lt = visit x.Left
+            let rt = visit x.Right
+            Binary (lt, And, rt)
+        | ExpressionType.Or
+        | ExpressionType.OrElse ->
+            let lt = visit x.Left
+            let rt = visit x.Right
+            Binary (lt, Or, rt)
+        | _ ->
+            match x.Left, x.Right with
+            | Member m, Constant c ->
+                let colName = m.Member.Name
+                let value = c.Value
+                let columnComparison = getColumnComparison(exp.NodeType, value)
+                Column (colName, columnComparison)
+            | _ ->
+                failwith "Not supported"
 
     | MethodCall x -> 
         failwith "Not Implemented"
@@ -93,6 +120,9 @@ let rec visit (exp: Expression) : Where =
 
     | Parameter x -> 
         failwith "Not Implemented"
+
+    | _ ->
+        failwithf "Not implemented expression type: %A" exp.NodeType
 
 let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
     visit (filter :> Expression)
