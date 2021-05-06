@@ -15,7 +15,7 @@ open ExpressionBuilders
 
 let testsBasic() = testList "SELECT EXPRESSION" [
     
-    ftestTask "Visitor" {
+    testTask "Simple Where" {
 
         let query = 
             select {
@@ -24,7 +24,17 @@ let testsBasic() = testList "SELECT EXPRESSION" [
             }
 
         Expect.equal (query.Where) (eq "FName" "John") "Expected FName = 'John'"
-        
     }
+
+    testTask "Compound Where" {
+    
+            let query = 
+                select {
+                    for p in tbl<Person> do                
+                    where (p.FName = "John" && p.LName = "Doe")
+                }
+    
+            Expect.equal (query.Where) (eq "FName" "John" + eq "LName" "Doe") "Expected FName = 'John' && LName = 'Doe'"
+        }
 
 ]
