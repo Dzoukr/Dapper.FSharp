@@ -73,22 +73,22 @@ let postgresTests connString =
     |> testList "PostgreSQL"
     |> testSequenced
 
-//[<EntryPoint>]
-//let main _ =
-//    let conf = (ConfigurationBuilder()).AddJsonFile("local.settings.json").Build()
-    
-//    Dapper.FSharp.OptionTypes.register()
-    
-//    [
-//        conf.["mssqlConnectionString"] |> mssqlTests
-//        conf.["mysqlConnectionString"] |> mysqlTests
-//        conf.["postgresConnectionString"] |> postgresTests
-//    ]
-//    |> testList ""
-//    |> runTests testConfig
-
 [<EntryPoint>]
-let main _ =
-    [selectExprTests]
-    |> testList ""
-    |> runTests testConfig
+let main argv =
+    match argv with
+    | [| "EXPR" |] -> 
+        // Only run expression unit tests
+        selectExprTests
+        |> runTests testConfig
+    | _ -> 
+        // Run all tests
+        let conf = (ConfigurationBuilder()).AddJsonFile("local.settings.json").Build()
+        Dapper.FSharp.OptionTypes.register()
+        [
+            conf.["mssqlConnectionString"] |> mssqlTests
+            conf.["mysqlConnectionString"] |> mysqlTests
+            conf.["postgresConnectionString"] |> postgresTests
+            selectExprTests
+        ]
+        |> testList ""
+        |> runTests testConfig

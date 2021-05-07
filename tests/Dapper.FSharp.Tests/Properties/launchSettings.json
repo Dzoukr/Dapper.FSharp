@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Dapper.FSharp.Tests": {
+      "commandName": "Project",
+      "commandLineArgs": "EXPR"
+    }
+  }
+}
