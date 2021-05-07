@@ -77,52 +77,51 @@ let getColumnComparison (expType: ExpressionType, value: obj) =
     | ExpressionType.GreaterThanOrEqual -> Ge value
     | ExpressionType.LessThan -> Lt value
     | ExpressionType.LessThanOrEqual -> Le value
-    | _ -> failwith "Unsupported statement"
-
-let rec visit (exp: Expression) : Where =
-    match exp with
-    | Lambda x ->
-        visit x.Body
-
-    | Unary x ->
-        visit x.Operand
-
-    | Binary x -> 
-        match exp.NodeType with
-        | ExpressionType.And
-        | ExpressionType.AndAlso ->
-            let lt = visit x.Left
-            let rt = visit x.Right
-            Binary (lt, And, rt)
-        | ExpressionType.Or
-        | ExpressionType.OrElse ->
-            let lt = visit x.Left
-            let rt = visit x.Right
-            Binary (lt, Or, rt)
-        | _ ->
-            match x.Left, x.Right with
-            | Member m, Constant c ->
-                let colName = m.Member.Name
-                let value = c.Value
-                let columnComparison = getColumnComparison(exp.NodeType, value)
-                Column (colName, columnComparison)
-            | _ ->
-                failwith "Not supported"
-
-    | MethodCall x -> 
-        failwith "Not Implemented"
-
-    | Constant x -> 
-        failwith "Not Implemented"
-
-    | Member x ->
-        failwith "Not Implemented"
-
-    | Parameter x -> 
-        failwith "Not Implemented"
-
-    | _ ->
-        failwithf "Not implemented expression type: %A" exp.NodeType
+    | _ -> raise (NotImplementedException "Unsupported comparison type")
 
 let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
+    let rec visit (exp: Expression) : Where =
+        match exp with
+        | Lambda x -> visit x.Body
+        | Unary x -> visit x.Operand
+        | Binary x -> 
+            match exp.NodeType with
+            | ExpressionType.And
+            | ExpressionType.AndAlso ->
+                let lt = visit x.Left
+                let rt = visit x.Right
+                Binary (lt, And, rt)
+            | ExpressionType.Or
+            | ExpressionType.OrElse ->
+                let lt = visit x.Left
+                let rt = visit x.Right
+                Binary (lt, Or, rt)
+            | _ ->
+                match x.Left, x.Right with
+                | Member m, Constant c
+                | Constant c, Member m ->
+                    let colName = m.Member.Name
+                    let value = c.Value
+                    let columnComparison = getColumnComparison(exp.NodeType, value)
+                    Column (colName, columnComparison)
+                | _ ->
+                    raise (NotImplementedException())
+        | _ ->
+            raise (NotImplementedException())
+
     visit (filter :> Expression)
+
+let visitOrderBy<'T, 'TColType> (selector: Expression<Func<'T, 'TColType>>, direction) =
+    let rec visit (exp: Expression) : OrderBy =
+        match exp with
+        | Lambda x -> visit x.Body
+        | Unary x -> visit x.Operand
+        | Member m -> 
+            let colName = m.Member.Name
+            OrderBy (colName, direction)
+            | _ ->
+                raise (NotImplementedException())
+        | _ ->
+            raise (NotImplementedException())
+
+    visit (selector :> Expression)

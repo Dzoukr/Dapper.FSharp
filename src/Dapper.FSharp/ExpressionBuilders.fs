@@ -1,10 +1,10 @@
 ﻿module Dapper.FSharp.ExpressionBuilders
 
 /// Used in the 'for' statement
-let entity<'T> = Array.empty<'T>
+let entity<'T> = Seq.empty<'T>
 
-type SelectExpressionBuilder() =
-
+type SelectExpressionBuilder<'T, 'TSort>() =
+    
     let def = 
         { Schema = None
           Table = ""
@@ -16,7 +16,7 @@ type SelectExpressionBuilder() =
           GroupBy = []
           Distinct = false } : SelectQuery
 
-    member this.For (rows: seq<'T>, f: 'T -> SelectQuery) =
+    member this.For (items: seq<'T>, f: 'T -> SelectQuery) =
         let t = typeof<'T>
         { def with Table = t.Name }
 
@@ -37,13 +37,29 @@ type SelectExpressionBuilder() =
         let where = ExpressionVisitor.visitWhere<'T> whereExpression
         { state with Where = where }
 
-    /// Sets the ORDER BY for multiple columns
-    [<CustomOperation("orderByMany", MaintainsVariableSpace = true)>]
-    member __.OrderByMany (state:SelectQuery, values) = { state with OrderBy = values }
-
     /// Sets the ORDER BY for single column
     [<CustomOperation("orderBy", MaintainsVariableSpace = true)>]
-    member __.OrderBy (state:SelectQuery, colName, direction) = { state with OrderBy = [(colName, direction)] }
+    member __.OrderBy (state:SelectQuery, [<ProjectionParameter>] columnSelector) = 
+        let orderBy = ExpressionVisitor.visitOrderBy<'T, 'TSort>(columnSelector, Asc)
+        { state with OrderBy = [orderBy] }
+
+    /// Sets the ORDER BY DESC for single column
+    [<CustomOperation("orderByDescending", MaintainsVariableSpace = true)>]
+    member __.OrderByDescending (state:SelectQuery, [<ProjectionParameter>] columnSelector) = 
+        let orderBy = ExpressionVisitor.visitOrderBy<'T, 'TSort>(columnSelector, Desc)
+        { state with OrderBy = [orderBy] }
+
+    /// Sets the ORDER BY for single column
+    [<CustomOperation("thenBy", MaintainsVariableSpace = true)>]
+    member __.ThenBy (state:SelectQuery, [<ProjectionParameter>] columnSelector) = 
+        let orderBy = ExpressionVisitor.visitOrderBy<'T, 'TSort>(columnSelector, Asc)
+        { state with OrderBy = state.OrderBy @ [orderBy] }
+
+    /// Sets the ORDER BY DESC for single column
+    [<CustomOperation("thenByDescending", MaintainsVariableSpace = true)>]
+    member __.ThenByDescending (state:SelectQuery, [<ProjectionParameter>] columnSelector) = 
+        let orderBy = ExpressionVisitor.visitOrderBy<'T, 'TSort>(columnSelector, Desc)
+        { state with OrderBy = state.OrderBy @ [orderBy] }
 
     /// Sets the SKIP value for query
     [<CustomOperation("skip", MaintainsVariableSpace = true)>]
@@ -97,5 +113,4 @@ type SelectExpressionBuilder() =
     [<CustomOperation("distinct", MaintainsVariableSpace = true)>]
     member __.Distinct (state:SelectQuery) = { state with Distinct = true }
 
-
-let select = SelectExpressionBuilder()
+let select<'T, 'TSort> = SelectExpressionBuilder<'T, 'TSort>()
