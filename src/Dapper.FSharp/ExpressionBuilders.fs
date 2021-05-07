@@ -39,14 +39,14 @@ type SelectExpressionBuilder<'T>() =
 
     /// Sets the ORDER BY for single column
     [<CustomOperation("orderBy", MaintainsVariableSpace = true)>]
-    member __.OrderBy (state:SelectQuery, [<ProjectionParameter>] columnSelector) = 
-        let orderBy = ExpressionVisitor.visitOrderBy<'T, 'TSort>(columnSelector, Asc)
+    member __.OrderBy (state:SelectQuery, [<ProjectionParameter>] propertySelector) = 
+        let orderBy = ExpressionVisitor.visitOrderBy<'T, 'TProp>(propertySelector, Asc)
         { state with OrderBy = state.OrderBy @ [orderBy] }
 
     /// Sets the ORDER BY DESC for single column
     [<CustomOperation("orderByDescending", MaintainsVariableSpace = true)>]
-    member __.OrderByDescending (state:SelectQuery, [<ProjectionParameter>] columnSelector) = 
-        let orderBy = ExpressionVisitor.visitOrderBy<'T, 'TSort>(columnSelector, Desc)
+    member __.OrderByDescending (state:SelectQuery, [<ProjectionParameter>] propertySelector) = 
+        let orderBy = ExpressionVisitor.visitOrderBy<'T, 'TProp>(propertySelector, Desc)
         { state with OrderBy = state.OrderBy @ [orderBy] }
 
     /// Sets the SKIP value for query
@@ -69,13 +69,11 @@ type SelectExpressionBuilder<'T>() =
     [<CustomOperation("leftJoin", MaintainsVariableSpace = true)>]
     member __.LeftJoin (state:SelectQuery, tableName, colName, equalsTo) = { state with Joins = state.Joins @ [LeftJoin(tableName, colName, equalsTo)] }
     
-    /// Sets the ORDER BY for multiple columns
-    [<CustomOperation("groupByMany", MaintainsVariableSpace = true)>]
-    member __.GroupByMany (state:SelectQuery, values) = { state with GroupBy = values }
-
     /// Sets the ORDER BY for single column
     [<CustomOperation("groupBy", MaintainsVariableSpace = true)>]
-    member __.GroupBy (state:SelectQuery, colName) = { state with GroupBy = [colName] }
+    member __.GroupBy (state:SelectQuery, [<ProjectionParameter>] propertySelector) = 
+        let groupBy = ExpressionVisitor.visitGroupBy<'T, 'Prop>(propertySelector)
+        { state with GroupBy = state.GroupBy @ [groupBy] }
 
     /// COUNT aggregate function for COLNAME (or * symbol) and map it to ALIAS
     [<CustomOperation("count", MaintainsVariableSpace = true)>]

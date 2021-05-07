@@ -16,7 +16,6 @@ type Person = {
 let testsBasic() = testList "SELECT EXPRESSION" [
     
     testTask "Simple Query" {
-        
         let query = 
             select {
                 for p in entity<Person> do
@@ -29,19 +28,39 @@ let testsBasic() = testList "SELECT EXPRESSION" [
         Expect.equal query.OrderBy [("LName", Asc)] "Expected Order By 'LName'"
     }
 
-    testTask "Complex Where" {
+    testTask "Complex Query" {
+        let query = 
+            select {
+                for p in entity<Person> do
+                where (p.FName = "John" && p.LName = "Doe")
+                orderByDescending p.LName
+                orderByDescending p.Age
+            }
     
-            let query = 
-                select {
-                    for p in entity<Person> do
-                    where (p.FName = "John" && p.LName = "Doe")
-                    orderByDescending p.LName
-                    orderByDescending p.Age
-                }
+        Expect.equal query.Table "Person" "Expected table = 'Person'"
+        Expect.equal query.Where (eq "FName" "John" + eq "LName" "Doe") "Expected FName = 'John' && LName = 'Doe'"
+        Expect.equal query.OrderBy [("LName", Desc); ("Age", Desc)] "Expected Order By 'LName DESC, Age DESC'"
+    }
+
+    testTask "Unary Not" {
+        let query = 
+            select {
+                for p in entity<Person> do
+                where (not (p.FName = "John"))
+            }
     
-            Expect.equal query.Table "Person" "Expected table = 'Person'"
-            Expect.equal query.Where (eq "FName" "John" + eq "LName" "Doe") "Expected FName = 'John' && LName = 'Doe'"
-            Expect.equal query.OrderBy [("LName", Desc); ("Age", Desc)] "Expected Order By 'LName DESC, Age DESC'"
-        }
+        Expect.equal query.Where (!!(eq "FName" "John")) "Expected not (FName = 'John')"
+    }
+
+    testTask "Group By" {
+        let query = 
+            select {
+                for p in entity<Person> do
+                where (not (p.FName = "John"))
+                groupBy p.Age
+            }
+    
+        Expect.equal query.GroupBy ["Age"] "Expected group by 'Age'"
+    }
 
 ]

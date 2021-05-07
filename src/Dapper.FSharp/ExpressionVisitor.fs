@@ -83,7 +83,13 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
     let rec visit (exp: Expression) : Where =
         match exp with
         | Lambda x -> visit x.Body
-        | Unary x -> visit x.Operand
+        | Unary x -> 
+            match x.NodeType with
+            | ExpressionType.Not -> 
+                let operand = visit x.Operand
+                Unary (Not, operand)
+            | _ ->
+                raise (NotImplementedException "Unsupported unary operation")
         | Binary x -> 
             match exp.NodeType with
             | ExpressionType.And
@@ -111,17 +117,20 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
 
     visit (filter :> Expression)
 
-let visitOrderBy<'T, 'TSort> (selector: Expression<Func<'T, 'TSort>>, direction) =
+let visitOrderBy<'T, 'TProp> (propertySelector: Expression<Func<'T, 'TProp>>, direction) =
     let rec visit (exp: Expression) : OrderBy =
         match exp with
         | Lambda x -> visit x.Body
-        | Unary x -> visit x.Operand
-        | Member m -> 
-            let colName = m.Member.Name
-            OrderBy (colName, direction)
-            | _ ->
-                raise (NotImplementedException())
-        | _ ->
-            raise (NotImplementedException())
+        | Member m -> OrderBy (m.Member.Name, direction)
+        | _ -> raise (NotImplementedException())
 
-    visit (selector :> Expression)
+    visit (propertySelector :> Expression)
+
+let visitGroupBy<'T, 'TProp> (propertySelector: Expression<Func<'T, 'TProp>>) =
+    let rec visit (exp: Expression) : string =
+        match exp with
+        | Lambda x -> visit x.Body
+        | Member m -> m.Member.Name
+        | _ -> raise (NotImplementedException())
+
+    visit (propertySelector :> Expression)
