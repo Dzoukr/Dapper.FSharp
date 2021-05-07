@@ -9,6 +9,7 @@ open ExpressionBuilders
 
 type Person = {
     FName: string
+    MI: string option
     LName: string
     Age: int
 }
@@ -56,11 +57,43 @@ let testsBasic() = testList "SELECT EXPRESSION" [
         let query = 
             select {
                 for p in entity<Person> do
+                count "*" "Count"
                 where (not (p.FName = "John"))
                 groupBy p.Age
             }
     
         Expect.equal query.GroupBy ["Age"] "Expected group by 'Age'"
+        Expect.equal query.Aggregates [Count ("*", "Count")] "Expected count(*) as [Count]"
+    }
+
+    testTask "Optional Column is None" {
+        let query = 
+            select {
+                for p in entity<Person> do
+                where (p.MI = None)
+            }
+    
+        Expect.equal query.Where (isNullValue "MI") "Expected MI is null"
+    }
+
+    testTask "Optional Column is not None" {
+        let query = 
+            select {
+                for p in entity<Person> do
+                where (p.MI <> None)
+            }
+    
+        Expect.equal query.Where (isNotNullValue "MI") "Expected MI is not null"
+    }
+
+    testTask "Optional Column = Some value" {
+        let query = 
+            select {
+                for p in entity<Person> do
+                where (p.MI = Some "N")
+            }
+    
+        Expect.equal query.Where (eq "MI" "N") "Expected MI = 'N'"
     }
 
 ]

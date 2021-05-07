@@ -3,6 +3,12 @@
 open System.Linq.Expressions
 open System
 
+let notImpl() = raise (NotImplementedException())
+let notImplMsg msg = raise (NotImplementedException msg)
+
+let isOptionType (t: Type) = 
+    t.IsGenericType && t.GetGenericTypeDefinition() = typedefof<Option<_>>
+
 let (|Lambda|_|) (exp: Expression) =
     match exp.NodeType with
     | ExpressionType.Lambda -> Some (exp :?> LambdaExpression)
@@ -71,13 +77,15 @@ let (|Parameter|_|) (exp: Expression) =
 
 let getColumnComparison (expType: ExpressionType, value: obj) =
     match expType with
+    | ExpressionType.Equal when (isNull value) -> IsNull
+    | ExpressionType.NotEqual when (isNull value) -> IsNotNull
     | ExpressionType.Equal -> Eq value
     | ExpressionType.NotEqual -> Ne value
     | ExpressionType.GreaterThan -> Gt value
     | ExpressionType.GreaterThanOrEqual -> Ge value
     | ExpressionType.LessThan -> Lt value
     | ExpressionType.LessThanOrEqual -> Le value
-    | _ -> raise (NotImplementedException "Unsupported comparison type")
+    | _ -> notImplMsg "Unsupported comparison type"
 
 let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
     let rec visit (exp: Expression) : Where =
@@ -89,7 +97,7 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
                 let operand = visit x.Operand
                 Unary (Not, operand)
             | _ ->
-                raise (NotImplementedException "Unsupported unary operation")
+                notImplMsg "Unsupported unary operation"
         | Binary x -> 
             match exp.NodeType with
             | ExpressionType.And
@@ -103,17 +111,31 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
                 let rt = visit x.Right
                 Binary (lt, Or, rt)
             | _ ->
-                match x.Left, x.Right with
+                match x.Left, x.Right with                
                 | Member m, Constant c
                 | Constant c, Member m ->
+                    // Handle regular column comparisons
                     let colName = m.Member.Name
                     let value = c.Value
                     let columnComparison = getColumnComparison(exp.NodeType, value)
                     Column (colName, columnComparison)
+                | Member m, MethodCall c when c.Type |> isOptionType ->
+                    // Handle optional column comparisons
+                    let colName = m.Member.Name
+                    if c.Arguments.Count > 0 then 
+                        match c.Arguments.[0] with
+                        | Constant optVal -> 
+                            let columnComparison = getColumnComparison(exp.NodeType, optVal.Value)
+                            Column (colName, columnComparison)
+                        | _ -> 
+                            notImpl()
+                    else
+                        let columnComparison = getColumnComparison(exp.NodeType, null)
+                        Column (colName, columnComparison)
                 | _ ->
-                    raise (NotImplementedException())
+                    notImpl()
         | _ ->
-            raise (NotImplementedException())
+            notImpl()
 
     visit (filter :> Expression)
 
@@ -122,7 +144,7 @@ let visitOrderBy<'T, 'TProp> (propertySelector: Expression<Func<'T, 'TProp>>, di
         match exp with
         | Lambda x -> visit x.Body
         | Member m -> OrderBy (m.Member.Name, direction)
-        | _ -> raise (NotImplementedException())
+        | _ -> notImpl()
 
     visit (propertySelector :> Expression)
 
@@ -131,6 +153,6 @@ let visitGroupBy<'T, 'TProp> (propertySelector: Expression<Func<'T, 'TProp>>) =
         match exp with
         | Lambda x -> visit x.Body
         | Member m -> m.Member.Name
-        | _ -> raise (NotImplementedException())
+        | _ -> notImpl()
 
     visit (propertySelector :> Expression)
