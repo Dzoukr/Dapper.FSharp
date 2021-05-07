@@ -111,7 +111,7 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
 
     visit (filter :> Expression)
 
-let visitOrderBy<'T, 'TColType> (selector: Expression<Func<'T, 'TColType>>, direction) =
+let visitOrderBy<'T, 'TSort> (selector: Expression<Func<'T, 'TSort>>, direction) =
     let rec visit (exp: Expression) : OrderBy =
         match exp with
         | Lambda x -> visit x.Body

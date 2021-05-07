@@ -10,6 +10,7 @@ open ExpressionBuilders
 type Person = {
     FName: string
     LName: string
+    Age: int
 }
 
 let testsBasic() = testList "SELECT EXPRESSION" [
@@ -35,12 +36,12 @@ let testsBasic() = testList "SELECT EXPRESSION" [
                     for p in entity<Person> do
                     where (p.FName = "John" && p.LName = "Doe")
                     orderByDescending p.LName
-                    thenByDescending p.FName
+                    thenByDescending p.Age
                 }
     
             Expect.equal query.Table "Person" "Expected table = 'Person'"
             Expect.equal query.Where (eq "FName" "John" + eq "LName" "Doe") "Expected FName = 'John' && LName = 'Doe'"
-            Expect.equal query.OrderBy [("LName", Desc); ("FName", Desc)] "Expected Order By 'LName DESC, FName DESC'"
+            Expect.equal query.OrderBy [("LName", Desc); ("Age", Desc)] "Expected Order By 'LName DESC, Age DESC'"
         }
 
 ]

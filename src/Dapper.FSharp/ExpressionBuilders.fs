@@ -3,7 +3,7 @@
 /// Used in the 'for' statement
 let entity<'T> = Seq.empty<'T>
 
-type SelectExpressionBuilder<'T, 'TSort>() =
+type SelectExpressionBuilder<'T>() =
     
     let def = 
         { Schema = None
@@ -113,4 +113,4 @@ type SelectExpressionBuilder<'T, 'TSort>() =
     [<CustomOperation("distinct", MaintainsVariableSpace = true)>]
     member __.Distinct (state:SelectQuery) = { state with Distinct = true }
 
-let select<'T, 'TSort> = SelectExpressionBuilder<'T, 'TSort>()
+let select<'T> = SelectExpressionBuilder<'T>()
