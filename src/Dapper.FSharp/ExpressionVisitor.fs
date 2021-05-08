@@ -178,3 +178,20 @@ let visitGroupBy<'T, 'TProp> (propertySelector: Expression<Func<'T, 'TProp>>) =
         | _ -> notImpl()
 
     visit (propertySelector :> Expression)
+
+let visitJoin<'Left, 'Right> (joinOn: Expression<Func<'Left, 'Right, bool>>, joinType) =
+    let rec visit (exp: Expression) : Join =
+        match exp with
+        | Lambda x -> visit x.Body
+        | Binary x -> 
+            match x.Left, x.Right with                
+            | Member lt, Member rt ->
+                let ltTbl = typeof<'Left>.Name
+                let ltCol = sprintf "%s.%s" ltTbl lt.Member.Name
+                let rtTbl = typeof<'Right>.Name
+                let rtCol = rt.Member.Name
+                joinType (rtTbl, rtCol, ltCol)
+            | _ -> notImpl()
+        | _ -> notImpl()
+
+    visit (joinOn :> Expression)

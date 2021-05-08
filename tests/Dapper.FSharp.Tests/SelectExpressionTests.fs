@@ -8,10 +8,17 @@ open FSharp.Control.Tasks.V2
 open ExpressionBuilders
 
 type Person = {
+    Id: int
     FName: string
     MI: string option
     LName: string
     Age: int
+}
+
+type Address = {
+    PersonId: int
+    City: string
+    State: string
 }
 
 let testsBasic() = testList "SELECT EXPRESSION" [
@@ -125,5 +132,25 @@ let testsBasic() = testList "SELECT EXPRESSION" [
             }
     
         Expect.equal query.Where (Column ("LName", Like "D%")) "Expected LName LIKE \"D%\""
+    }
+
+    testTask "Inner Join" {
+        let query = 
+            select {
+                for p in entity<Person> do
+                innerJoin (fun (p: Person) (a: Address) -> p.Id = a.PersonId)
+            }
+    
+        Expect.equal query.Joins [InnerJoin ("Address", "PersonId", "Person.Id")] "Expected INNER JOIN Address ON Person.Id = Address.PersonId"
+    }
+
+    testTask "Left Join" {
+        let query = 
+            select {
+                for p in entity<Person> do
+                leftJoin (fun (p: Person) (a: Address) -> p.Id = a.PersonId)
+            }
+    
+        Expect.equal query.Joins [LeftJoin ("Address", "PersonId", "Person.Id")] "Expected LEFT JOIN Address ON Person.Id = Address.PersonId"
     }
 ]
