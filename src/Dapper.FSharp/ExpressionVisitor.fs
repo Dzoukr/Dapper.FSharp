@@ -87,6 +87,14 @@ let getColumnComparison (expType: ExpressionType, value: obj) =
     | ExpressionType.LessThanOrEqual -> Le value
     | _ -> notImplMsg "Unsupported comparison type"
 
+let rec unwrapListExpr (lstValues: obj list, lstExp: MethodCallExpression) =
+    if lstExp.Arguments.Count > 0 then
+        match lstExp.Arguments.[0] with
+        | Constant c -> unwrapListExpr (lstValues @ [c.Value], (lstExp.Arguments.[1] :?> MethodCallExpression))
+        | _ -> notImpl()
+    else 
+        lstValues
+
 let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
     let rec visit (exp: Expression) : Where =
         match exp with
@@ -98,6 +106,16 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
                 Unary (Not, operand)
             | _ ->
                 notImplMsg "Unsupported unary operation"
+        | MethodCall m when m.Method.Name = "isIn" || m.Method.Name = "isNotIn" ->
+            let comparisonType = if m.Method.Name = "isIn" then In else NotIn
+            match m.Arguments.[0], m.Arguments.[1] with
+            | Member col, MethodCall fn ->
+                let lstValues = unwrapListExpr ([], fn)                
+                Column (col.Member.Name, comparisonType lstValues)
+            | Member col, Constant c -> 
+                let lstValues = (c.Value :?> System.Collections.IEnumerable) |> Seq.cast<obj> |> Seq.toList
+                Column (col.Member.Name, comparisonType lstValues)
+            | _ -> notImpl()
         | Binary x -> 
             match exp.NodeType with
             | ExpressionType.And

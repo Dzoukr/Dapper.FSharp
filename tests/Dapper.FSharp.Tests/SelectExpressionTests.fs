@@ -96,4 +96,24 @@ let testsBasic() = testList "SELECT EXPRESSION" [
         Expect.equal query.Where (eq "MI" "N") "Expected MI = 'N'"
     }
 
+    ftestTask "SqlMethods.isIn" {
+        let query = 
+            select {
+                for p in entity<Person> do
+                where (SqlMethods.isIn p.Age [18;21])
+            }
+    
+        Expect.equal query.Where (isIn "Age" [18;21]) "Expected Age IN (18,21)"
+    }
+
+    ftestTask "SqlMethods.isNotIn" {
+        let ages = [1..5]
+        let query = 
+            select {
+                for p in entity<Person> do
+                where (SqlMethods.isNotIn p.Age ages)
+            }
+    
+        Expect.equal query.Where (isNotIn "Age" [1;2;3;4;5]) "Expected Age NOT IN (1,2,3,4,5)"
+    }
 ]
