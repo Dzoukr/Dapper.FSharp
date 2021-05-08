@@ -3,9 +3,9 @@
 /// Used in the 'for' statement
 let entity<'T> = Seq.empty<'T>
 
-module SqlMethods = 
-    let isIn<'T> (value: 'T) (lst: 'T list) = true
-    let isNotIn<'T> (value: 'T) (lst: 'T list) = true
+// Where filters
+let isIn<'T> (value: 'T) (lst: 'T list) = true
+let isNotIn<'T> (value: 'T) (lst: 'T list) = true
 
 type SelectExpressionBuilder<'T>() =
     
