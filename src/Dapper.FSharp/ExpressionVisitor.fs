@@ -109,12 +109,18 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
         | MethodCall m when m.Method.Name = "isIn" || m.Method.Name = "isNotIn" ->
             let comparisonType = if m.Method.Name = "isIn" then In else NotIn
             match m.Arguments.[0], m.Arguments.[1] with
-            | Member col, MethodCall fn ->
-                let lstValues = unwrapListExpr ([], fn)                
+            | Member col, MethodCall lst ->
+                let lstValues = unwrapListExpr ([], lst)                
                 Column (col.Member.Name, comparisonType lstValues)
             | Member col, Constant c -> 
                 let lstValues = (c.Value :?> System.Collections.IEnumerable) |> Seq.cast<obj> |> Seq.toList
                 Column (col.Member.Name, comparisonType lstValues)
+            | _ -> notImpl()
+        | MethodCall m when m.Method.Name = "like" ->
+            match m.Arguments.[0], m.Arguments.[1] with
+            | Member col, Constant c -> 
+                let pattern = string c.Value
+                Column (col.Member.Name, Like pattern)
             | _ -> notImpl()
         | Binary x -> 
             match exp.NodeType with
@@ -130,26 +136,24 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
                 Binary (lt, Or, rt)
             | _ ->
                 match x.Left, x.Right with                
-                | Member m, Constant c
-                | Constant c, Member m ->
+                | Member col, Constant c
+                | Constant c, Member col ->
                     // Handle regular column comparisons
-                    let colName = m.Member.Name
                     let value = c.Value
                     let columnComparison = getColumnComparison(exp.NodeType, value)
-                    Column (colName, columnComparison)
-                | Member m, MethodCall c when c.Type |> isOptionType ->
+                    Column (col.Member.Name, columnComparison)
+                | Member col, MethodCall c when c.Type |> isOptionType ->
                     // Handle optional column comparisons
-                    let colName = m.Member.Name
                     if c.Arguments.Count > 0 then 
                         match c.Arguments.[0] with
                         | Constant optVal -> 
                             let columnComparison = getColumnComparison(exp.NodeType, optVal.Value)
-                            Column (colName, columnComparison)
+                            Column (col.Member.Name, columnComparison)
                         | _ -> 
                             notImpl()
                     else
                         let columnComparison = getColumnComparison(exp.NodeType, null)
-                        Column (colName, columnComparison)
+                        Column (col.Member.Name, columnComparison)
                 | _ ->
                     notImpl()
         | _ ->

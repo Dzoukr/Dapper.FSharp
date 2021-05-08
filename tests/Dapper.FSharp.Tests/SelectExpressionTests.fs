@@ -116,4 +116,14 @@ let testsBasic() = testList "SELECT EXPRESSION" [
     
         Expect.equal query.Where (Column ("Age", NotIn [1;2;3;4;5])) "Expected Age NOT IN (1,2,3,4,5)"
     }
+
+    testTask "Like" {
+        let query = 
+            select {
+                for p in entity<Person> do
+                where (like p.LName "D%")
+            }
+    
+        Expect.equal query.Where (Column ("LName", Like "D%")) "Expected LName LIKE \"D%\""
+    }
 ]

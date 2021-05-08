@@ -1,11 +1,12 @@
 ﻿module Dapper.FSharp.ExpressionBuilders
 
 /// Used in the 'for' statement
-let entity<'T> = Seq.empty<'T>
+let entity<'Table> = Seq.empty<'Table>
 
 // Where filters
-let isIn<'T> (value: 'T) (lst: 'T list) = true
-let isNotIn<'T> (value: 'T) (lst: 'T list) = true
+let isIn<'P> (prop: 'P) (values: 'P list) = true
+let isNotIn<'P> (prop: 'P) (values: 'P list) = true
+let like<'P> (prop: 'P) (pattern: string) = true
 
 type SelectExpressionBuilder<'T>() =
     
