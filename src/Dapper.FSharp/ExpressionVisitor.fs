@@ -161,16 +161,7 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
 
     visit (filter :> Expression)
 
-let visitOrderBy<'T, 'TProp> (propertySelector: Expression<Func<'T, 'TProp>>, direction) =
-    let rec visit (exp: Expression) : OrderBy =
-        match exp with
-        | Lambda x -> visit x.Body
-        | Member m -> OrderBy (m.Member.Name, direction)
-        | _ -> notImpl()
-
-    visit (propertySelector :> Expression)
-
-let visitGroupBy<'T, 'TProp> (propertySelector: Expression<Func<'T, 'TProp>>) =
+let visitPropertySelector<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) =
     let rec visit (exp: Expression) : string =
         match exp with
         | Lambda x -> visit x.Body
@@ -178,6 +169,10 @@ let visitGroupBy<'T, 'TProp> (propertySelector: Expression<Func<'T, 'TProp>>) =
         | _ -> notImpl()
 
     visit (propertySelector :> Expression)
+
+let visitOrderBy<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>, direction) =
+    let propertyName = visitPropertySelector propertySelector
+    OrderBy (propertyName, direction)
 
 let visitJoin<'Left, 'Right> (joinOn: Expression<Func<'Left, 'Right, bool>>, joinType) =
     let rec visit (exp: Expression) : Join =
@@ -195,3 +190,4 @@ let visitJoin<'Left, 'Right> (joinOn: Expression<Func<'Left, 'Right, bool>>, joi
         | _ -> notImpl()
 
     visit (joinOn :> Expression)
+

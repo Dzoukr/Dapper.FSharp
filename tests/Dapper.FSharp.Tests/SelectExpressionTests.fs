@@ -153,4 +153,25 @@ let testsBasic() = testList "SELECT EXPRESSION" [
     
         Expect.equal query.Joins [LeftJoin ("Address", "PersonId", "Person.Id")] "Expected LEFT JOIN Address ON Person.Id = Address.PersonId"
     }
+
+    testTask "Count" {
+        let query = 
+            select {
+                for p in entity<Person> do
+                count "*" "Count"
+                where (not (p.FName = "John"))
+            }
+    
+        Expect.equal query.Aggregates [Count ("*", "Count")] "Expected count(*) as [Count]"
+    }
+
+    testTask "Max By" {
+        let query = 
+            select {
+                for p in entity<Person> do
+                maxBy p.Age
+            }
+    
+        Expect.equal query.Aggregates [Max ("Age", "Age")] "Expected max(Age) as [Age]"
+    }
 ]
