@@ -23,7 +23,7 @@ type Address = {
 
 let testsBasic() = testList "SELECT EXPRESSION" [
     
-    testTask "Simple Query" {
+    testTask "Simple Where" {
         let query = 
             select {
                 for p in entity<Person> do
@@ -32,11 +32,11 @@ let testsBasic() = testList "SELECT EXPRESSION" [
             }
 
         Expect.equal query.Table "Person" "Expected table = 'Person'"
-        Expect.equal query.Where (eq "FName" "John") "Expected FName = 'John'"
-        Expect.equal query.OrderBy [("LName", Asc)] "Expected Order By 'LName'"
+        Expect.equal query.Where (eq "Person.FName" "John") "Expected WHERE Person.FName = 'John'"
+        Expect.equal query.OrderBy [("Person.LName", Asc)] "Expected ORDER BY Person.LName"
     }
 
-    testTask "Complex Query" {
+    testTask "Binary Where" {
         let query = 
             select {
                 for p in entity<Person> do
@@ -46,8 +46,8 @@ let testsBasic() = testList "SELECT EXPRESSION" [
             }
     
         Expect.equal query.Table "Person" "Expected table = 'Person'"
-        Expect.equal query.Where (eq "FName" "John" + eq "LName" "Doe") "Expected FName = 'John' && LName = 'Doe'"
-        Expect.equal query.OrderBy [("LName", Desc); ("Age", Desc)] "Expected Order By 'LName DESC, Age DESC'"
+        Expect.equal query.Where (eq "Person.FName" "John" + eq "Person.LName" "Doe") "Expected WHERE Person.FName = 'John' && Person.LName = 'Doe'"
+        Expect.equal query.OrderBy [("Person.LName", Desc); ("Person.Age", Desc)] "Expected ORDER BY 'Person.LName DESC, Person.Age DESC'"
     }
 
     testTask "Unary Not" {
@@ -57,7 +57,7 @@ let testsBasic() = testList "SELECT EXPRESSION" [
                 where (not (p.FName = "John"))
             }
     
-        Expect.equal query.Where (!!(eq "FName" "John")) "Expected not (FName = 'John')"
+        Expect.equal query.Where (!!(eq "Person.FName" "John")) "Expected NOT (Person.FName = 'John')"
     }
 
     testTask "Group By" {
@@ -69,8 +69,8 @@ let testsBasic() = testList "SELECT EXPRESSION" [
                 groupBy p.Age
             }
     
-        Expect.equal query.GroupBy ["Age"] "Expected group by 'Age'"
-        Expect.equal query.Aggregates [Count ("*", "Count")] "Expected count(*) as [Count]"
+        Expect.equal query.GroupBy ["Person.Age"] "Expected GROUP BY Person.Age"
+        Expect.equal query.Aggregates [Count ("*", "Count")] "Expected COUNT(*) as [Count]"
     }
 
     testTask "Optional Column is None" {
@@ -80,7 +80,7 @@ let testsBasic() = testList "SELECT EXPRESSION" [
                 where (p.MI = None)
             }
     
-        Expect.equal query.Where (isNullValue "MI") "Expected MI is null"
+        Expect.equal query.Where (isNullValue "Person.MI") "Expected Person.MI IS NULL"
     }
 
     testTask "Optional Column is not None" {
@@ -90,7 +90,7 @@ let testsBasic() = testList "SELECT EXPRESSION" [
                 where (p.MI <> None)
             }
     
-        Expect.equal query.Where (isNotNullValue "MI") "Expected MI is not null"
+        Expect.equal query.Where (isNotNullValue "Person.MI") "Expected MI IS NOT NULL"
     }
 
     testTask "Optional Column = Some value" {
@@ -100,7 +100,7 @@ let testsBasic() = testList "SELECT EXPRESSION" [
                 where (p.MI = Some "N")
             }
     
-        Expect.equal query.Where (eq "MI" "N") "Expected MI = 'N'"
+        Expect.equal query.Where (eq "Person.MI" "N") "Expected Person.MI = 'N'"
     }
 
     testTask "SqlMethods.isIn" {
@@ -110,7 +110,7 @@ let testsBasic() = testList "SELECT EXPRESSION" [
                 where (isIn p.Age [18;21])
             }
     
-        Expect.equal query.Where (Column ("Age", In [18;21])) "Expected Age IN (18,21)"
+        Expect.equal query.Where (Column ("Person.Age", In [18;21])) "Expected Person.Age IN (18,21)"
     }
 
     testTask "SqlMethods.isNotIn" {
@@ -121,7 +121,7 @@ let testsBasic() = testList "SELECT EXPRESSION" [
                 where (isNotIn p.Age ages)
             }
     
-        Expect.equal query.Where (Column ("Age", NotIn [1;2;3;4;5])) "Expected Age NOT IN (1,2,3,4,5)"
+        Expect.equal query.Where (Column ("Person.Age", NotIn [1;2;3;4;5])) "Expected Person.Age NOT IN (1,2,3,4,5)"
     }
 
     testTask "Like" {
@@ -131,7 +131,7 @@ let testsBasic() = testList "SELECT EXPRESSION" [
                 where (like p.LName "D%")
             }
     
-        Expect.equal query.Where (Column ("LName", Like "D%")) "Expected LName LIKE \"D%\""
+        Expect.equal query.Where (Column ("Person.LName", Like "D%")) "Expected LName Person.LIKE \"D%\""
     }
 
     testTask "Inner Join" {
@@ -172,6 +172,6 @@ let testsBasic() = testList "SELECT EXPRESSION" [
                 maxBy p.Age
             }
     
-        Expect.equal query.Aggregates [Max ("Age", "Age")] "Expected max(Age) as [Age]"
+        Expect.equal query.Aggregates [Max ("Person.Age", "Person.Age")] "Expected max(Age) as [Age]"
     }
 ]

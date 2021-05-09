@@ -96,6 +96,10 @@ let rec unwrapListExpr (lstValues: obj list, lstExp: MethodCallExpression) =
         lstValues
 
 let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
+    /// Creates a qualified {table}.{column}
+    let qualifiedColumn (col: MemberExpression, comparison) = 
+        Column ((sprintf "%s.%s" col.Member.DeclaringType.Name col.Member.Name), comparison)
+
     let rec visit (exp: Expression) : Where =
         match exp with
         | Lambda x -> visit x.Body
@@ -111,16 +115,16 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
             match m.Arguments.[0], m.Arguments.[1] with
             | Member col, MethodCall lst ->
                 let lstValues = unwrapListExpr ([], lst)                
-                Column (col.Member.Name, comparisonType lstValues)
+                qualifiedColumn (col, comparisonType lstValues)
             | Member col, Constant c -> 
                 let lstValues = (c.Value :?> System.Collections.IEnumerable) |> Seq.cast<obj> |> Seq.toList
-                Column (col.Member.Name, comparisonType lstValues)
+                qualifiedColumn (col, comparisonType lstValues)
             | _ -> notImpl()
         | MethodCall m when m.Method.Name = "like" ->
             match m.Arguments.[0], m.Arguments.[1] with
             | Member col, Constant c -> 
                 let pattern = string c.Value
-                Column (col.Member.Name, Like pattern)
+                qualifiedColumn (col, Like pattern)
             | _ -> notImpl()
         | Binary x -> 
             match exp.NodeType with
@@ -141,19 +145,19 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
                     // Handle regular column comparisons
                     let value = c.Value
                     let columnComparison = getColumnComparison(exp.NodeType, value)
-                    Column (col.Member.Name, columnComparison)
+                    qualifiedColumn (col, columnComparison)
                 | Member col, MethodCall c when c.Type |> isOptionType ->
                     // Handle optional column comparisons
                     if c.Arguments.Count > 0 then 
                         match c.Arguments.[0] with
                         | Constant optVal -> 
                             let columnComparison = getColumnComparison(exp.NodeType, optVal.Value)
-                            Column (col.Member.Name, columnComparison)
+                            qualifiedColumn (col, columnComparison)
                         | _ -> 
                             notImpl()
                     else
                         let columnComparison = getColumnComparison(exp.NodeType, null)
-                        Column (col.Member.Name, columnComparison)
+                        qualifiedColumn (col, columnComparison)
                 | _ ->
                     notImpl()
         | _ ->
@@ -161,11 +165,12 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
 
     visit (filter :> Expression)
 
+/// Returns a fully qualified column name: {table}.{column}
 let visitPropertySelector<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) =
     let rec visit (exp: Expression) : string =
         match exp with
         | Lambda x -> visit x.Body
-        | Member m -> m.Member.Name
+        | Member m -> sprintf "%s.%s" m.Member.DeclaringType.Name m.Member.Name
         | _ -> notImpl()
 
     visit (propertySelector :> Expression)
@@ -174,18 +179,26 @@ let visitOrderBy<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>, dire
     let propertyName = visitPropertySelector propertySelector
     OrderBy (propertyName, direction)
 
-let visitJoin<'Left, 'Right> (joinOn: Expression<Func<'Left, 'Right, bool>>, joinType) =
+let visitJoin<'Left, 'Right> (joinOn: Expression<Func<'Left, 'Right, bool>>, joinType, schemaMaybe) =
     let rec visit (exp: Expression) : Join =
         match exp with
         | Lambda x -> visit x.Body
         | Binary x -> 
             match x.Left, x.Right with                
             | Member lt, Member rt ->
-                let ltTbl = typeof<'Left>.Name
-                let ltCol = sprintf "%s.%s" ltTbl lt.Member.Name
-                let rtTbl = typeof<'Right>.Name
-                let rtCol = rt.Member.Name
-                joinType (rtTbl, rtCol, ltCol)
+                match schemaMaybe with
+                | Some schema -> 
+                    let ltTbl = sprintf "%s.%s" schema typeof<'Left>.Name
+                    let ltCol = sprintf "%s.%s" ltTbl lt.Member.Name
+                    let rtTbl = sprintf "%s.%s" schema typeof<'Right>.Name
+                    let rtCol = rt.Member.Name
+                    joinType (rtTbl, rtCol, ltCol)
+                | None -> 
+                    let ltTbl = typeof<'Left>.Name
+                    let ltCol = sprintf "%s.%s" ltTbl lt.Member.Name
+                    let rtTbl = typeof<'Right>.Name
+                    let rtCol = rt.Member.Name
+                    joinType (rtTbl, rtCol, ltCol)
             | _ -> notImpl()
         | _ -> notImpl()
 

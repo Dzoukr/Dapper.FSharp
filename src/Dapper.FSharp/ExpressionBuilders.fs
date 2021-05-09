@@ -69,13 +69,13 @@ type SelectExpressionBuilder<'T>() =
     /// INNER JOIN table where COLNAME equals to another COLUMN (including TABLE name)
     [<CustomOperation("innerJoin", MaintainsVariableSpace = true)>]
     member __.InnerJoin (state:SelectQuery, joinOn) = 
-        let join = ExpressionVisitor.visitJoin (joinOn, InnerJoin)
+        let join = ExpressionVisitor.visitJoin (joinOn, InnerJoin, state.Schema)
         { state with Joins = state.Joins @ [join] }
 
     /// LEFT JOIN table where COLNAME equals to another COLUMN (including TABLE name)
     [<CustomOperation("leftJoin", MaintainsVariableSpace = true)>]
     member __.LeftJoin (state:SelectQuery, joinOn) = 
-        let join = ExpressionVisitor.visitJoin (joinOn, LeftJoin)
+        let join = ExpressionVisitor.visitJoin (joinOn, LeftJoin, state.Schema)
         { state with Joins = state.Joins @ [join] }
     
     /// Sets the ORDER BY for single column
