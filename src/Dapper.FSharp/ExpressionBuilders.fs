@@ -23,7 +23,11 @@ type SelectExpressionBuilder<'T>() =
 
     member this.For (items: seq<'T>, f: 'T -> SelectQuery) =
         let t = typeof<'T>
-        { def with Table = t.Name }
+        if t.Name.StartsWith "Tuple" then
+            let args = t.GetGenericArguments()
+            { def with Table = args.[0].Name }
+        else
+            { def with Table = t.Name }
 
     member __.Yield _ =
         def

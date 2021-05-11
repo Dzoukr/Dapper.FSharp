@@ -21,6 +21,11 @@ type Address = {
     State: string
 }
 
+type Contact = {
+    PersonId: int
+    Phone: string
+}
+
 let testsBasic() = testList "SELECT EXPRESSION" [
     
     testTask "Simple Where" {
@@ -173,5 +178,34 @@ let testsBasic() = testList "SELECT EXPRESSION" [
             }
     
         Expect.equal query.Aggregates [Max ("Person.Age", "Person.Age")] "Expected max(Age) as [Age]"
+    }
+
+    testTask "Join2" {
+        let query = 
+            select {
+                for (p,a) in entity do
+                innerJoin (fun (p: Person) (a: Address) -> p.Id = a.PersonId)
+                where (p.FName = "John" && a.City = "Chicago")
+            }
+    
+        Expect.equal query.Joins [InnerJoin ("Address", "PersonId", "Person.Id")] "Expected INNER JOIN Address ON Person.Id = Address.PersonId"
+        Expect.equal query.Where (eq "Person.FName" "John" + eq "Address.City" "Chicago") "Expected WHERE Person.FName = 'John' AND Address.City = 'Chicago'"
+    }
+
+    testTask "Join3" {
+        let query = 
+            select {
+                for (p,a,c) in entity do
+                innerJoin (fun (p: Person) (a: Address) -> p.Id = a.PersonId)
+                innerJoin (fun (p: Person) (c: Contact) -> p.Id = c.PersonId)
+                where (p.FName = "John" && a.City = "Chicago" && c.Phone = "123-456-7890" )
+            }
+    
+        Expect.equal query.Joins [
+            InnerJoin ("Address", "PersonId", "Person.Id")
+            InnerJoin ("Contact", "PersonId", "Person.Id")
+        ] "Expected INNER JOIN Address ON Person.Id = Address.PersonId"
+        Expect.equal query.Where (eq "Person.FName" "John" + eq "Address.City" "Chicago" + eq "Contact.Phone" "123-456-7890") 
+            "Expected WHERE Person.FName = 'John' AND Address.City = 'Chicago' AND Contact.Phone = '123-456-7890'"
     }
 ]
