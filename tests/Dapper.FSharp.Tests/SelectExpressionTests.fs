@@ -139,25 +139,25 @@ let testsBasic() = testList "SELECT EXPRESSION" [
         Expect.equal query.Where (Column ("Person.LName", Like "D%")) "Expected LName Person.LIKE \"D%\""
     }
 
-    testTask "Inner Join" {
-        let query = 
-            select {
-                for p in entity<Person> do
-                innerJoin (fun (p: Person) (a: Address) -> p.Id = a.PersonId)
-            }
+    //testTask "Inner Join" {
+    //    let query = 
+    //        select {
+    //            for p in entity<Person> do
+    //            innerJoin (fun (p: Person) (a: Address) -> p.Id = a.PersonId)
+    //        }
     
-        Expect.equal query.Joins [InnerJoin ("Address", "PersonId", "Person.Id")] "Expected INNER JOIN Address ON Person.Id = Address.PersonId"
-    }
+    //    Expect.equal query.Joins [InnerJoin ("Address", "PersonId", "Person.Id")] "Expected INNER JOIN Address ON Person.Id = Address.PersonId"
+    //}
 
-    testTask "Left Join" {
-        let query = 
-            select {
-                for p in entity<Person> do
-                leftJoin (fun (p: Person) (a: Address) -> p.Id = a.PersonId)
-            }
+    //testTask "Left Join" {
+    //    let query = 
+    //        select {
+    //            for p in entity<Person> do
+    //            leftJoin (fun (p: Person) (a: Address) -> p.Id = a.PersonId)
+    //        }
     
-        Expect.equal query.Joins [LeftJoin ("Address", "PersonId", "Person.Id")] "Expected LEFT JOIN Address ON Person.Id = Address.PersonId"
-    }
+    //    Expect.equal query.Joins [LeftJoin ("Address", "PersonId", "Person.Id")] "Expected LEFT JOIN Address ON Person.Id = Address.PersonId"
+    //}
 
     testTask "Count" {
         let query = 
@@ -173,39 +173,22 @@ let testsBasic() = testList "SELECT EXPRESSION" [
     testTask "Max By" {
         let query = 
             select {
-                for p in entity<Person> do
+                for p in entity do
                 maxBy p.Age
             }
     
         Expect.equal query.Aggregates [Max ("Person.Age", "Person.Age")] "Expected max(Age) as [Age]"
     }
 
-    testTask "Join2" {
+    ftestTask "Join" {
         let query = 
             select {
-                for (p,a) in entity do
-                innerJoin (fun (p: Person) (a: Address) -> p.Id = a.PersonId)
-                where (p.FName = "John" && a.City = "Chicago")
+                for p in entity<Person> do
+                join a in entity<Address> on (p.Id = a.PersonId) 
+                join c in entity<Contact> on (p.Id = c.PersonId)
+                where (p.Id = a.PersonId && c.Phone = "")
             }
     
         Expect.equal query.Joins [InnerJoin ("Address", "PersonId", "Person.Id")] "Expected INNER JOIN Address ON Person.Id = Address.PersonId"
-        Expect.equal query.Where (eq "Person.FName" "John" + eq "Address.City" "Chicago") "Expected WHERE Person.FName = 'John' AND Address.City = 'Chicago'"
-    }
-
-    testTask "Join3" {
-        let query = 
-            select {
-                for (p,a,c) in entity do
-                innerJoin (fun (p: Person) (a: Address) -> p.Id = a.PersonId)
-                innerJoin (fun (p: Person) (c: Contact) -> p.Id = c.PersonId)
-                where (p.FName = "John" && a.City = "Chicago" && c.Phone = "123-456-7890" )
-            }
-    
-        Expect.equal query.Joins [
-            InnerJoin ("Address", "PersonId", "Person.Id")
-            InnerJoin ("Contact", "PersonId", "Person.Id")
-        ] "Expected INNER JOIN Address ON Person.Id = Address.PersonId"
-        Expect.equal query.Where (eq "Person.FName" "John" + eq "Address.City" "Chicago" + eq "Contact.Phone" "123-456-7890") 
-            "Expected WHERE Person.FName = 'John' AND Address.City = 'Chicago' AND Contact.Phone = '123-456-7890'"
     }
 ]

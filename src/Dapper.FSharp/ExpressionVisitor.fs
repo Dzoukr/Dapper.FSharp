@@ -110,9 +110,6 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
                 Unary (Not, operand)
             | _ ->
                 notImplMsg "Unsupported unary operation"
-        | MethodCall m when m.Method.Name = "Invoke" ->
-            // Handle Join2 and Join3 tuples
-            visit m.Object
         | MethodCall m when m.Method.Name = "isIn" || m.Method.Name = "isNotIn" ->
             let comparisonType = if m.Method.Name = "isIn" then In else NotIn
             match m.Arguments.[0], m.Arguments.[1] with
@@ -206,3 +203,9 @@ let visitJoin<'Left, 'Right> (joinOn: Expression<Func<'Left, 'Right, bool>>, joi
         | _ -> notImpl()
 
     visit (joinOn :> Expression)
+
+let visitJoin2<'TInner, 'TOuter, 'TResult, 'TKey>(
+                                                    innerSelector: Expression<Func<'TInner, 'TKey>>, 
+                                                    outerSelector: Expression<Func<'TOuter, 'TKey>>, 
+                                                    resultSelector: Expression<Func<'TInner, 'TOuter, 'TResult>>) =
+    notImpl()
