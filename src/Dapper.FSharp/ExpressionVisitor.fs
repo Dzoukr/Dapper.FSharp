@@ -110,6 +110,9 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
                 Unary (Not, operand)
             | _ ->
                 notImplMsg "Unsupported unary operation"
+        | MethodCall m when m.Method.Name = "Invoke" ->
+            // Handle tuples
+            visit m.Object
         | MethodCall m when m.Method.Name = "isIn" || m.Method.Name = "isNotIn" ->
             let comparisonType = if m.Method.Name = "isIn" then In else NotIn
             match m.Arguments.[0], m.Arguments.[1] with
@@ -139,7 +142,11 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
                 let rt = visit x.Right
                 Binary (lt, Or, rt)
             | _ ->
-                match x.Left, x.Right with                
+                match x.Left, x.Right with
+                | Member col1, Member col2 ->
+                    // Handle col to col cmoparisons
+                    let columnComparison = getColumnComparison(exp.NodeType, col2)
+                    qualifiedColumn (col1, columnComparison)
                 | Member col, Constant c
                 | Constant c, Member col ->
                     // Handle regular column comparisons
