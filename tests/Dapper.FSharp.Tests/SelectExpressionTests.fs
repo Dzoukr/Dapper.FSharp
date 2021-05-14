@@ -179,14 +179,13 @@ let testsBasic() = testList "SELECT EXPRESSION" [
     
         Expect.equal query.Aggregates [Max ("Person.Age", "Person.Age")] "Expected max(Age) as [Age]"
     }
-
+    
     ftestTask "Join" {
         let query = 
             select {
                 for p in entity<Person> do
                 join a in entity<Address> on (p.Id = a.PersonId) 
-                join c in entity<Contact> on (p.Id = c.PersonId)
-                where (p.Id = a.PersonId && c.Phone = "")
+                where (p.Id = a.PersonId)
             }
     
         Expect.equal query.Joins [InnerJoin ("Address", "PersonId", "Person.Id")] "Expected INNER JOIN Address ON Person.Id = Address.PersonId"
