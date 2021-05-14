@@ -169,7 +169,7 @@ let testsBasic() = testList "SELECT EXPRESSION" [
     
         Expect.equal query.Aggregates [Count ("*", "Count")] "Expected count(*) as [Count]"
     }
-
+    
     testTask "Max By" {
         let query = 
             select {
@@ -180,7 +180,7 @@ let testsBasic() = testList "SELECT EXPRESSION" [
         Expect.equal query.Aggregates [Max ("Person.Age", "Person.Age")] "Expected max(Age) as [Age]"
     }
     
-    ftestTask "Join" {
+    testTask "Join" {
         let query = 
             select {
                 for p in entity<Person> do
@@ -188,6 +188,6 @@ let testsBasic() = testList "SELECT EXPRESSION" [
                 where (p.Id = a.PersonId)
             }
     
-        Expect.equal query.Joins [InnerJoin ("Address", "PersonId", "Person.Id")] "Expected INNER JOIN Address ON Person.Id = Address.PersonId"
+        Expect.equal query.Joins [InnerJoin ("Address", "Address.PersonId", "Person.Id")] "Expected INNER JOIN Address ON Person.Id = Address.PersonId"
     }
 ]

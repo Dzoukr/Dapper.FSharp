@@ -185,28 +185,3 @@ let visitPropertySelector<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Pro
 let visitOrderBy<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>, direction) =
     let propertyName = visitPropertySelector propertySelector
     OrderBy (propertyName, direction)
-
-let visitJoin<'Left, 'Right> (joinOn: Expression<Func<'Left, 'Right, bool>>, joinType, schemaMaybe) =
-    let rec visit (exp: Expression) : Join =
-        match exp with
-        | Lambda x -> visit x.Body
-        | Binary x -> 
-            match x.Left, x.Right with                
-            | Member lt, Member rt ->
-                match schemaMaybe with
-                | Some schema -> 
-                    let ltTbl = sprintf "%s.%s" schema typeof<'Left>.Name
-                    let ltCol = sprintf "%s.%s" ltTbl lt.Member.Name
-                    let rtTbl = sprintf "%s.%s" schema typeof<'Right>.Name
-                    let rtCol = rt.Member.Name
-                    joinType (rtTbl, rtCol, ltCol)
-                | None -> 
-                    let ltTbl = typeof<'Left>.Name
-                    let ltCol = sprintf "%s.%s" ltTbl lt.Member.Name
-                    let rtTbl = typeof<'Right>.Name
-                    let rtCol = rt.Member.Name
-                    joinType (rtTbl, rtCol, ltCol)
-            | _ -> notImpl()
-        | _ -> notImpl()
-
-    visit (joinOn :> Expression)

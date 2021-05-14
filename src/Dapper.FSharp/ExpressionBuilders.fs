@@ -32,10 +32,15 @@ type QuerySource<'T>() =
 type SelectExpressionBuilder<'T>() =
     let def = new QuerySource<'T>()
 
-    member this.For (items: seq<'T>, f: 'T -> QuerySource<'T>) =
+    member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
         let t = typeof<'T>
-        def.Query <- { def.Query with Table = t.Name }
-        def
+        // Join returns a tuple
+        if t.Name.StartsWith "Tuple" then
+            let args = t.GetGenericArguments()
+            state.Query <- { state.Query with Table = args.[0].Name }
+        else
+            state.Query <- { state.Query with Table = t.Name }
+        state
 
     member __.Yield _ =
         def
@@ -95,13 +100,12 @@ type SelectExpressionBuilder<'T>() =
         state
 
     /// INNER JOIN table where COLNAME equals to another COLUMN (including TABLE name)
-    [<CustomOperation("join", IsLikeJoin = true, JoinConditionWord = "on")>]
+    [<CustomOperation("join", MaintainsVariableSpace = true, IsLikeJoin = true, JoinConditionWord = "on")>]
     member __.Join (outerSource: QuerySource<'TOuter>, 
-        innerSource: QuerySource<'TInner>, 
-        outerKeySelector: Expression<Func<'TOuter,'Key>>, 
-        innerKeySelector: Expression<Func<'TInner,'Key>>, 
-        resultSelector: Expression<Func<'TOuter,'TInner,'Result>> ) = 
-        //let join = ExpressionVisitor.visitJoin2<'TInner, 'TOuter, SelectQuery, 'TKey>(innerKeySelector, outerKeySelector, resultSelector)
+                    innerSource: QuerySource<'TInner>, 
+                    outerKeySelector: Expression<Func<'TOuter,'Key>>, 
+                    innerKeySelector: Expression<Func<'TInner,'Key>>, 
+                    resultSelector: Expression<Func<'TOuter,'TInner,'Result>> ) = 
         let outerPropertyName = ExpressionVisitor.visitPropertySelector(outerKeySelector)
         let innerPropertyName = ExpressionVisitor.visitPropertySelector(innerKeySelector)
         let outerTable = typeof<'TOuter>.Name
@@ -111,18 +115,6 @@ type SelectExpressionBuilder<'T>() =
         r.Query <- { r.Query with Joins = r.Query.Joins @ [join] }
         r
 
-    ///// INNER JOIN table where COLNAME equals to another COLUMN (including TABLE name)
-    //[<CustomOperation("innerJoin", MaintainsVariableSpace = true)>]
-    //member __.InnerJoin (state:QuerySource<'T>, joinOn) = 
-    //    let join = ExpressionVisitor.visitJoin (joinOn, InnerJoin, state.Schema)
-    //    { state with Joins = state.Joins @ [join] }
-
-    ///// LEFT JOIN table where COLNAME equals to another COLUMN (including TABLE name)
-    //[<CustomOperation("leftJoin", MaintainsVariableSpace = true)>]
-    //member __.LeftJoin (state:QueryWrapper<'T>, joinOn) = 
-    //    let join = ExpressionVisitor.visitJoin (joinOn, LeftJoin, state.Schema)
-    //    { state with Joins = state.Joins @ [join] }
-    
     /// Sets the ORDER BY for single column
     [<CustomOperation("groupBy", MaintainsVariableSpace = true)>]
     member __.GroupBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
