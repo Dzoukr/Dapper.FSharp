@@ -177,6 +177,9 @@ let visitPropertySelector<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Pro
     let rec visit (exp: Expression) : string =
         match exp with
         | Lambda x -> visit x.Body
+        | MethodCall m when m.Method.Name = "Invoke" ->
+            // Handle tuples
+            visit m.Object
         | Member m -> sprintf "%s.%s" m.Member.DeclaringType.Name m.Member.Name
         | _ -> notImpl()
 
