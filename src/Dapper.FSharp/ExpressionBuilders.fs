@@ -31,7 +31,7 @@ type QuerySource<'T>() =
 
 type SelectExpressionBuilder<'T>() =
     let def = new QuerySource<'T>()
-                    
+
     member this.For (items: seq<'T>, f: 'T -> QuerySource<'T>) =
         let t = typeof<'T>
         def.Query <- { def.Query with Table = t.Name }
@@ -102,9 +102,14 @@ type SelectExpressionBuilder<'T>() =
         innerKeySelector: Expression<Func<'TInner,'Key>>, 
         resultSelector: Expression<Func<'TOuter,'TInner,'Result>> ) = 
         //let join = ExpressionVisitor.visitJoin2<'TInner, 'TOuter, SelectQuery, 'TKey>(innerKeySelector, outerKeySelector, resultSelector)
-        let newResult = QuerySource<'Result>()
-        //newResult.Query <- state.Query
-        newResult
+        let outerPropertyName = ExpressionVisitor.visitPropertySelector(outerKeySelector)
+        let innerPropertyName = ExpressionVisitor.visitPropertySelector(innerKeySelector)
+        let outerTable = typeof<'TOuter>.Name
+        let innerTable = typeof<'TInner>.Name
+        let join = InnerJoin (innerTable, innerPropertyName, outerPropertyName)
+        let r = QuerySource<'Result>()
+        r.Query <- { r.Query with Joins = r.Query.Joins @ [join] }
+        r
 
     ///// INNER JOIN table where COLNAME equals to another COLUMN (including TABLE name)
     //[<CustomOperation("innerJoin", MaintainsVariableSpace = true)>]
