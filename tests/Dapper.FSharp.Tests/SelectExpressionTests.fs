@@ -168,7 +168,7 @@ let testsBasic() = testList "SELECT EXPRESSION" [
                 where (p.Id = a.PersonId) 
             }
     
-        Expect.equal query.Joins [InnerJoin ("Address", "Address.PersonId", "Person.Id")] "Expected INNER JOIN Address ON Person.Id = Address.PersonId"
+        Expect.equal query.Joins [InnerJoin ("Address", "PersonId", "Person.Id")] "Expected INNER JOIN Address ON Person.Id = Address.PersonId"
         Expect.equal query.Where (Column ("Person.Id", Eq "Address.PersonId")) "Expected Person.Id = Address.PersonId"
     }
     
@@ -182,8 +182,8 @@ let testsBasic() = testList "SELECT EXPRESSION" [
             }
     
         Expect.equal query.Joins [
-            InnerJoin ("Address", "Address.PersonId", "Person.Id")
-            InnerJoin ("Contact", "Contact.PersonId", "Person.Id")
+            InnerJoin ("Address", "PersonId", "Person.Id")
+            InnerJoin ("Contact", "PersonId", "Person.Id")
         ] "Expected INNER JOIN Address ON Person.Id = Address.PersonId"
     }
 
@@ -195,7 +195,7 @@ let testsBasic() = testList "SELECT EXPRESSION" [
                 where (p.Id = a.PersonId) 
             }
     
-        Expect.equal query.Joins [LeftJoin ("Address", "Address.PersonId", "Person.Id")] "Expected LEFT JOIN Address ON Person.Id = Address.PersonId"
+        Expect.equal query.Joins [LeftJoin ("Address", "PersonId", "Person.Id")] "Expected LEFT JOIN Address ON Person.Id = Address.PersonId"
         Expect.equal query.Where (Column ("Person.Id", Eq "Address.PersonId")) "Expected Person.Id = Address.PersonId"
     }
 
@@ -209,8 +209,8 @@ let testsBasic() = testList "SELECT EXPRESSION" [
             }
     
         Expect.equal query.Joins [
-            LeftJoin ("Address", "Address.PersonId", "Person.Id")
-            LeftJoin ("Contact", "Contact.PersonId", "Person.Id")
+            LeftJoin ("Address", "PersonId", "Person.Id")
+            LeftJoin ("Contact", "PersonId", "Person.Id")
         ] "Expected LEFT JOIN Address ON Person.Id = Address.PersonId"
     }
 
@@ -233,8 +233,8 @@ let testsBasic() = testList "SELECT EXPRESSION" [
         Expect.equal query.Schema (Some "dbo") "Expected schema = dbo"
         Expect.equal query.Table "People" "Expected table = People"
         Expect.equal query.Joins [
-            InnerJoin ("dbo.Addresses", "dbo.Addresses.PersonId", "dbo.People.Id")
-            InnerJoin ("dbo.Contacts", "dbo.Contacts.PersonId", "dbo.People.Id")
+            InnerJoin ("dbo.Addresses", "PersonId", "dbo.People.Id")
+            InnerJoin ("dbo.Contacts", "PersonId", "dbo.People.Id")
         ] "Expected tables and columns to be fully qualified with schema and overriden table names"
         Expect.equal query.Where 
             (eq "dbo.People.FName" "John" + eq "dbo.Addresses.City" "Chicago" + eq "dbo.Contacts.Phone" "919-765-4321") 
@@ -265,8 +265,8 @@ let testsBasic() = testList "SELECT EXPRESSION" [
         Expect.equal query.Schema (Some "dbo") "Expected schema = dbo"
         Expect.equal query.Table "People" "Expected table = People"
         Expect.equal query.Joins [
-            LeftJoin ("dbo.Addresses", "dbo.Addresses.PersonId", "dbo.People.Id")
-            LeftJoin ("dbo.Contacts", "dbo.Contacts.PersonId", "dbo.People.Id")
+            LeftJoin ("dbo.Addresses", "PersonId", "dbo.People.Id")
+            LeftJoin ("dbo.Contacts", "PersonId", "dbo.People.Id")
         ] "Expected tables and columns to be fully qualified with schema and overriden table names"
         Expect.equal query.Where 
             (eq "dbo.People.FName" "John" + eq "dbo.Addresses.City" "Chicago" + eq "dbo.Contacts.Phone" "919-765-4321") 
