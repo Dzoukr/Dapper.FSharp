@@ -33,13 +33,6 @@ type SelectExpressionBuilder<'T>() =
     let def = new QuerySource<'T>()
 
     member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
-        let t = typeof<'T>
-        // Join returns a tuple
-        if t.Name.StartsWith "Tuple" then
-            let args = t.GetGenericArguments()
-            state.Query <- { state.Query with Table = args.[0].Name }
-        else
-            state.Query <- { state.Query with Table = t.Name }
         state
 
     member __.Yield _ =
@@ -47,18 +40,6 @@ type SelectExpressionBuilder<'T>() =
 
     member __.Zero _ =
         def
-
-    /// Sets the TABLE name for query
-    [<CustomOperation("schema", MaintainsVariableSpace = true)>]
-    member __.Schema (state:QuerySource<'T>, name) = 
-        state.Query <- { state.Query with Schema = Some name }
-        state
-
-    /// Sets the TABLE name for query
-    [<CustomOperation("table", MaintainsVariableSpace = true)>]
-    member __.Table (state:QuerySource<'T>, name) = 
-        state.Query <- { state.Query with Table = name }
-        state
 
     /// Sets the WHERE condition
     [<CustomOperation("where", MaintainsVariableSpace = true)>]
@@ -110,9 +91,11 @@ type SelectExpressionBuilder<'T>() =
                     resultSelector: Expression<Func<'TOuter,'TInner,'Result>> ) = 
         let outerPropertyName = ExpressionVisitor.visitPropertySelector(outerKeySelector)
         let innerPropertyName = ExpressionVisitor.visitPropertySelector(innerKeySelector)
-        let outerTable = typeof<'TOuter>.Name
-        let innerTable = typeof<'TInner>.Name
-        let join = InnerJoin (innerTable, innerPropertyName, outerPropertyName)
+        let innerTableName = 
+            match innerSource.Query.Schema with
+            | Some schema -> sprintf "%s.%s" schema innerSource.Query.Table
+            | None -> innerSource.Query.Table
+        let join = InnerJoin (innerTableName, innerPropertyName, outerPropertyName)
         let result = QuerySource<'Result>()
         result.Query <- { outerSource.Query with Joins = outerSource.Query.Joins @ [join] }
         result
@@ -126,9 +109,11 @@ type SelectExpressionBuilder<'T>() =
                     resultSelector: Expression<Func<'TOuter,'TInner,'Result>> ) = 
         let outerPropertyName = ExpressionVisitor.visitPropertySelector(outerKeySelector)
         let innerPropertyName = ExpressionVisitor.visitPropertySelector(innerKeySelector)
-        let outerTable = typeof<'TOuter>.Name
-        let innerTable = typeof<'TInner>.Name
-        let join = LeftJoin (innerTable, innerPropertyName, outerPropertyName)
+        let innerTableName = 
+            match innerSource.Query.Schema with
+            | Some schema -> sprintf "%s.%s" schema innerSource.Query.Table
+            | None -> innerSource.Query.Table
+        let join = LeftJoin (innerTableName, innerPropertyName, outerPropertyName)
         let result = QuerySource<'Result>()
         result.Query <- { outerSource.Query with Joins = outerSource.Query.Joins @ [join] }
         result
@@ -217,5 +202,18 @@ type SelectExpressionBuilder<'T>() =
 
 let select<'T> = SelectExpressionBuilder<'T>()
 
-/// Used in the 'for' statement
-let entity<'T> = QuerySource<'T>()
+/// Maps the entity 'T to a table of the same name.
+let entity<'T> = 
+    let qs = QuerySource<'T>()
+    qs.Query <- { qs.Query with Table = typeof<'T>.Name }
+    qs
+
+/// Maps the entity 'T to a table of the given name.
+let mapTable<'T> (tableName: string) (qs: QuerySource<'T>) = 
+    qs.Query <- { qs.Query with Table = tableName }
+    qs
+
+/// Maps the entity 'T to a schema of the given name.
+let mapSchema<'T> (schemaName: string) (qs: QuerySource<'T>) =
+    qs.Query <- { qs.Query with Schema = Some schemaName }
+    qs

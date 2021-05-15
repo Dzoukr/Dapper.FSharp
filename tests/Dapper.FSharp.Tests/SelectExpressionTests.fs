@@ -199,7 +199,7 @@ let testsBasic() = testList "SELECT EXPRESSION" [
         Expect.equal query.Where (Column ("Person.Id", Eq "Address.PersonId")) "Expected Person.Id = Address.PersonId"
     }
 
-    testTask "LeftJoin2" {
+    testTask "LeftJoin2" {        
         let query = 
             select {
                 for p in entity<Person> do
@@ -212,5 +212,69 @@ let testsBasic() = testList "SELECT EXPRESSION" [
             LeftJoin ("Address", "Address.PersonId", "Person.Id")
             LeftJoin ("Contact", "Contact.PersonId", "Person.Id")
         ] "Expected LEFT JOIN Address ON Person.Id = Address.PersonId"
+    }
+
+    testTask "Join2 with Custom Schema and Table Names" {
+        let personTable = entity<Person> |> mapSchema "dbo"  |> mapTable "People"
+        let addressTable = entity<Address> |> mapSchema "dbo"  |> mapTable "Addresses"
+        let contactTable = entity<Contact> |> mapSchema "dbo"  |> mapTable "Contacts"
+
+        let query = 
+            select {
+                for p in personTable do
+                join a in addressTable on (p.Id = a.PersonId) 
+                join c in contactTable on (p.Id = c.PersonId)
+                where (p.FName = "John" && a.City = "Chicago" && c.Phone = "919-765-4321")
+                orderBy p.Id
+                orderBy a.City
+                orderBy c.Phone
+            }
+    
+        Expect.equal query.Schema (Some "dbo") "Expected schema = dbo"
+        Expect.equal query.Table "People" "Expected table = People"
+        Expect.equal query.Joins [
+            InnerJoin ("dbo.Addresses", "Addresses.PersonId", "People.Id")
+            InnerJoin ("dbo.Contacts", "Contacts.PersonId", "People.Id")
+        ] "Expected all 3 table names to be overriden and have a schema"
+        Expect.equal query.Where 
+            (eq "People.FName" "John" + eq "Addresses.City" "Chicago" + eq "Contacts.Phone" "919-765-4321") 
+            "Expected WHERE Person.FName = 'John' && Person.LName = 'Doe'"
+        Expect.equal query.OrderBy [
+            OrderBy ("People.Id", Asc)
+            OrderBy ("Addresses.Id", Asc)
+            OrderBy ("Contacts.Id", Asc)
+        ] "Expected order by to use overriden schemas and table names"
+    }
+
+    testTask "LeftJoin2 with Custom Schema and Table Names" {
+        let personTable = entity<Person> |> mapSchema "dbo"  |> mapTable "People"
+        let addressTable = entity<Address> |> mapSchema "dbo"  |> mapTable "Addresses"
+        let contactTable = entity<Contact> |> mapSchema "dbo"  |> mapTable "Contacts"
+
+        let query = 
+            select {
+                for p in personTable do
+                leftJoin a in addressTable on (p.Id = a.PersonId) 
+                leftJoin c in contactTable on (p.Id = c.PersonId)
+                where (p.FName = "John" && a.City = "Chicago" && c.Phone = "919-765-4321")
+                orderBy p.Id
+                orderBy a.City
+                orderBy c.Phone
+            }
+    
+        Expect.equal query.Schema (Some "dbo") "Expected schema = dbo"
+        Expect.equal query.Table "People" "Expected table = People"
+        Expect.equal query.Joins [
+            LeftJoin ("dbo.Addresses", "Addresses.PersonId", "People.Id")
+            LeftJoin ("dbo.Contacts", "Contacts.PersonId", "People.Id")
+        ] "Expected all 3 table names to be overriden and have a schema"
+        Expect.equal query.Where 
+            (eq "People.FName" "John" + eq "Addresses.City" "Chicago" + eq "Contacts.Phone" "919-765-4321") 
+            "Expected WHERE Person.FName = 'John' && Person.LName = 'Doe'"
+        Expect.equal query.OrderBy [
+            OrderBy ("People.Id", Asc)
+            OrderBy ("Addresses.Id", Asc)
+            OrderBy ("Contacts.Id", Asc)
+        ] "Expected order by to use overriden schemas and table names"
     }
 ]
