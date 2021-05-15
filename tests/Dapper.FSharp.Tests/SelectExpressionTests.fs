@@ -214,7 +214,7 @@ let testsBasic() = testList "SELECT EXPRESSION" [
         ] "Expected LEFT JOIN Address ON Person.Id = Address.PersonId"
     }
 
-    ftestTask "Join2 with Custom Schema and Table Names" {
+    testTask "Join2 with Custom Schema and Table Names" {
         let personTable = entity<Person> |> mapSchema "dbo"  |> mapTable "People"
         let addressTable = entity<Address> |> mapSchema "dbo"  |> mapTable "Addresses"
         let contactTable = entity<Contact> |> mapSchema "dbo"  |> mapTable "Contacts"
@@ -233,24 +233,24 @@ let testsBasic() = testList "SELECT EXPRESSION" [
         Expect.equal query.Schema (Some "dbo") "Expected schema = dbo"
         Expect.equal query.Table "People" "Expected table = People"
         Expect.equal query.Joins [
-            InnerJoin ("dbo.Addresses", "Addresses.PersonId", "People.Id")
-            InnerJoin ("dbo.Contacts", "Contacts.PersonId", "People.Id")
-        ] "Expected all 3 table names to be overriden and have a schema"
+            InnerJoin ("dbo.Addresses", "dbo.Addresses.PersonId", "dbo.People.Id")
+            InnerJoin ("dbo.Contacts", "dbo.Contacts.PersonId", "dbo.People.Id")
+        ] "Expected tables and columns to be fully qualified with schema and overriden table names"
         Expect.equal query.Where 
-            (eq "People.FName" "John" + eq "Addresses.City" "Chicago" + eq "Contacts.Phone" "919-765-4321") 
-            "Expected WHERE Person.FName = 'John' && Person.LName = 'Doe'"
+            (eq "dbo.People.FName" "John" + eq "dbo.Addresses.City" "Chicago" + eq "dbo.Contacts.Phone" "919-765-4321") 
+            "Expected tables and columns to be fully qualified with schema and overriden table names"
         Expect.equal query.OrderBy [
-            OrderBy ("People.Id", Desc)
-            OrderBy ("Addresses.City", Asc)
-            OrderBy ("Contacts.Phone", Asc)
-        ] "Expected order by to use overriden schemas and table names"
+            OrderBy ("dbo.People.Id", Desc)
+            OrderBy ("dbo.Addresses.City", Asc)
+            OrderBy ("dbo.Contacts.Phone", Asc)
+        ] "Expected tables and columns to be fully qualified with schema and overriden table names"
     }
 
     testTask "LeftJoin2 with Custom Schema and Table Names" {
-        let personTable = entity<Person> |> mapSchema "dbo"  |> mapTable "People"
-        let addressTable = entity<Address> |> mapSchema "dbo"  |> mapTable "Addresses"
-        let contactTable = entity<Contact> |> mapSchema "dbo"  |> mapTable "Contacts"
-
+        let personTable = entity<Person> |> mapTable "People" |> mapSchema "dbo"
+        let addressTable = entity<Address> |> mapTable "Addresses" |> mapSchema "dbo"
+        let contactTable = entity<Contact> |> mapTable "Contacts" |> mapSchema "dbo"
+                                                                    
         let query = 
             select {
                 for p in personTable do
@@ -265,16 +265,16 @@ let testsBasic() = testList "SELECT EXPRESSION" [
         Expect.equal query.Schema (Some "dbo") "Expected schema = dbo"
         Expect.equal query.Table "People" "Expected table = People"
         Expect.equal query.Joins [
-            LeftJoin ("dbo.Addresses", "Addresses.PersonId", "People.Id")
-            LeftJoin ("dbo.Contacts", "Contacts.PersonId", "People.Id")
-        ] "Expected all 3 table names to be overriden and have a schema"
+            LeftJoin ("dbo.Addresses", "dbo.Addresses.PersonId", "dbo.People.Id")
+            LeftJoin ("dbo.Contacts", "dbo.Contacts.PersonId", "dbo.People.Id")
+        ] "Expected tables and columns to be fully qualified with schema and overriden table names"
         Expect.equal query.Where 
-            (eq "People.FName" "John" + eq "Addresses.City" "Chicago" + eq "Contacts.Phone" "919-765-4321") 
-            "Expected WHERE Person.FName = 'John' && Person.LName = 'Doe'"
+            (eq "dbo.People.FName" "John" + eq "dbo.Addresses.City" "Chicago" + eq "dbo.Contacts.Phone" "919-765-4321") 
+            "Expected tables and columns to be fully qualified with schema and overriden table names"
         Expect.equal query.OrderBy [
-            OrderBy ("People.Id", Asc)
-            OrderBy ("Addresses.City", Asc)
-            OrderBy ("Contacts.Phone", Desc)
-        ] "Expected order by to use overriden schemas and table names"
+            OrderBy ("dbo.People.Id", Asc)
+            OrderBy ("dbo.Addresses.City", Asc)
+            OrderBy ("dbo.Contacts.Phone", Desc)
+        ] "Expected tables and columns to be fully qualified with schema and overriden table names"
     }
 ]

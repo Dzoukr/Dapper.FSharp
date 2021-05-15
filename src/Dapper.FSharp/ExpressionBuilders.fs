@@ -9,6 +9,11 @@ let isIn<'P> (prop: 'P) (values: 'P list) = true
 let isNotIn<'P> (prop: 'P) (values: 'P list) = true
 let like<'P> (prop: 'P) (pattern: string) = true
 
+type TableInfo = {
+    Name: string
+    Schema: string option
+}
+
 type QuerySource<'T>() =
     let query = 
         { Schema = None
@@ -22,15 +27,25 @@ type QuerySource<'T>() =
           Distinct = false } : SelectQuery
 
     interface IEnumerable<'T> with
-        member this.GetEnumerator(): Collections.IEnumerator = 
-            Seq.empty<'T>.GetEnumerator() :> Collections.IEnumerator
-        member this.GetEnumerator(): IEnumerator<'T> = 
-            Seq.empty<'T>.GetEnumerator()
+        member this.GetEnumerator() = Seq.empty<'T>.GetEnumerator() :> Collections.IEnumerator
+        member this.GetEnumerator() = Seq.empty<'T>.GetEnumerator()
 
     member val Query : SelectQuery = query with get,set
+    member val Tables : Map<string, TableInfo> = Map.empty with get,set
 
 type SelectExpressionBuilder<'T>() =
     let def = new QuerySource<'T>()
+
+    /// Merges two maps of table info records
+    let mergeTables (a: Map<string, TableInfo>, b: Map<string, TableInfo>) =
+        Map (Seq.concat [ (Map.toSeq a); (Map.toSeq b) ])
+
+    /// Fully qualifies a column by looking up table info
+    let qualifyColumn (tables: Map<string, TableInfo>) (entityType: Type, columnName: string) =
+        let tbl = tables.[entityType.Name]
+        match tbl.Schema with
+        | Some schema -> sprintf "%s.%s.%s" schema tbl.Name columnName
+        | None -> sprintf "%s.%s" tbl.Name columnName
 
     member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
         state
@@ -44,14 +59,14 @@ type SelectExpressionBuilder<'T>() =
     /// Sets the WHERE condition
     [<CustomOperation("where", MaintainsVariableSpace = true)>]
     member __.Where (state:QuerySource<'T>, [<ProjectionParameter>] whereExpression) = 
-        let where = ExpressionVisitor.visitWhere<'T> whereExpression
+        let where = ExpressionVisitor.visitWhere<'T> whereExpression (qualifyColumn state.Tables)
         state.Query <- { state.Query with Where = where }
         state
 
     /// Sets the ORDER BY for single column
     [<CustomOperation("orderBy", MaintainsVariableSpace = true)>]
     member __.OrderBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        let propertyName = ExpressionVisitor.visitPropertySelector propertySelector
+        let propertyName = ExpressionVisitor.visitPropertySelector propertySelector (qualifyColumn state.Tables)
         let orderBy = OrderBy (propertyName, Asc)
         state.Query <- { state.Query with OrderBy = state.Query.OrderBy @ [orderBy] }
         state
@@ -64,7 +79,7 @@ type SelectExpressionBuilder<'T>() =
     /// Sets the ORDER BY DESC for single column
     [<CustomOperation("orderByDescending", MaintainsVariableSpace = true)>]
     member __.OrderByDescending (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        let propertyName = ExpressionVisitor.visitPropertySelector propertySelector
+        let propertyName = ExpressionVisitor.visitPropertySelector propertySelector (qualifyColumn state.Tables)
         let orderBy = OrderBy (propertyName, Desc)
         state.Query <- { state.Query with OrderBy = state.Query.OrderBy @ [orderBy] }
         state
@@ -99,40 +114,48 @@ type SelectExpressionBuilder<'T>() =
                     outerKeySelector: Expression<Func<'TOuter,'Key>>, 
                     innerKeySelector: Expression<Func<'TInner,'Key>>, 
                     resultSelector: Expression<Func<'TOuter,'TInner,'Result>> ) = 
-        let outerPropertyName = ExpressionVisitor.visitPropertySelector(outerKeySelector)
-        let innerPropertyName = ExpressionVisitor.visitPropertySelector(innerKeySelector)
+
+        let mergedTables = mergeTables (outerSource.Tables, innerSource.Tables)
+        let outerPropertyName = ExpressionVisitor.visitPropertySelector outerKeySelector (qualifyColumn mergedTables)
+        let innerPropertyName = ExpressionVisitor.visitPropertySelector innerKeySelector (qualifyColumn mergedTables)
         let innerTableName = 
-            match innerSource.Query.Schema with
-            | Some schema -> sprintf "%s.%s" schema innerSource.Query.Table
-            | None -> innerSource.Query.Table
+            let tbl = mergedTables.[typeof<'TInner>.Name]
+            match tbl.Schema with
+            | Some schema -> sprintf "%s.%s" schema tbl.Name
+            | None -> tbl.Name
         let join = InnerJoin (innerTableName, innerPropertyName, outerPropertyName)
         let result = QuerySource<'Result>()
+        result.Tables <- mergedTables
         result.Query <- { outerSource.Query with Joins = outerSource.Query.Joins @ [join] }
         result
 
     /// LEFT JOIN table where COLNAME equals to another COLUMN (including TABLE name)
     [<CustomOperation("leftJoin", MaintainsVariableSpace = true, IsLikeJoin = true, JoinConditionWord = "on")>]
     member __.LeftJoin (outerSource: QuerySource<'TOuter>, 
-                    innerSource: QuerySource<'TInner>, 
-                    outerKeySelector: Expression<Func<'TOuter,'Key>>, 
-                    innerKeySelector: Expression<Func<'TInner,'Key>>, 
-                    resultSelector: Expression<Func<'TOuter,'TInner,'Result>> ) = 
-        let outerPropertyName = ExpressionVisitor.visitPropertySelector(outerKeySelector)
-        let innerPropertyName = ExpressionVisitor.visitPropertySelector(innerKeySelector)
+                        innerSource: QuerySource<'TInner>, 
+                        outerKeySelector: Expression<Func<'TOuter,'Key>>, 
+                        innerKeySelector: Expression<Func<'TInner,'Key>>, 
+                        resultSelector: Expression<Func<'TOuter,'TInner,'Result>> ) = 
+
+        let mergedTables = mergeTables (outerSource.Tables, innerSource.Tables)
+        let outerPropertyName = ExpressionVisitor.visitPropertySelector outerKeySelector (qualifyColumn mergedTables)
+        let innerPropertyName = ExpressionVisitor.visitPropertySelector innerKeySelector (qualifyColumn mergedTables)
         let innerTableName = 
-            match innerSource.Query.Schema with
-            | Some schema -> sprintf "%s.%s" schema innerSource.Query.Table
-            | None -> innerSource.Query.Table
+            let tbl = mergedTables.[typeof<'TInner>.Name]
+            match tbl.Schema with
+            | Some schema -> sprintf "%s.%s" schema tbl.Name
+            | None -> tbl.Name
         let join = LeftJoin (innerTableName, innerPropertyName, outerPropertyName)
         let result = QuerySource<'Result>()
+        result.Tables <- mergedTables
         result.Query <- { outerSource.Query with Joins = outerSource.Query.Joins @ [join] }
-        result
 
+        result
 
     /// Sets the ORDER BY for single column
     [<CustomOperation("groupBy", MaintainsVariableSpace = true)>]
     member __.GroupBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        let propertyName = ExpressionVisitor.visitPropertySelector<'T, 'Prop>(propertySelector)
+        let propertyName = ExpressionVisitor.visitPropertySelector<'T, 'Prop> propertySelector (qualifyColumn state.Tables)
         state.Query <- { state.Query with GroupBy = state.Query.GroupBy @ [propertyName] }
         state
 
@@ -145,7 +168,7 @@ type SelectExpressionBuilder<'T>() =
     /// COUNT aggregate function for the selected column
     [<CustomOperation("countBy", MaintainsVariableSpace = true)>]
     member __.CountBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        let propertyName = ExpressionVisitor.visitPropertySelector<'T, 'Prop>(propertySelector)
+        let propertyName = ExpressionVisitor.visitPropertySelector<'T, 'Prop> propertySelector (qualifyColumn state.Tables)
         state.Query <- { state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Count(propertyName, propertyName)] }
         state
 
@@ -158,7 +181,7 @@ type SelectExpressionBuilder<'T>() =
     /// AVG aggregate function for the selected column
     [<CustomOperation("avgBy", MaintainsVariableSpace = true)>]
     member __.AvgBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        let propertyName = ExpressionVisitor.visitPropertySelector<'T, 'Prop>(propertySelector)
+        let propertyName = ExpressionVisitor.visitPropertySelector<'T, 'Prop> propertySelector (qualifyColumn state.Tables)
         state.Query <- { state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Avg(propertyName, propertyName)] }
         state
     
@@ -171,7 +194,7 @@ type SelectExpressionBuilder<'T>() =
     /// SUM aggregate function for the selected column
     [<CustomOperation("sumBy", MaintainsVariableSpace = true)>]
     member __.SumBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        let propertyName = ExpressionVisitor.visitPropertySelector<'T, 'Prop>(propertySelector)
+        let propertyName = ExpressionVisitor.visitPropertySelector<'T, 'Prop> propertySelector (qualifyColumn state.Tables)
         state.Query <- { state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Sum(propertyName, propertyName)] }
         state
     
@@ -184,7 +207,7 @@ type SelectExpressionBuilder<'T>() =
     /// MIN aggregate function for the selected column
     [<CustomOperation("minBy", MaintainsVariableSpace = true)>]
     member __.MinBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        let propertyName = ExpressionVisitor.visitPropertySelector<'T, 'Prop>(propertySelector)
+        let propertyName = ExpressionVisitor.visitPropertySelector<'T, 'Prop> propertySelector (qualifyColumn state.Tables)
         state.Query <- { state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Min(propertyName, propertyName)] }
         state
     
@@ -197,7 +220,7 @@ type SelectExpressionBuilder<'T>() =
     /// MIN aggregate function for the selected column
     [<CustomOperation("maxBy", MaintainsVariableSpace = true)>]
     member __.MaxBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        let propertyName = ExpressionVisitor.visitPropertySelector<'T, 'Prop>(propertySelector)
+        let propertyName = ExpressionVisitor.visitPropertySelector<'T, 'Prop> propertySelector (qualifyColumn state.Tables)
         state.Query <- { state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Max(propertyName, propertyName)] }
         state
     
@@ -215,15 +238,23 @@ let select<'T> = SelectExpressionBuilder<'T>()
 /// Maps the entity 'T to a table of the same name.
 let entity<'T> = 
     let qs = QuerySource<'T>()
-    qs.Query <- { qs.Query with Table = typeof<'T>.Name }
+    let entityName = typeof<'T>.Name
+    qs.Query <- { qs.Query with Table = entityName }
+    qs.Tables <- qs.Tables.Add(entityName, { Name = entityName; Schema = None })
     qs
 
 /// Maps the entity 'T to a table of the given name.
 let mapTable<'T> (tableName: string) (qs: QuerySource<'T>) = 
     qs.Query <- { qs.Query with Table = tableName }
+    let entityName = typeof<'T>.Name
+    let tbl = qs.Tables.[entityName]
+    qs.Tables <- qs.Tables.Add(entityName, { tbl with Name = tableName })
     qs
 
 /// Maps the entity 'T to a schema of the given name.
 let mapSchema<'T> (schemaName: string) (qs: QuerySource<'T>) =
     qs.Query <- { qs.Query with Schema = Some schemaName }
+    let entityName = typeof<'T>.Name
+    let tbl = qs.Tables.[entityName]
+    qs.Tables <- qs.Tables.Add(entityName, { tbl with Schema = Some schemaName })
     qs

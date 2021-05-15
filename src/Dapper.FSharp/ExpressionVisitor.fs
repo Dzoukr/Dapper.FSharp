@@ -95,11 +95,7 @@ let rec unwrapListExpr (lstValues: obj list, lstExp: MethodCallExpression) =
     else 
         lstValues
 
-let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
-    /// Creates a qualified {table}.{column}
-    let qualifyColumn (col: MemberExpression) =
-        sprintf "%s.%s" col.Member.DeclaringType.Name col.Member.Name
-
+let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: (Type * string) -> string) =
     let rec visit (exp: Expression) : Where =
         match exp with
         | Lambda x -> visit x.Body
@@ -118,16 +114,16 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
             match m.Arguments.[0], m.Arguments.[1] with
             | Member col, MethodCall lst ->
                 let lstValues = unwrapListExpr ([], lst)                
-                Column (qualifyColumn col, comparisonType lstValues)
+                Column (qualifyColumn(col.Member.DeclaringType, col.Member.Name), comparisonType lstValues)
             | Member col, Constant c -> 
                 let lstValues = (c.Value :?> System.Collections.IEnumerable) |> Seq.cast<obj> |> Seq.toList
-                Column (qualifyColumn col, comparisonType lstValues)
+                Column (qualifyColumn(col.Member.DeclaringType, col.Member.Name), comparisonType lstValues)
             | _ -> notImpl()
         | MethodCall m when m.Method.Name = "like" ->
             match m.Arguments.[0], m.Arguments.[1] with
             | Member col, Constant c -> 
                 let pattern = string c.Value
-                Column (qualifyColumn col, Like pattern)
+                Column (qualifyColumn(col.Member.DeclaringType, col.Member.Name), Like pattern)
             | _ -> notImpl()
         | Binary x -> 
             match exp.NodeType with
@@ -145,42 +141,43 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
                 match x.Left, x.Right with
                 | Member col1, Member col2 ->
                     // Handle col to col comparisons
-                    let columnComparison = getColumnComparison(exp.NodeType, qualifyColumn col2)
-                    Column (qualifyColumn col1, columnComparison)
+                    let columnComparison = getColumnComparison(exp.NodeType, qualifyColumn(col2.Member.DeclaringType, col2.Member.Name))
+                    Column (qualifyColumn(col1.Member.DeclaringType, col1.Member.Name), columnComparison)
                 | Member col, Constant c
                 | Constant c, Member col ->
                     // Handle regular column comparisons
                     let value = c.Value
                     let columnComparison = getColumnComparison(exp.NodeType, value)
-                    Column (qualifyColumn col, columnComparison)
+                    Column (qualifyColumn(col.Member.DeclaringType, col.Member.Name), columnComparison)
                 | Member col, MethodCall c when c.Type |> isOptionType ->
                     // Handle optional column comparisons
                     if c.Arguments.Count > 0 then 
                         match c.Arguments.[0] with
                         | Constant optVal -> 
                             let columnComparison = getColumnComparison(exp.NodeType, optVal.Value)
-                            Column (qualifyColumn col, columnComparison)
+                            Column (qualifyColumn(col.Member.DeclaringType, col.Member.Name), columnComparison)
                         | _ -> 
                             notImpl()
                     else
                         let columnComparison = getColumnComparison(exp.NodeType, null)
-                        Column (qualifyColumn col, columnComparison)
+                        Column (qualifyColumn(col.Member.DeclaringType, col.Member.Name), columnComparison)
                 | _ ->
                     notImpl()
         | _ ->
             notImpl()
 
     visit (filter :> Expression)
-
+    
 /// Returns a fully qualified column name: {table}.{column}
-let visitPropertySelector<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) =
+let visitPropertySelector<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) (qualifyColumn: (Type * string) -> string) =
     let rec visit (exp: Expression) : string =
         match exp with
         | Lambda x -> visit x.Body
         | MethodCall m when m.Method.Name = "Invoke" ->
             // Handle tuples
             visit m.Object
-        | Member m -> sprintf "%s.%s" m.Member.DeclaringType.Name m.Member.Name
+        | Member m -> 
+            qualifyColumn(m.Member.DeclaringType, m.Member.Name)
         | _ -> notImpl()
 
     visit (propertySelector :> Expression)
