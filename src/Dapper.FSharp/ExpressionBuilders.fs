@@ -56,6 +56,11 @@ type SelectExpressionBuilder<'T>() =
         state.Query <- { state.Query with OrderBy = state.Query.OrderBy @ [orderBy] }
         state
 
+    /// Sets the ORDER BY for single column
+    [<CustomOperation("thenBy", MaintainsVariableSpace = true)>]
+    member __.ThenBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+        __.OrderBy (state, propertySelector)
+
     /// Sets the ORDER BY DESC for single column
     [<CustomOperation("orderByDescending", MaintainsVariableSpace = true)>]
     member __.OrderByDescending (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
@@ -63,6 +68,11 @@ type SelectExpressionBuilder<'T>() =
         let orderBy = OrderBy (propertyName, Desc)
         state.Query <- { state.Query with OrderBy = state.Query.OrderBy @ [orderBy] }
         state
+
+    /// Sets the ORDER BY DESC for single column
+    [<CustomOperation("thenByDescending", MaintainsVariableSpace = true)>]
+    member __.ThenByDescending (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+        __.OrderByDescending (state, propertySelector)
 
     /// Sets the SKIP value for query
     [<CustomOperation("skip", MaintainsVariableSpace = true)>]

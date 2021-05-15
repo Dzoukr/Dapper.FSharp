@@ -214,7 +214,7 @@ let testsBasic() = testList "SELECT EXPRESSION" [
         ] "Expected LEFT JOIN Address ON Person.Id = Address.PersonId"
     }
 
-    testTask "Join2 with Custom Schema and Table Names" {
+    ftestTask "Join2 with Custom Schema and Table Names" {
         let personTable = entity<Person> |> mapSchema "dbo"  |> mapTable "People"
         let addressTable = entity<Address> |> mapSchema "dbo"  |> mapTable "Addresses"
         let contactTable = entity<Contact> |> mapSchema "dbo"  |> mapTable "Contacts"
@@ -225,9 +225,9 @@ let testsBasic() = testList "SELECT EXPRESSION" [
                 join a in addressTable on (p.Id = a.PersonId) 
                 join c in contactTable on (p.Id = c.PersonId)
                 where (p.FName = "John" && a.City = "Chicago" && c.Phone = "919-765-4321")
-                orderBy p.Id
-                orderBy a.City
-                orderBy c.Phone
+                orderByDescending p.Id
+                thenBy a.City
+                thenBy c.Phone
             }
     
         Expect.equal query.Schema (Some "dbo") "Expected schema = dbo"
@@ -240,9 +240,9 @@ let testsBasic() = testList "SELECT EXPRESSION" [
             (eq "People.FName" "John" + eq "Addresses.City" "Chicago" + eq "Contacts.Phone" "919-765-4321") 
             "Expected WHERE Person.FName = 'John' && Person.LName = 'Doe'"
         Expect.equal query.OrderBy [
-            OrderBy ("People.Id", Asc)
-            OrderBy ("Addresses.Id", Asc)
-            OrderBy ("Contacts.Id", Asc)
+            OrderBy ("People.Id", Desc)
+            OrderBy ("Addresses.City", Asc)
+            OrderBy ("Contacts.Phone", Asc)
         ] "Expected order by to use overriden schemas and table names"
     }
 
@@ -258,8 +258,8 @@ let testsBasic() = testList "SELECT EXPRESSION" [
                 leftJoin c in contactTable on (p.Id = c.PersonId)
                 where (p.FName = "John" && a.City = "Chicago" && c.Phone = "919-765-4321")
                 orderBy p.Id
-                orderBy a.City
-                orderBy c.Phone
+                thenBy a.City
+                thenByDescending c.Phone
             }
     
         Expect.equal query.Schema (Some "dbo") "Expected schema = dbo"
@@ -273,8 +273,8 @@ let testsBasic() = testList "SELECT EXPRESSION" [
             "Expected WHERE Person.FName = 'John' && Person.LName = 'Doe'"
         Expect.equal query.OrderBy [
             OrderBy ("People.Id", Asc)
-            OrderBy ("Addresses.Id", Asc)
-            OrderBy ("Contacts.Id", Asc)
+            OrderBy ("Addresses.City", Asc)
+            OrderBy ("Contacts.Phone", Desc)
         ] "Expected order by to use overriden schemas and table names"
     }
 ]
