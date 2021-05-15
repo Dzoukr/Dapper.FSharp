@@ -70,14 +70,16 @@ type SelectExpressionBuilder<'T>() =
     /// Sets the ORDER BY for single column
     [<CustomOperation("orderBy", MaintainsVariableSpace = true)>]
     member __.OrderBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        let orderBy = ExpressionVisitor.visitOrderBy<'T, 'Prop>(propertySelector, Asc)
+        let propertyName = ExpressionVisitor.visitPropertySelector propertySelector
+        let orderBy = OrderBy (propertyName, Asc)
         state.Query <- { state.Query with OrderBy = state.Query.OrderBy @ [orderBy] }
         state
 
     /// Sets the ORDER BY DESC for single column
     [<CustomOperation("orderByDescending", MaintainsVariableSpace = true)>]
     member __.OrderByDescending (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        let orderBy = ExpressionVisitor.visitOrderBy<'T, 'Prop>(propertySelector, Desc)
+        let propertyName = ExpressionVisitor.visitPropertySelector propertySelector
+        let orderBy = OrderBy (propertyName, Desc)
         state.Query <- { state.Query with OrderBy = state.Query.OrderBy @ [orderBy] }
         state
 
@@ -114,6 +116,23 @@ type SelectExpressionBuilder<'T>() =
         let result = QuerySource<'Result>()
         result.Query <- { outerSource.Query with Joins = outerSource.Query.Joins @ [join] }
         result
+
+    /// LEFT JOIN table where COLNAME equals to another COLUMN (including TABLE name)
+    [<CustomOperation("leftJoin", MaintainsVariableSpace = true, IsLikeJoin = true, JoinConditionWord = "on")>]
+    member __.LeftJoin (outerSource: QuerySource<'TOuter>, 
+                    innerSource: QuerySource<'TInner>, 
+                    outerKeySelector: Expression<Func<'TOuter,'Key>>, 
+                    innerKeySelector: Expression<Func<'TInner,'Key>>, 
+                    resultSelector: Expression<Func<'TOuter,'TInner,'Result>> ) = 
+        let outerPropertyName = ExpressionVisitor.visitPropertySelector(outerKeySelector)
+        let innerPropertyName = ExpressionVisitor.visitPropertySelector(innerKeySelector)
+        let outerTable = typeof<'TOuter>.Name
+        let innerTable = typeof<'TInner>.Name
+        let join = LeftJoin (innerTable, innerPropertyName, outerPropertyName)
+        let result = QuerySource<'Result>()
+        result.Query <- { outerSource.Query with Joins = outerSource.Query.Joins @ [join] }
+        result
+
 
     /// Sets the ORDER BY for single column
     [<CustomOperation("groupBy", MaintainsVariableSpace = true)>]

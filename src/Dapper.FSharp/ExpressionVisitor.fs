@@ -184,7 +184,3 @@ let visitPropertySelector<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Pro
         | _ -> notImpl()
 
     visit (propertySelector :> Expression)
-
-let visitOrderBy<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>, direction) =
-    let propertyName = visitPropertySelector propertySelector
-    OrderBy (propertyName, direction)

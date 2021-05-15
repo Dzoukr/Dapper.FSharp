@@ -186,4 +186,31 @@ let testsBasic() = testList "SELECT EXPRESSION" [
             InnerJoin ("Contact", "Contact.PersonId", "Person.Id")
         ] "Expected INNER JOIN Address ON Person.Id = Address.PersonId"
     }
+
+    testTask "LeftJoin" {
+        let query = 
+            select {
+                for p in entity<Person> do
+                leftJoin a in entity<Address> on (p.Id = a.PersonId) 
+                where (p.Id = a.PersonId) 
+            }
+    
+        Expect.equal query.Joins [LeftJoin ("Address", "Address.PersonId", "Person.Id")] "Expected LEFT JOIN Address ON Person.Id = Address.PersonId"
+        Expect.equal query.Where (Column ("Person.Id", Eq "Address.PersonId")) "Expected Person.Id = Address.PersonId"
+    }
+
+    testTask "LeftJoin2" {
+        let query = 
+            select {
+                for p in entity<Person> do
+                leftJoin a in entity<Address> on (p.Id = a.PersonId) 
+                leftJoin c in entity<Contact> on (p.Id = c.PersonId)
+                where (p.Id = a.PersonId && c.Phone = "919-765-4321")
+            }
+    
+        Expect.equal query.Joins [
+            LeftJoin ("Address", "Address.PersonId", "Person.Id")
+            LeftJoin ("Contact", "Contact.PersonId", "Person.Id")
+        ] "Expected LEFT JOIN Address ON Person.Id = Address.PersonId"
+    }
 ]
