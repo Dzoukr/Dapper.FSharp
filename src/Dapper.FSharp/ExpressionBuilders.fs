@@ -66,7 +66,7 @@ type SelectExpressionBuilder<'T>() =
     /// Sets the ORDER BY for single column
     [<CustomOperation("orderBy", MaintainsVariableSpace = true)>]
     member __.OrderBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        let propertyName = ExpressionVisitor.visitPropertySelector propertySelector (qualifyColumn state.Tables)
+        let propertyName = ExpressionVisitor.visitPropertySelector<'T, 'Prop> propertySelector (qualifyColumn state.Tables)
         let orderBy = OrderBy (propertyName, Asc)
         state.Query <- { state.Query with OrderBy = state.Query.OrderBy @ [orderBy] }
         state
@@ -79,7 +79,7 @@ type SelectExpressionBuilder<'T>() =
     /// Sets the ORDER BY DESC for single column
     [<CustomOperation("orderByDescending", MaintainsVariableSpace = true)>]
     member __.OrderByDescending (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        let propertyName = ExpressionVisitor.visitPropertySelector propertySelector (qualifyColumn state.Tables)
+        let propertyName = ExpressionVisitor.visitPropertySelector<'T, 'Prop> propertySelector (qualifyColumn state.Tables)
         let orderBy = OrderBy (propertyName, Desc)
         state.Query <- { state.Query with OrderBy = state.Query.OrderBy @ [orderBy] }
         state
@@ -116,8 +116,8 @@ type SelectExpressionBuilder<'T>() =
                     resultSelector: Expression<Func<'TOuter,'TInner,'Result>> ) = 
 
         let mergedTables = mergeTables (outerSource.Tables, innerSource.Tables)
-        let outerPropertyName = ExpressionVisitor.visitPropertySelector outerKeySelector (qualifyColumn mergedTables)
-        let innerPropertyName = ExpressionVisitor.visitPropertySelector innerKeySelector (qualifyColumn mergedTables)
+        let outerPropertyName = ExpressionVisitor.visitPropertySelector<'TOuter, 'Key> outerKeySelector (qualifyColumn mergedTables)
+        let innerPropertyName = ExpressionVisitor.visitPropertySelector<'TInner, 'Key> innerKeySelector (qualifyColumn mergedTables)
         let innerTableName = 
             let tbl = mergedTables.[typeof<'TInner>.Name]
             match tbl.Schema with
@@ -138,8 +138,8 @@ type SelectExpressionBuilder<'T>() =
                         resultSelector: Expression<Func<'TOuter,'TInner,'Result>> ) = 
 
         let mergedTables = mergeTables (outerSource.Tables, innerSource.Tables)
-        let outerPropertyName = ExpressionVisitor.visitPropertySelector outerKeySelector (qualifyColumn mergedTables)
-        let innerPropertyName = ExpressionVisitor.visitPropertySelector innerKeySelector (qualifyColumn mergedTables)
+        let outerPropertyName = ExpressionVisitor.visitPropertySelector<'TOuter, 'Key> outerKeySelector (qualifyColumn mergedTables)
+        let innerPropertyName = ExpressionVisitor.visitPropertySelector<'TInner, 'Key> innerKeySelector (qualifyColumn mergedTables)
         let innerTableName = 
             let tbl = mergedTables.[typeof<'TInner>.Name]
             match tbl.Schema with
