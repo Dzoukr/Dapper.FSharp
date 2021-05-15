@@ -111,9 +111,9 @@ type SelectExpressionBuilder<'T>() =
         let outerTable = typeof<'TOuter>.Name
         let innerTable = typeof<'TInner>.Name
         let join = InnerJoin (innerTable, innerPropertyName, outerPropertyName)
-        let r = QuerySource<'Result>()
-        r.Query <- { r.Query with Joins = r.Query.Joins @ [join] }
-        r
+        let result = QuerySource<'Result>()
+        result.Query <- { outerSource.Query with Joins = outerSource.Query.Joins @ [join] }
+        result
 
     /// Sets the ORDER BY for single column
     [<CustomOperation("groupBy", MaintainsVariableSpace = true)>]

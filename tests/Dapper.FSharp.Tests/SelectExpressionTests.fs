@@ -191,8 +191,8 @@ let testsBasic() = testList "SELECT EXPRESSION" [
         Expect.equal query.Joins [InnerJoin ("Address", "Address.PersonId", "Person.Id")] "Expected INNER JOIN Address ON Person.Id = Address.PersonId"
         Expect.equal query.Where (Column ("Person.Id", Eq "Address.PersonId")) "Expected Person.Id = Address.PersonId"
     }
-
-    ftestTask "Join2" {
+    
+    testTask "Join2" {
         let query = 
             select {
                 for p in entity<Person> do
