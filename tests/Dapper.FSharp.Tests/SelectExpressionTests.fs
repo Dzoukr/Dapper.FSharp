@@ -139,26 +139,6 @@ let testsBasic() = testList "SELECT EXPRESSION" [
         Expect.equal query.Where (Column ("Person.LName", Like "D%")) "Expected LName Person.LIKE \"D%\""
     }
 
-    //testTask "Inner Join" {
-    //    let query = 
-    //        select {
-    //            for p in entity<Person> do
-    //            innerJoin (fun (p: Person) (a: Address) -> p.Id = a.PersonId)
-    //        }
-    
-    //    Expect.equal query.Joins [InnerJoin ("Address", "PersonId", "Person.Id")] "Expected INNER JOIN Address ON Person.Id = Address.PersonId"
-    //}
-
-    //testTask "Left Join" {
-    //    let query = 
-    //        select {
-    //            for p in entity<Person> do
-    //            leftJoin (fun (p: Person) (a: Address) -> p.Id = a.PersonId)
-    //        }
-    
-    //    Expect.equal query.Joins [LeftJoin ("Address", "PersonId", "Person.Id")] "Expected LEFT JOIN Address ON Person.Id = Address.PersonId"
-    //}
-
     testTask "Count" {
         let query = 
             select {
