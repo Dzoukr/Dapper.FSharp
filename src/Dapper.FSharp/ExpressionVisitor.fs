@@ -97,8 +97,8 @@ let rec unwrapListExpr (lstValues: obj list, lstExp: MethodCallExpression) =
 
 let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
     /// Creates a qualified {table}.{column}
-    let qualifiedColumn (col: MemberExpression, comparison) = 
-        Column ((sprintf "%s.%s" col.Member.DeclaringType.Name col.Member.Name), comparison)
+    let qualifyColumn (col: MemberExpression) =
+        sprintf "%s.%s" col.Member.DeclaringType.Name col.Member.Name
 
     let rec visit (exp: Expression) : Where =
         match exp with
@@ -118,16 +118,16 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
             match m.Arguments.[0], m.Arguments.[1] with
             | Member col, MethodCall lst ->
                 let lstValues = unwrapListExpr ([], lst)                
-                qualifiedColumn (col, comparisonType lstValues)
+                Column (qualifyColumn col, comparisonType lstValues)
             | Member col, Constant c -> 
                 let lstValues = (c.Value :?> System.Collections.IEnumerable) |> Seq.cast<obj> |> Seq.toList
-                qualifiedColumn (col, comparisonType lstValues)
+                Column (qualifyColumn col, comparisonType lstValues)
             | _ -> notImpl()
         | MethodCall m when m.Method.Name = "like" ->
             match m.Arguments.[0], m.Arguments.[1] with
             | Member col, Constant c -> 
                 let pattern = string c.Value
-                qualifiedColumn (col, Like pattern)
+                Column (qualifyColumn col, Like pattern)
             | _ -> notImpl()
         | Binary x -> 
             match exp.NodeType with
@@ -144,27 +144,27 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) =
             | _ ->
                 match x.Left, x.Right with
                 | Member col1, Member col2 ->
-                    // Handle col to col cmoparisons
-                    let columnComparison = getColumnComparison(exp.NodeType, col2)
-                    qualifiedColumn (col1, columnComparison)
+                    // Handle col to col comparisons
+                    let columnComparison = getColumnComparison(exp.NodeType, qualifyColumn col2)
+                    Column (qualifyColumn col1, columnComparison)
                 | Member col, Constant c
                 | Constant c, Member col ->
                     // Handle regular column comparisons
                     let value = c.Value
                     let columnComparison = getColumnComparison(exp.NodeType, value)
-                    qualifiedColumn (col, columnComparison)
+                    Column (qualifyColumn col, columnComparison)
                 | Member col, MethodCall c when c.Type |> isOptionType ->
                     // Handle optional column comparisons
                     if c.Arguments.Count > 0 then 
                         match c.Arguments.[0] with
                         | Constant optVal -> 
                             let columnComparison = getColumnComparison(exp.NodeType, optVal.Value)
-                            qualifiedColumn (col, columnComparison)
+                            Column (qualifyColumn col, columnComparison)
                         | _ -> 
                             notImpl()
                     else
                         let columnComparison = getColumnComparison(exp.NodeType, null)
-                        qualifiedColumn (col, columnComparison)
+                        Column (qualifyColumn col, columnComparison)
                 | _ ->
                     notImpl()
         | _ ->
