@@ -675,7 +675,7 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let! fromDb =
             select {
                 for p in personsView do
-                join d in dogsView on (p.Id = d.OwnerId)
+                leftJoin d in dogsView on (p.Id = d.OwnerId)
                 orderBy p.Position
                 thenBy d.Nickname
             } |> crud.SelectAsyncOption<Persons.View, Dogs.View>
@@ -792,8 +792,8 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let! fromDb =
             select {
                 for p in personsView do
-                join d in dogsView on (p.Id = d.OwnerId)
-                join dw in dogsWeights on (d.Nickname = dw.DogNickname)
+                leftJoin d in dogsView on (p.Id = d.OwnerId)
+                leftJoin dw in dogsWeights on (d.Nickname = dw.DogNickname)
                 orderBy p.Position
                 thenBy d.Nickname
                 thenBy dw.Year

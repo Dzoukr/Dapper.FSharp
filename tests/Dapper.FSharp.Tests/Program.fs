@@ -18,7 +18,6 @@ let mssqlTests connString =
     let crud = MSSQL.Database.getCrud conn
     let init = MSSQL.Database.getInitializer conn
     [   
-        LinqSelectTests.integrationTests crud init
         //DeleteTests.testsBasic crud init
         //DeleteTests.testsOutput crud init
         //InsertTests.testsBasic crud init
@@ -28,6 +27,7 @@ let mssqlTests connString =
         //UpdateTests.testsBasic crud init
         //UpdateTests.testsOutput crud init
         //SelectTests.testsBasic crud init        
+        LinqSelectTests.integrationTests crud init
         //MSSQL.AggregatesTests.tests conn
     ]
     |> testList "MSSQL"
