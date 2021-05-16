@@ -2,6 +2,7 @@
 
 open System.Linq.Expressions
 open System
+open System.Reflection
 
 let notImpl() = raise (NotImplementedException())
 let notImplMsg msg = raise (NotImplementedException msg)
@@ -100,7 +101,7 @@ let rec unwrapListExpr (lstValues: obj list, lstExp: MethodCallExpression) =
     else 
         lstValues
 
-let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: (Type * string) -> string) =
+let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberInfo -> string) =
     let rec visit (exp: Expression) : Where =
         match exp with
         | Lambda x -> visit x.Body
@@ -119,16 +120,16 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: (Type * 
             match m.Arguments.[0], m.Arguments.[1] with
             | Member col, MethodCall lst ->
                 let lstValues = unwrapListExpr ([], lst)                
-                Column (qualifyColumn(col.Member.DeclaringType, col.Member.Name), comparisonType lstValues)
+                Column (qualifyColumn(col.Member), comparisonType lstValues)
             | Member col, Constant c -> 
                 let lstValues = (c.Value :?> System.Collections.IEnumerable) |> Seq.cast<obj> |> Seq.toList
-                Column (qualifyColumn(col.Member.DeclaringType, col.Member.Name), comparisonType lstValues)
+                Column (qualifyColumn(col.Member), comparisonType lstValues)
             | _ -> notImpl()
         | MethodCall m when m.Method.Name = "like" ->
             match m.Arguments.[0], m.Arguments.[1] with
             | Member col, Constant c -> 
                 let pattern = string c.Value
-                Column (qualifyColumn(col.Member.DeclaringType, col.Member.Name), Like pattern)
+                Column (qualifyColumn(col.Member), Like pattern)
             | _ -> notImpl()
         | Binary x -> 
             match exp.NodeType with
@@ -146,14 +147,14 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: (Type * 
                 match x.Left, x.Right with
                 | Member col1, Member col2 ->
                     // Handle col to col comparisons
-                    let columnComparison = getColumnComparison(exp.NodeType, qualifyColumn(col2.Member.DeclaringType, col2.Member.Name))
-                    Column (qualifyColumn(col1.Member.DeclaringType, col1.Member.Name), columnComparison)                
+                    let columnComparison = getColumnComparison(exp.NodeType, qualifyColumn(col2.Member))
+                    Column (qualifyColumn(col1.Member), columnComparison)                
                 | Member col, Constant c
                 | Constant c, Member col ->
                     // Handle regular column comparisons
                     let value = c.Value
                     let columnComparison = getColumnComparison(exp.NodeType, value)
-                    Column (qualifyColumn(col.Member.DeclaringType, col.Member.Name), columnComparison)
+                    Column (qualifyColumn(col.Member), columnComparison)
                 | Constant _, Constant _ ->
                     notImplMsg("Constant comparisons are not currently supported. Ex: 'where (1 = 1)'")
                 | Member col, MethodCall c when c.Type |> isOptionType ->
@@ -162,12 +163,12 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: (Type * 
                         match c.Arguments.[0] with
                         | Constant optVal -> 
                             let columnComparison = getColumnComparison(exp.NodeType, optVal.Value)
-                            Column (qualifyColumn(col.Member.DeclaringType, col.Member.Name), columnComparison)
+                            Column (qualifyColumn(col.Member), columnComparison)
                         | _ -> 
                             notImpl()
                     else
                         let columnComparison = getColumnComparison(exp.NodeType, null)
-                        Column (qualifyColumn(col.Member.DeclaringType, col.Member.Name), columnComparison)
+                        Column (qualifyColumn(col.Member), columnComparison)
                 | _ ->
                     notImpl()
         | _ ->
@@ -176,7 +177,7 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: (Type * 
     visit (filter :> Expression)
 
 /// Returns a list of one or more fully qualified column names: ["{schema}.{table}.{column}"]
-let visitGroupBy<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) (qualifyColumn: (Type * string) -> string) =
+let visitGroupBy<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) (qualifyColumn: MemberInfo -> string) =
     let rec visit (exp: Expression) : string list =
         match exp with
         | Lambda x -> visit x.Body
@@ -188,7 +189,7 @@ let visitGroupBy<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) (qua
             n.Arguments |> Seq.map visit |> Seq.toList |> List.concat
         | Member m -> 
             // Handle groupBy for a single column
-            let column = qualifyColumn(m.Member.DeclaringType, m.Member.Name)
+            let column = qualifyColumn(m.Member)
             [column]
         | _ -> notImpl()
 
@@ -196,7 +197,7 @@ let visitGroupBy<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) (qua
 
 
 /// Returns a fully qualified column name: "{schema}.{table}.{column}"
-let visitPropertySelector<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) (qualifyColumn: (Type * string) -> string) =
+let visitPropertySelector<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) (qualifyColumn: MemberInfo -> string) =
     let rec visit (exp: Expression) : string =
         match exp with
         | Lambda x -> visit x.Body
@@ -204,7 +205,7 @@ let visitPropertySelector<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Pro
             // Handle tuples
             visit m.Object
         | Member m -> 
-            qualifyColumn(m.Member.DeclaringType, m.Member.Name)
+            qualifyColumn(m.Member)
         | _ -> notImpl()
 
     visit (propertySelector :> Expression)

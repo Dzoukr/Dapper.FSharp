@@ -41,11 +41,11 @@ type SelectExpressionBuilder<'T>() =
         Map (Seq.concat [ (Map.toSeq a); (Map.toSeq b) ])
 
     /// Fully qualifies a column with: {schema}.{table}.{column}
-    let fullyQualifyColumn (tables: Map<string, TableInfo>) (entityType: Type, columnName: string) =
-        let tbl = tables.[entityType.Name]
+    let fullyQualifyColumn (tables: Map<string, TableInfo>) (property: Reflection.MemberInfo) =
+        let tbl = tables.[property.DeclaringType.Name]
         match tbl.Schema with
-        | Some schema -> sprintf "%s.%s.%s" schema tbl.Name columnName
-        | None -> sprintf "%s.%s" tbl.Name columnName
+        | Some schema -> sprintf "%s.%s.%s" schema tbl.Name property.Name
+        | None -> sprintf "%s.%s" tbl.Name property.Name
 
     member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
         state
@@ -119,7 +119,7 @@ type SelectExpressionBuilder<'T>() =
         let outerPropertyName = ExpressionVisitor.visitPropertySelector<'TOuter, 'Key> outerKeySelector (fullyQualifyColumn mergedTables)
         
         // Do not qualify inner column name because Dapper.FSharp later appends "{innerTableName}.{innerPropertyName}"
-        let doNotQualifyColumn (entityType: Type, columnName: string) = columnName
+        let doNotQualifyColumn (property: Reflection.MemberInfo) = property.Name
         let innerPropertyName = ExpressionVisitor.visitPropertySelector<'TInner, 'Key> innerKeySelector doNotQualifyColumn
 
         let innerTableName = 
@@ -145,7 +145,7 @@ type SelectExpressionBuilder<'T>() =
         let outerPropertyName = ExpressionVisitor.visitPropertySelector<'TOuter, 'Key> outerKeySelector (fullyQualifyColumn mergedTables)
         
         // Do not qualify inner column name because Dapper.FSharp later appends "{innerTableName}.{innerPropertyName}"
-        let doNotQualifyColumn (entityType: Type, columnName: string) = columnName
+        let doNotQualifyColumn (property: Reflection.MemberInfo) = property.Name
         let innerPropertyName = ExpressionVisitor.visitPropertySelector<'TInner, 'Key> innerKeySelector doNotQualifyColumn
 
         let innerTableName = 
