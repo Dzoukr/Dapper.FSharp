@@ -7,79 +7,140 @@ open System.Reflection
 let notImpl() = raise (NotImplementedException())
 let notImplMsg msg = raise (NotImplementedException msg)
 
-let isOptionType (t: Type) = 
-    t.IsGenericType && t.GetGenericTypeDefinition() = typedefof<Option<_>>
+[<AutoOpen>]
+module VisitorPatterns =
 
-let (|Lambda|_|) (exp: Expression) =
-    match exp.NodeType with
-    | ExpressionType.Lambda -> Some (exp :?> LambdaExpression)
-    | _ -> None
+    let (|Lambda|_|) (exp: Expression) =
+        match exp.NodeType with
+        | ExpressionType.Lambda -> Some (exp :?> LambdaExpression)
+        | _ -> None
 
-let (|Unary|_|) (exp: Expression) =
-    match exp.NodeType with
-    | ExpressionType.ArrayLength
-    | ExpressionType.Convert
-    | ExpressionType.ConvertChecked
-    | ExpressionType.Negate
-    | ExpressionType.UnaryPlus
-    | ExpressionType.NegateChecked
-    | ExpressionType.Not
-    | ExpressionType.Quote
-    | ExpressionType.TypeAs -> Some (exp :?> UnaryExpression)
-    | _ -> None
+    let (|Unary|_|) (exp: Expression) =
+        match exp.NodeType with
+        | ExpressionType.ArrayLength
+        | ExpressionType.Convert
+        | ExpressionType.ConvertChecked
+        | ExpressionType.Negate
+        | ExpressionType.UnaryPlus
+        | ExpressionType.NegateChecked
+        | ExpressionType.Not
+        | ExpressionType.Quote
+        | ExpressionType.TypeAs -> Some (exp :?> UnaryExpression)
+        | _ -> None
 
-let (|Binary|_|) (exp: Expression) =
-    match exp.NodeType with
-    | ExpressionType.Add
-    | ExpressionType.AddChecked
-    | ExpressionType.And
-    | ExpressionType.AndAlso
-    | ExpressionType.ArrayIndex
-    | ExpressionType.Coalesce
-    | ExpressionType.Divide
-    | ExpressionType.Equal
-    | ExpressionType.ExclusiveOr
-    | ExpressionType.GreaterThan
-    | ExpressionType.GreaterThanOrEqual
-    | ExpressionType.LeftShift
-    | ExpressionType.LessThan
-    | ExpressionType.LessThanOrEqual
-    | ExpressionType.Modulo
-    | ExpressionType.Multiply
-    | ExpressionType.MultiplyChecked
-    | ExpressionType.NotEqual
-    | ExpressionType.Or
-    | ExpressionType.OrElse
-    | ExpressionType.Power
-    | ExpressionType.RightShift
-    | ExpressionType.Subtract
-    | ExpressionType.SubtractChecked -> Some (exp :?> BinaryExpression)
-    | _ -> None
+    let (|Binary|_|) (exp: Expression) =
+        match exp.NodeType with
+        | ExpressionType.Add
+        | ExpressionType.AddChecked
+        | ExpressionType.And
+        | ExpressionType.AndAlso
+        | ExpressionType.ArrayIndex
+        | ExpressionType.Coalesce
+        | ExpressionType.Divide
+        | ExpressionType.Equal
+        | ExpressionType.ExclusiveOr
+        | ExpressionType.GreaterThan
+        | ExpressionType.GreaterThanOrEqual
+        | ExpressionType.LeftShift
+        | ExpressionType.LessThan
+        | ExpressionType.LessThanOrEqual
+        | ExpressionType.Modulo
+        | ExpressionType.Multiply
+        | ExpressionType.MultiplyChecked
+        | ExpressionType.NotEqual
+        | ExpressionType.Or
+        | ExpressionType.OrElse
+        | ExpressionType.Power
+        | ExpressionType.RightShift
+        | ExpressionType.Subtract
+        | ExpressionType.SubtractChecked -> Some (exp :?> BinaryExpression)
+        | _ -> None
 
-let (|MethodCall|_|) (exp: Expression) =
-    match exp.NodeType with
-    | ExpressionType.Call -> Some (exp :?> MethodCallExpression)    
-    | _ -> None
+    let (|MethodCall|_|) (exp: Expression) =
+        match exp.NodeType with
+        | ExpressionType.Call -> Some (exp :?> MethodCallExpression)    
+        | _ -> None
 
-let (|New|_|) (exp: Expression) =
-    match exp.NodeType with
-    | ExpressionType.New -> Some (exp :?> NewExpression)
-    | _ -> None
+    let (|New|_|) (exp: Expression) =
+        match exp.NodeType with
+        | ExpressionType.New -> Some (exp :?> NewExpression)
+        | _ -> None
 
-let (|Constant|_|) (exp: Expression) =
-    match exp.NodeType with
-    | ExpressionType.Constant -> Some (exp :?> ConstantExpression)
-    | _ -> None
+    let (|Constant|_|) (exp: Expression) =
+        match exp.NodeType with
+        | ExpressionType.Constant -> Some (exp :?> ConstantExpression)
+        | _ -> None
 
-let (|Property|_|) (exp: Expression) =
-    match exp.NodeType with
-    | ExpressionType.MemberAccess -> Some (exp :?> MemberExpression)
-    | _ -> None
+    let (|Member|_|) (exp: Expression) =
+        match exp.NodeType with
+        | ExpressionType.MemberAccess -> Some (exp :?> MemberExpression)
+        | _ -> None
 
-let (|Parameter|_|) (exp: Expression) =
-    match exp.NodeType with
-    | ExpressionType.Parameter -> Some (exp :?> ParameterExpression)
-    | _ -> None
+    let (|Parameter|_|) (exp: Expression) =
+        match exp.NodeType with
+        | ExpressionType.Parameter -> Some (exp :?> ParameterExpression)
+        | _ -> None
+
+[<AutoOpen>]
+module SqlPatterns = 
+
+    let (|Not|_|) (exp: Expression) = 
+        match exp.NodeType with
+        | ExpressionType.Not -> Some (exp :?> UnaryExpression)
+        | _ -> None
+
+    let (|BinaryAnd|_|) (exp: Expression) =
+        match exp.NodeType with
+        | ExpressionType.And
+        | ExpressionType.AndAlso -> Some (exp :?> BinaryExpression)
+        | _ -> None
+
+    let (|BinaryOr|_|) (exp: Expression) =
+        match exp.NodeType with
+        | ExpressionType.Or
+        | ExpressionType.OrElse -> Some (exp :?> BinaryExpression)
+        | _ -> None
+
+    let (|BinaryCompare|_|) (exp: Expression) =
+        match exp.NodeType with
+        | ExpressionType.Equal
+        | ExpressionType.NotEqual
+        | ExpressionType.GreaterThan
+        | ExpressionType.GreaterThanOrEqual
+        | ExpressionType.LessThan
+        | ExpressionType.LessThanOrEqual -> Some (exp :?> BinaryExpression)
+        | _ -> None
+
+    let isOptionType (t: Type) = 
+        t.IsGenericType && t.GetGenericTypeDefinition() = typedefof<Option<_>>
+
+    /// A property member or a property wrapped in 'Some'.
+    let (|Property|_|) (exp: Expression) =
+        match exp with
+        | Member m -> Some m.Member
+        | MethodCall opt when opt.Type |> isOptionType ->        
+            if opt.Arguments.Count > 0 then
+                // Option.Some
+                match opt.Arguments.[0] with
+                | Member m -> Some m.Member
+                | _ -> None
+            else None
+        | _ -> None
+
+    /// A constant or a constant option.
+    let (|Value|_|) (exp: Expression) =
+        match exp with
+        | Constant c -> Some c.Value
+        | MethodCall opt when opt.Type |> isOptionType ->        
+            if opt.Arguments.Count > 0 then
+                // Option.Some
+                match opt.Arguments.[0] with
+                | Constant c -> Some c.Value
+                | _ -> None
+            else
+                // Option.None
+                Some null
+        | _ -> None
 
 let getColumnComparison (expType: ExpressionType, value: obj) =
     match expType with
@@ -115,78 +176,54 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
     let rec visit (exp: Expression) : Where =
         match exp with
         | Lambda x -> visit x.Body
-        | Unary x -> 
-            match x.NodeType with
-            | ExpressionType.Not -> 
-                let operand = visit x.Operand
-                Unary (Not, operand)
-            | _ ->
-                notImplMsg "Unsupported unary operation"
+        | Not x -> 
+            let operand = visit x.Operand
+            Unary (Not, operand)
         | MethodCall m when m.Method.Name = "Invoke" ->
             // Handle tuples
             visit m.Object
         | MethodCall m when m.Method.Name = "isIn" || m.Method.Name = "isNotIn" ->
             let comparisonType = if m.Method.Name = "isIn" then In else NotIn
             match m.Arguments.[0], m.Arguments.[1] with
-            | Property col, MethodCall lst ->
+            | Member col, MethodCall lst ->
                 let lstValues = unwrapListExpr ([], lst)                
                 Column (qualifyColumn col.Member, comparisonType lstValues)
-            | Property col, Constant c -> 
+            | Member col, Constant c -> 
                 let lstValues = (c.Value :?> System.Collections.IEnumerable) |> Seq.cast<obj> |> Seq.toList
                 Column (qualifyColumn col.Member, comparisonType lstValues)
             | _ -> notImpl()
         | MethodCall m when m.Method.Name = "like" ->
             match m.Arguments.[0], m.Arguments.[1] with
-            | Property col, Constant c -> 
+            | Member col, Constant c -> 
                 let pattern = string c.Value
                 Column (qualifyColumn col.Member, Like pattern)
             | _ -> notImpl()
-        | Binary x -> 
-            match exp.NodeType with
-            | ExpressionType.And
-            | ExpressionType.AndAlso ->
-                let lt = visit x.Left
-                let rt = visit x.Right
-                Binary (lt, And, rt)
-            | ExpressionType.Or
-            | ExpressionType.OrElse ->
-                let lt = visit x.Left
-                let rt = visit x.Right
-                Binary (lt, Or, rt)
+        | BinaryAnd x ->
+            let lt = visit x.Left
+            let rt = visit x.Right
+            Binary (lt, And, rt)
+        | BinaryOr x -> 
+            let lt = visit x.Left
+            let rt = visit x.Right
+            Binary (lt, Or, rt)
+        | BinaryCompare x ->
+            match x.Left, x.Right with            
+            | Property p1, Property p2 ->
+                // Handle col to col comparisons
+                let lt = qualifyColumn p1
+                let cp = getComparison exp.NodeType
+                let rt = qualifyColumn p2
+                Expr (sprintf "%s %s %s" lt cp rt)
+            | Property p, Value value ->
+                // Handle column to value comparisons
+                let columnComparison = getColumnComparison(exp.NodeType, value)
+                Column (qualifyColumn p, columnComparison)
+            | Value v1, Value v2 ->
+                // Handle value to value comparisons
+                let cp = getComparison exp.NodeType
+                Expr (sprintf "%A %s %A" v1 cp v2)
             | _ ->
-                match x.Left, x.Right with
-                | Constant _, Constant _ ->
-                    notImplMsg("Constant to Constant comparisons are not currently supported. Ex: 'where (1 = 1)'")
-                | Property col1, Property col2 ->
-                    // Handle col to col comparisons
-                    let lt = qualifyColumn col1.Member
-                    let cp = getComparison exp.NodeType
-                    let rt = qualifyColumn col2.Member
-                    Expr (sprintf "%s %s %s" lt cp rt)
-                | Property col, Constant c ->
-                    // Handle regular column comparisons
-                    let value = c.Value
-                    let columnComparison = getColumnComparison(exp.NodeType, value)
-                    Column (qualifyColumn col.Member, columnComparison)
-                | Property col, MethodCall opt when opt.Type |> isOptionType ->
-                    // Handle optional column comparisons
-                    if opt.Arguments.Count > 0 then // Option.Some 
-                        match opt.Arguments.[0] with
-                        | Constant optVal -> 
-                            let columnComparison = getColumnComparison(exp.NodeType, optVal.Value)
-                            Column (qualifyColumn col.Member, columnComparison)
-                        | Property optM -> 
-                            let lt = qualifyColumn col.Member
-                            let cp = getComparison exp.NodeType
-                            let rt = qualifyColumn optM.Member
-                            Expr (sprintf "%s %s %s" lt cp rt)
-                        | _ -> 
-                            notImpl()
-                    else // Option.None
-                        let columnComparison = getColumnComparison(exp.NodeType, null)
-                        Column (qualifyColumn col.Member, columnComparison)
-                | _ ->
-                    notImpl()
+                notImpl()
         | _ ->
             notImpl()
 
@@ -203,7 +240,7 @@ let visitGroupBy<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) (qua
         | New n -> 
             // Handle groupBy that returns a tuple of multiple columns
             n.Arguments |> Seq.map visit |> Seq.toList |> List.concat
-        | Property m -> 
+        | Member m -> 
             // Handle groupBy for a single column
             let column = qualifyColumn m.Member
             [column]
@@ -220,7 +257,7 @@ let visitPropertySelector<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Pro
         | MethodCall m when m.Method.Name = "Invoke" ->
             // Handle tuples
             visit m.Object
-        | Property m -> 
+        | Member m -> 
             qualifyColumn m.Member
         | _ -> notImpl()
 

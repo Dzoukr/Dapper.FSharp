@@ -28,7 +28,7 @@ type Contact = {
 
 let testsBasic() = testList "SELECT EXPRESSION" [
     
-    testTask "Simple Where" {
+    testTask "Simple Query" {
         let query = 
             select {
                 for p in entity<Person> do
@@ -49,6 +49,16 @@ let testsBasic() = testList "SELECT EXPRESSION" [
             }
         
         Expect.equal query.Where (Expr "Person.FName = Person.LName") "Expected WHERE Person.FName = Person.LName"
+    }
+
+    testTask "Col option = Col option Where" {
+        let query = 
+            select {
+                for p in entity<Person> do
+                where (p.MI = p.MI)
+            }
+        
+        Expect.equal query.Where (Expr "Person.MI = Person.MI") "Expected WHERE Person.MI = Person.MI"
     }
 
     testTask "Col = Some Col Where" {
