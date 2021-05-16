@@ -221,9 +221,9 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
                 let columnComparison = getColumnComparison(exp.NodeType, value)
                 Column (qualifyColumn p, columnComparison)
             | Value v1, Value v2 ->
-                // Handle value to value comparisons
-                let cp = getComparison exp.NodeType
-                Expr (sprintf "%A %s %A" v1 cp v2)
+                // Not implemented because I didn't want to embed logic to properly format strings, dates, etc.
+                // This can be easily added later if it is implemented in Dapper.FSharp.
+                notImplMsg("Value to value comparisons are not currently supported. Ex: where (1 = 1)")
             | _ ->
                 notImpl()
         | _ ->
