@@ -84,8 +84,8 @@ let main argv =
         Dapper.FSharp.OptionTypes.register()
         [
             conf.["mssqlConnectionString"] |> mssqlTests
-            //conf.["mysqlConnectionString"] |> mysqlTests
-            //conf.["postgresConnectionString"] |> postgresTests
+            conf.["mysqlConnectionString"] |> mysqlTests
+            conf.["postgresConnectionString"] |> postgresTests
         ]
         |> testList ""
         |> runTests testConfig

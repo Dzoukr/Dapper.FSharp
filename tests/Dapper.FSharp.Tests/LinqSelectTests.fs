@@ -327,14 +327,14 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
 
     let personsView = entity<Persons.View> |> mapTable "Persons"
     let dogsView = entity<Dogs.View> |> mapTable "Dogs"
-    let dogsWeights = entity<DogsWeights.View> |> mapTable "DogsWeights"
-
+    let dogsWeightsView = entity<DogsWeights.View> |> mapTable "DogsWeights"
+    
     testTask "Selects by single where condition" {
         do! init.InitPersons()
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                table personsView.Query.Table
                 values rs
             } |> crud.InsertAsync
         let! fromDb =
@@ -350,7 +350,7 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                table personsView.Query.Table
                 values rs
             } |> crud.InsertAsync
         let! fromDb =
@@ -366,7 +366,7 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                table personsView.Query.Table
                 values rs
             } |> crud.InsertAsync
         let! fromDb =
@@ -384,7 +384,7 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                table personsView.Query.Table
                 values rs
             } |> crud.InsertAsync
         let! fromDb =
@@ -403,7 +403,7 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                table personsView.Query.Table
                 values rs
             } |> crud.InsertAsync
         let! fromDb =
@@ -421,7 +421,7 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                table personsView.Query.Table
                 values rs
             } |> crud.InsertAsync
         let! fromDb =
@@ -439,7 +439,7 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                table personsView.Query.Table
                 values rs
             } |> crud.InsertAsync
         let! fromDb =
@@ -457,7 +457,7 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                table personsView.Query.Table
                 values rs
             } |> crud.InsertAsync
         let! fromDb =
@@ -474,7 +474,7 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                table personsView.Query.Table
                 values rs
             } |> crud.InsertAsync
         let! fromDb =
@@ -490,7 +490,7 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                table personsView.Query.Table
                 values rs
             } |> crud.InsertAsync
         let! fromDb =
@@ -508,7 +508,7 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                table personsView.Query.Table
                 values rs
             } |> crud.InsertAsync
         let! fromDb =
@@ -524,7 +524,7 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                table personsView.Query.Table
                 values rs
             } |> crud.InsertAsync
         let! fromDb =
@@ -540,7 +540,7 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                table personsView.Query.Table
                 values rs
             } |> crud.InsertAsync
         let! fromDb =
@@ -558,7 +558,7 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                table personsView.Query.Table
                 values rs
             } |> crud.InsertAsync
         let! fromDb =
@@ -576,7 +576,7 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                table personsView.Query.Table
                 values rs
             } |> crud.InsertAsync
         let! fromDb =
@@ -598,12 +598,12 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let dogs = Dogs.View.generate1to1 persons
         let! _ =
             insert {
-                table "Persons"
+                table personsView.Query.Table
                 values persons
             } |> crud.InsertAsync
         let! _ =
             insert {
-                table "Dogs"
+                table dogsView.Query.Table
                 values dogs
             } |> crud.InsertAsync
         let! fromDb =
@@ -624,12 +624,12 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let dogs = Dogs.View.generate1toN 5 persons.Head
         let! _ =
             insert {
-                table "Persons"
+                table personsView.Query.Table
                 values persons
             } |> crud.InsertAsync
         let! _ =
             insert {
-                table "Dogs"
+                table dogsView.Query.Table
                 values dogs
             } |> crud.InsertAsync
         let! fromDb =
@@ -654,12 +654,12 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let dogs = Dogs.View.generate1toN 5 persons.Head
         let! _ =
             insert {
-                table "Persons"
+                table personsView.Query.Table
                 values persons
             } |> crud.InsertAsync
         let! _ =
             insert {
-                table "Dogs"
+                table dogsView.Query.Table
                 values dogs
             } |> crud.InsertAsync
         let! fromDb =
@@ -689,17 +689,17 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
 
         let! _ =
             insert {
-                table "Persons"
+                table personsView.Query.Table
                 values persons
             } |> crud.InsertAsync
         let! _ =
             insert {
-                table "Dogs"
+                table dogsView.Query.Table
                 values dogs
             } |> crud.InsertAsync
         let! _ =
             insert {
-                table "DogsWeights"
+                table dogsWeightsView.Query.Table
                 values weights
             } |> crud.InsertAsync
 
@@ -707,7 +707,7 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
             select {
                 for p in personsView do
                 join d in dogsView on (p.Id = d.OwnerId)
-                join dw in dogsWeights on (d.Nickname = dw.DogNickname)
+                join dw in dogsWeightsView on (d.Nickname = dw.DogNickname)
                 orderBy p.Position
             } |> crud.SelectAsync<Persons.View, Dogs.View, DogsWeights.View>
 
@@ -726,17 +726,17 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
 
         let! _ =
             insert {
-                table "Persons"
+                table personsView.Query.Table
                 values persons
             } |> crud.InsertAsync
         let! _ =
             insert {
-                table "Dogs"
+                table dogsView.Query.Table
                 values dogs
             } |> crud.InsertAsync
         let! _ =
             insert {
-                table "DogsWeights"
+                table dogsWeightsView.Query.Table
                 values weights
             } |> crud.InsertAsync
 
@@ -744,7 +744,7 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
             select {
                 for p in personsView do
                 join d in dogsView on (p.Id = d.OwnerId)
-                join dw in dogsWeights on (d.Nickname = dw.DogNickname)
+                join dw in dogsWeightsView on (d.Nickname = dw.DogNickname)
                 orderBy p.Position
                 thenBy d.Nickname
                 thenBy dw.Year
@@ -765,17 +765,17 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
 
         let! _ =
             insert {
-                table "Persons"
+                table personsView.Query.Table
                 values persons
             } |> crud.InsertAsync
         let! _ =
             insert {
-                table "Dogs"
+                table dogsView.Query.Table
                 values dogs
             } |> crud.InsertAsync
         let! _ =
             insert {
-                table "DogsWeights"
+                table dogsWeightsView.Query.Table
                 values weights
             } |> crud.InsertAsync
 
@@ -783,7 +783,7 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
             select {
                 for p in personsView do
                 leftJoin d in dogsView on (p.Id = d.OwnerId)
-                leftJoin dw in dogsWeights on (d.Nickname = dw.DogNickname)
+                leftJoin dw in dogsWeightsView on (d.Nickname = dw.DogNickname)
                 orderBy p.Position
                 thenBy d.Nickname
                 thenBy dw.Year
