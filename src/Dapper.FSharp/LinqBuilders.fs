@@ -1,4 +1,5 @@
-﻿module Dapper.FSharp.ExpressionBuilders
+﻿/// LINQ query builders
+module Dapper.FSharp.LinqBuilders
 
 open System.Linq.Expressions
 open System
@@ -59,14 +60,14 @@ type SelectExpressionBuilder<'T>() =
     /// Sets the WHERE condition
     [<CustomOperation("where", MaintainsVariableSpace = true)>]
     member __.Where (state:QuerySource<'T>, [<ProjectionParameter>] whereExpression) = 
-        let where = ExpressionVisitor.visitWhere<'T> whereExpression (fullyQualifyColumn state.Tables)
+        let where = LinqExpressionVisitors.visitWhere<'T> whereExpression (fullyQualifyColumn state.Tables)
         state.Query <- { state.Query with Where = where }
         state
 
     /// Sets the ORDER BY for single column
     [<CustomOperation("orderBy", MaintainsVariableSpace = true)>]
     member __.OrderBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        let propertyName = ExpressionVisitor.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
+        let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
         let orderBy = OrderBy (propertyName, Asc)
         state.Query <- { state.Query with OrderBy = state.Query.OrderBy @ [orderBy] }
         state
@@ -79,7 +80,7 @@ type SelectExpressionBuilder<'T>() =
     /// Sets the ORDER BY DESC for single column
     [<CustomOperation("orderByDescending", MaintainsVariableSpace = true)>]
     member __.OrderByDescending (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        let propertyName = ExpressionVisitor.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
+        let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
         let orderBy = OrderBy (propertyName, Desc)
         state.Query <- { state.Query with OrderBy = state.Query.OrderBy @ [orderBy] }
         state
@@ -116,11 +117,11 @@ type SelectExpressionBuilder<'T>() =
                     resultSelector: Expression<Func<'TOuter,'TInner,'Result>> ) = 
 
         let mergedTables = mergeTables (outerSource.Tables, innerSource.Tables)
-        let outerPropertyName = ExpressionVisitor.visitPropertySelector<'TOuter, 'Key> outerKeySelector (fullyQualifyColumn mergedTables)
+        let outerPropertyName = LinqExpressionVisitors.visitPropertySelector<'TOuter, 'Key> outerKeySelector (fullyQualifyColumn mergedTables)
         
         // Do not qualify inner column name because Dapper.FSharp later appends "{innerTableName}.{innerPropertyName}"
         let doNotQualifyColumn (property: Reflection.MemberInfo) = property.Name
-        let innerPropertyName = ExpressionVisitor.visitPropertySelector<'TInner, 'Key> innerKeySelector doNotQualifyColumn
+        let innerPropertyName = LinqExpressionVisitors.visitPropertySelector<'TInner, 'Key> innerKeySelector doNotQualifyColumn
 
         let innerTableName = 
             let tbl = mergedTables.[typeof<'TInner>.Name]
@@ -142,11 +143,11 @@ type SelectExpressionBuilder<'T>() =
                         resultSelector: Expression<Func<'TOuter,'TInner,'Result>> ) = 
 
         let mergedTables = mergeTables (outerSource.Tables, innerSource.Tables)
-        let outerPropertyName = ExpressionVisitor.visitPropertySelector<'TOuter, 'Key> outerKeySelector (fullyQualifyColumn mergedTables)
+        let outerPropertyName = LinqExpressionVisitors.visitPropertySelector<'TOuter, 'Key> outerKeySelector (fullyQualifyColumn mergedTables)
         
         // Do not qualify inner column name because Dapper.FSharp later appends "{innerTableName}.{innerPropertyName}"
         let doNotQualifyColumn (property: Reflection.MemberInfo) = property.Name
-        let innerPropertyName = ExpressionVisitor.visitPropertySelector<'TInner, 'Key> innerKeySelector doNotQualifyColumn
+        let innerPropertyName = LinqExpressionVisitors.visitPropertySelector<'TInner, 'Key> innerKeySelector doNotQualifyColumn
 
         let innerTableName = 
             let tbl = mergedTables.[typeof<'TInner>.Name]
@@ -163,7 +164,7 @@ type SelectExpressionBuilder<'T>() =
     /// Sets the ORDER BY for single column
     [<CustomOperation("groupBy", MaintainsVariableSpace = true)>]
     member __.GroupBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        let properties = ExpressionVisitor.visitGroupBy<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
+        let properties = LinqExpressionVisitors.visitGroupBy<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
         state.Query <- { state.Query with GroupBy = state.Query.GroupBy @ properties}
         state
 
@@ -176,7 +177,7 @@ type SelectExpressionBuilder<'T>() =
     /// COUNT aggregate function for the selected column
     [<CustomOperation("countBy", MaintainsVariableSpace = true)>]
     member __.CountBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        let propertyName = ExpressionVisitor.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
+        let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
         state.Query <- { state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Count(propertyName, propertyName)] }
         state
 
@@ -189,7 +190,7 @@ type SelectExpressionBuilder<'T>() =
     /// AVG aggregate function for the selected column
     [<CustomOperation("avgBy", MaintainsVariableSpace = true)>]
     member __.AvgBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        let propertyName = ExpressionVisitor.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
+        let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
         state.Query <- { state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Avg(propertyName, propertyName)] }
         state
     
@@ -202,7 +203,7 @@ type SelectExpressionBuilder<'T>() =
     /// SUM aggregate function for the selected column
     [<CustomOperation("sumBy", MaintainsVariableSpace = true)>]
     member __.SumBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        let propertyName = ExpressionVisitor.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
+        let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
         state.Query <- { state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Sum(propertyName, propertyName)] }
         state
     
@@ -215,7 +216,7 @@ type SelectExpressionBuilder<'T>() =
     /// MIN aggregate function for the selected column
     [<CustomOperation("minBy", MaintainsVariableSpace = true)>]
     member __.MinBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        let propertyName = ExpressionVisitor.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
+        let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
         state.Query <- { state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Min(propertyName, propertyName)] }
         state
     
@@ -228,7 +229,7 @@ type SelectExpressionBuilder<'T>() =
     /// MIN aggregate function for the selected column
     [<CustomOperation("maxBy", MaintainsVariableSpace = true)>]
     member __.MaxBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        let propertyName = ExpressionVisitor.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
+        let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
         state.Query <- { state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Max(propertyName, propertyName)] }
         state
     

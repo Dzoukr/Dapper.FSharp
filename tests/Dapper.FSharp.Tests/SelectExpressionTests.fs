@@ -5,7 +5,7 @@ open Dapper.FSharp
 open Dapper.FSharp.Tests.Database
 open Expecto
 open FSharp.Control.Tasks.V2
-open ExpressionBuilders
+open LinqBuilders
 
 type Person = {
     Id: int

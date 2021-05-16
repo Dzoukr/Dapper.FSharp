@@ -1,4 +1,4 @@
-﻿module internal Dapper.FSharp.ExpressionVisitor
+﻿module internal Dapper.FSharp.LinqExpressionVisitors
 
 open System.Linq.Expressions
 open System
@@ -127,7 +127,7 @@ module SqlPatterns =
             else None
         | _ -> None
 
-    /// A constant or a constant option.
+    /// A constant value or an optional constant value
     let (|Value|_|) (exp: Expression) =
         match exp with
         | Constant c -> Some c.Value
