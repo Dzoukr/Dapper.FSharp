@@ -78,6 +78,19 @@ let testsBasic() = testList "SELECT EXPRESSION" [
         Expect.equal query.Aggregates [Count ("*", "Count")] "Expected COUNT(*) as [Count]"
     }
 
+    testTask "Group By Many" {
+        let query = 
+            select {
+                for p in entity<Person> do
+                join c in entity<Contact> on (p.Id = c.PersonId)
+                groupBy (p.FName, p.LName)
+                count "*" "Count"
+            }
+    
+        Expect.equal query.GroupBy ["Person.FName"; "Person.LName"] "Expected GROUP BY Person.FName, Person.LName"
+        Expect.equal query.Aggregates [Count ("*", "Count")] "Expected COUNT(*) as [Count]"
+    }
+
     testTask "Optional Column is None" {
         let query = 
             select {

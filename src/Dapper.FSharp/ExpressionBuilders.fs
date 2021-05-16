@@ -163,8 +163,8 @@ type SelectExpressionBuilder<'T>() =
     /// Sets the ORDER BY for single column
     [<CustomOperation("groupBy", MaintainsVariableSpace = true)>]
     member __.GroupBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        let propertyName = ExpressionVisitor.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
-        state.Query <- { state.Query with GroupBy = state.Query.GroupBy @ [propertyName] }
+        let properties = ExpressionVisitor.visitGroupBy<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
+        state.Query <- { state.Query with GroupBy = state.Query.GroupBy @ properties}
         state
 
     /// COUNT aggregate function for COLNAME (or * symbol) and map it to ALIAS

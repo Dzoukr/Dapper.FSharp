@@ -57,7 +57,12 @@ let (|Binary|_|) (exp: Expression) =
 
 let (|MethodCall|_|) (exp: Expression) =
     match exp.NodeType with
-    | ExpressionType.Call -> Some (exp :?> MethodCallExpression)
+    | ExpressionType.Call -> Some (exp :?> MethodCallExpression)    
+    | _ -> None
+
+let (|New|_|) (exp: Expression) =
+    match exp.NodeType with
+    | ExpressionType.New -> Some (exp :?> NewExpression)
     | _ -> None
 
 let (|Constant|_|) (exp: Expression) =
@@ -142,7 +147,7 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: (Type * 
                 | Member col1, Member col2 ->
                     // Handle col to col comparisons
                     let columnComparison = getColumnComparison(exp.NodeType, qualifyColumn(col2.Member.DeclaringType, col2.Member.Name))
-                    Column (qualifyColumn(col1.Member.DeclaringType, col1.Member.Name), columnComparison)
+                    Column (qualifyColumn(col1.Member.DeclaringType, col1.Member.Name), columnComparison)                
                 | Member col, Constant c
                 | Constant c, Member col ->
                     // Handle regular column comparisons
@@ -167,8 +172,28 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: (Type * 
             notImpl()
 
     visit (filter :> Expression)
-    
-/// Returns a fully qualified column name: {table}.{column}
+
+/// Returns a list of one or more fully qualified column names: ["{schema}.{table}.{column}"]
+let visitGroupBy<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) (qualifyColumn: (Type * string) -> string) =
+    let rec visit (exp: Expression) : string list =
+        match exp with
+        | Lambda x -> visit x.Body
+        | MethodCall m when m.Method.Name = "Invoke" ->
+            // Handle tuples
+            visit m.Object
+        | New n -> 
+            // Handle groupBy that returns a tuple of multiple columns
+            n.Arguments |> Seq.map visit |> Seq.toList |> List.concat
+        | Member m -> 
+            // Handle groupBy for a single column
+            let column = qualifyColumn(m.Member.DeclaringType, m.Member.Name)
+            [column]
+        | _ -> notImpl()
+
+    visit (propertySelector :> Expression)
+
+
+/// Returns a fully qualified column name: "{schema}.{table}.{column}"
 let visitPropertySelector<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) (qualifyColumn: (Type * string) -> string) =
     let rec visit (exp: Expression) : string =
         match exp with
