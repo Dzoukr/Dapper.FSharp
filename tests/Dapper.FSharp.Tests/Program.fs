@@ -12,27 +12,23 @@ let testConfig =
         parallelWorkers = 4
         verbosity = LogLevel.Debug }
 
-let selectExprTests = 
-    [SelectExpressionTests.testsBasic()]
-    |> testList "EXPR"
-    |> testSequenced
-
 let mssqlTests connString =
     let conn = new SqlConnection(connString)
     conn |> Dapper.FSharp.Tests.MSSQL.Database.init
     let crud = MSSQL.Database.getCrud conn
     let init = MSSQL.Database.getInitializer conn
-    [
-        DeleteTests.testsBasic crud init
-        DeleteTests.testsOutput crud init
-        InsertTests.testsBasic crud init
-        InsertTests.testsOutput crud init
-        IssuesTests.testsBasic crud init
-        IssuesTests.testsOutput crud init
-        UpdateTests.testsBasic crud init
-        UpdateTests.testsOutput crud init
-        SelectTests.testsBasic crud init        
-        MSSQL.AggregatesTests.tests conn
+    [   
+        LinqSelectTests.integrationTests crud init
+        //DeleteTests.testsBasic crud init
+        //DeleteTests.testsOutput crud init
+        //InsertTests.testsBasic crud init
+        //InsertTests.testsOutput crud init
+        //IssuesTests.testsBasic crud init
+        //IssuesTests.testsOutput crud init
+        //UpdateTests.testsBasic crud init
+        //UpdateTests.testsOutput crud init
+        //SelectTests.testsBasic crud init        
+        //MSSQL.AggregatesTests.tests conn
     ]
     |> testList "MSSQL"
     |> testSequenced
@@ -76,9 +72,10 @@ let postgresTests connString =
 [<EntryPoint>]
 let main argv =
     match argv with
-    | [| "EXPR" |] -> 
-        // Only run expression unit tests
-        selectExprTests
+    | [| "LINQ" |] -> 
+        [LinqSelectTests.unitTests()]
+        |> testList "LINQ"
+        |> testSequenced
         |> runTests testConfig
     | _ -> 
         // Run all tests
@@ -86,9 +83,8 @@ let main argv =
         Dapper.FSharp.OptionTypes.register()
         [
             conf.["mssqlConnectionString"] |> mssqlTests
-            conf.["mysqlConnectionString"] |> mysqlTests
-            conf.["postgresConnectionString"] |> postgresTests
-            selectExprTests
+            //conf.["mysqlConnectionString"] |> mysqlTests
+            //conf.["postgresConnectionString"] |> postgresTests
         ]
         |> testList ""
         |> runTests testConfig

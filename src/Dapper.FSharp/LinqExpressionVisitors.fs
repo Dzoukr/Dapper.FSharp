@@ -192,11 +192,13 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
                 let lstValues = (c.Value :?> System.Collections.IEnumerable) |> Seq.cast<obj> |> Seq.toList
                 Column (qualifyColumn col.Member, comparisonType lstValues)
             | _ -> notImpl()
-        | MethodCall m when m.Method.Name = "like" ->
+        | MethodCall m when m.Method.Name = "like" || m.Method.Name = "notLike" ->
             match m.Arguments.[0], m.Arguments.[1] with
             | Member col, Constant c -> 
                 let pattern = string c.Value
-                Column (qualifyColumn col.Member, Like pattern)
+                if m.Method.Name = "like"
+                then like (qualifyColumn col.Member) pattern
+                else notLike (qualifyColumn col.Member) pattern
             | _ -> notImpl()
         | BinaryAnd x ->
             let lt = visit x.Left

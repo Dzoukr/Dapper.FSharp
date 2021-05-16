@@ -9,6 +9,7 @@ open System.Collections.Generic
 let isIn<'P> (prop: 'P) (values: 'P list) = true
 let isNotIn<'P> (prop: 'P) (values: 'P list) = true
 let like<'P> (prop: 'P) (pattern: string) = true
+let notLike<'P> (prop: 'P) (pattern: string) = true
 
 type TableInfo = {
     Name: string
