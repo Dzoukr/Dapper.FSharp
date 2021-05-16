@@ -61,6 +61,16 @@ let testsBasic() = testList "SELECT EXPRESSION" [
         Expect.equal query.Where (Expr "Person.MI = Person.MI") "Expected WHERE Person.MI = Person.MI"
     }
 
+    testTask "Value = Value Where" {
+        let query = 
+            select {
+                for p in entity<Person> do
+                where (1 = 1)
+            }
+        
+        Expect.equal query.Where (Expr "1 = 1") "Expected WHERE 1 = 1"
+    }
+
     testTask "Col = Some Col Where" {
         let query = 
             select {
