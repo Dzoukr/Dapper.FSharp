@@ -71,7 +71,7 @@ let (|Constant|_|) (exp: Expression) =
     | ExpressionType.Constant -> Some (exp :?> ConstantExpression)
     | _ -> None
 
-let (|Member|_|) (exp: Expression) =
+let (|Column|_|) (exp: Expression) =
     match exp.NodeType with
     | ExpressionType.MemberAccess -> Some (exp :?> MemberExpression)
     | _ -> None
@@ -128,16 +128,16 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
         | MethodCall m when m.Method.Name = "isIn" || m.Method.Name = "isNotIn" ->
             let comparisonType = if m.Method.Name = "isIn" then In else NotIn
             match m.Arguments.[0], m.Arguments.[1] with
-            | Member col, MethodCall lst ->
+            | Column col, MethodCall lst ->
                 let lstValues = unwrapListExpr ([], lst)                
                 Column (qualifyColumn col.Member, comparisonType lstValues)
-            | Member col, Constant c -> 
+            | Column col, Constant c -> 
                 let lstValues = (c.Value :?> System.Collections.IEnumerable) |> Seq.cast<obj> |> Seq.toList
                 Column (qualifyColumn col.Member, comparisonType lstValues)
             | _ -> notImpl()
         | MethodCall m when m.Method.Name = "like" ->
             match m.Arguments.[0], m.Arguments.[1] with
-            | Member col, Constant c -> 
+            | Column col, Constant c -> 
                 let pattern = string c.Value
                 Column (qualifyColumn col.Member, Like pattern)
             | _ -> notImpl()
@@ -155,28 +155,27 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
                 Binary (lt, Or, rt)
             | _ ->
                 match x.Left, x.Right with
-                | Member col1, Member col2 ->
+                | Constant _, Constant _ ->
+                    notImplMsg("Constant to Constant comparisons are not currently supported. Ex: 'where (1 = 1)'")
+                | Column col1, Column col2 ->
                     // Handle col to col comparisons
                     let lt = qualifyColumn col1.Member
                     let cp = getComparison exp.NodeType
                     let rt = qualifyColumn col2.Member
                     Expr (sprintf "%s %s %s" lt cp rt)
-                | Constant _, Constant _ ->
-                    notImplMsg("Constant to Constant comparisons are not currently supported. Ex: 'where (1 = 1)'")
-                | Member col, Constant c
-                | Constant c, Member col ->
+                | Column col, Constant c ->
                     // Handle regular column comparisons
                     let value = c.Value
                     let columnComparison = getColumnComparison(exp.NodeType, value)
                     Column (qualifyColumn col.Member, columnComparison)
-                | Member col, MethodCall opt when opt.Type |> isOptionType ->
+                | Column col, MethodCall opt when opt.Type |> isOptionType ->
                     // Handle optional column comparisons
                     if opt.Arguments.Count > 0 then // Option.Some 
                         match opt.Arguments.[0] with
                         | Constant optVal -> 
                             let columnComparison = getColumnComparison(exp.NodeType, optVal.Value)
                             Column (qualifyColumn col.Member, columnComparison)
-                        | Member optM -> 
+                        | Column optM -> 
                             let lt = qualifyColumn col.Member
                             let cp = getComparison exp.NodeType
                             let rt = qualifyColumn optM.Member
@@ -204,7 +203,7 @@ let visitGroupBy<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) (qua
         | New n -> 
             // Handle groupBy that returns a tuple of multiple columns
             n.Arguments |> Seq.map visit |> Seq.toList |> List.concat
-        | Member m -> 
+        | Column m -> 
             // Handle groupBy for a single column
             let column = qualifyColumn m.Member
             [column]
@@ -221,7 +220,7 @@ let visitPropertySelector<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Pro
         | MethodCall m when m.Method.Name = "Invoke" ->
             // Handle tuples
             visit m.Object
-        | Member m -> 
+        | Column m -> 
             qualifyColumn m.Member
         | _ -> notImpl()
 
