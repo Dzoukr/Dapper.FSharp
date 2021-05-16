@@ -16,27 +16,27 @@ type TableInfo = {
     Schema: string option
 }
 
-type QuerySource<'T>() =
-    let query = 
-        { Schema = None
-          Table = ""
-          Where = Where.Empty
-          OrderBy = []
-          Pagination = { Skip = 0; Take = None }
-          Joins = []
-          Aggregates = []
-          GroupBy = []
-          Distinct = false } : SelectQuery
+let private defQuery = 
+    { Schema = None
+      Table = ""
+      Where = Where.Empty
+      OrderBy = []
+      Pagination = { Skip = 0; Take = None }
+      Joins = []
+      Aggregates = []
+      GroupBy = []
+      Distinct = false } : SelectQuery
 
+type QuerySource<'T>(query, tables) =
     interface IEnumerable<'T> with
         member this.GetEnumerator() = Seq.empty<'T>.GetEnumerator() :> Collections.IEnumerator
         member this.GetEnumerator() = Seq.empty<'T>.GetEnumerator()
 
-    member val Query : SelectQuery = query with get,set
-    member val Tables : Map<string, TableInfo> = Map.empty with get,set
+    member val Query : SelectQuery = query
+    member val Tables : Map<string, TableInfo> = tables
 
 type SelectExpressionBuilder<'T>() =
-    let def = new QuerySource<'T>()
+    let def = new QuerySource<'T>(defQuery, Map.empty)
 
     /// Merges two maps of table info records
     let mergeTables (a: Map<string, TableInfo>, b: Map<string, TableInfo>) =
@@ -62,52 +62,50 @@ type SelectExpressionBuilder<'T>() =
     [<CustomOperation("where", MaintainsVariableSpace = true)>]
     member __.Where (state:QuerySource<'T>, [<ProjectionParameter>] whereExpression) = 
         let where = LinqExpressionVisitors.visitWhere<'T> whereExpression (fullyQualifyColumn state.Tables)
-        state.Query <- { state.Query with Where = where }
-        state
+        QuerySource<'T>({ state.Query with Where = where }, state.Tables)
 
     /// Sets the ORDER BY for single column
     [<CustomOperation("orderBy", MaintainsVariableSpace = true)>]
     member __.OrderBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
         let orderBy = OrderBy (propertyName, Asc)
-        state.Query <- { state.Query with OrderBy = state.Query.OrderBy @ [orderBy] }
-        state
+        QuerySource<'T>({ state.Query with OrderBy = state.Query.OrderBy @ [orderBy] }, state.Tables)
 
     /// Sets the ORDER BY for single column
     [<CustomOperation("thenBy", MaintainsVariableSpace = true)>]
     member __.ThenBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        __.OrderBy (state, propertySelector)
+        let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
+        let orderBy = OrderBy (propertyName, Asc)
+        QuerySource<'T>({ state.Query with OrderBy = state.Query.OrderBy @ [orderBy] }, state.Tables)
 
     /// Sets the ORDER BY DESC for single column
     [<CustomOperation("orderByDescending", MaintainsVariableSpace = true)>]
     member __.OrderByDescending (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
         let orderBy = OrderBy (propertyName, Desc)
-        state.Query <- { state.Query with OrderBy = state.Query.OrderBy @ [orderBy] }
-        state
+        QuerySource<'T>({ state.Query with OrderBy = state.Query.OrderBy @ [orderBy] }, state.Tables)
 
     /// Sets the ORDER BY DESC for single column
     [<CustomOperation("thenByDescending", MaintainsVariableSpace = true)>]
     member __.ThenByDescending (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-        __.OrderByDescending (state, propertySelector)
+        let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
+        let orderBy = OrderBy (propertyName, Desc)
+        QuerySource<'T>({ state.Query with OrderBy = state.Query.OrderBy @ [orderBy] }, state.Tables)
 
     /// Sets the SKIP value for query
     [<CustomOperation("skip", MaintainsVariableSpace = true)>]
     member __.Skip (state:QuerySource<'T>, skip) = 
-        state.Query <- { state.Query with Pagination = { state.Query.Pagination with Skip = skip } }
-        state
+        QuerySource<'T>({ state.Query with Pagination = { state.Query.Pagination with Skip = skip } }, state.Tables)
     
     /// Sets the TAKE value for query
     [<CustomOperation("take", MaintainsVariableSpace = true)>]
     member __.Take (state:QuerySource<'T>, take) = 
-        state.Query <- { state.Query with Pagination = { state.Query.Pagination with Take = Some take } }
-        state
+        QuerySource<'T>({ state.Query with Pagination = { state.Query.Pagination with Take = Some take } }, state.Tables)
 
     /// Sets the SKIP and TAKE value for query
     [<CustomOperation("skipTake", MaintainsVariableSpace = true)>]
     member __.SkipTake (state:QuerySource<'T>, skip, take) = 
-        state.Query <- { state.Query with Pagination = { state.Query.Pagination with Skip = skip; Take = Some take } }
-        state
+        QuerySource<'T>({ state.Query with Pagination = { state.Query.Pagination with Skip = skip; Take = Some take } }, state.Tables)
 
     /// INNER JOIN table where COLNAME equals to another COLUMN (including TABLE name)
     [<CustomOperation("join", MaintainsVariableSpace = true, IsLikeJoin = true, JoinConditionWord = "on")>]
@@ -130,10 +128,7 @@ type SelectExpressionBuilder<'T>() =
             | Some schema -> sprintf "%s.%s" schema tbl.Name
             | None -> tbl.Name
         let join = InnerJoin (innerTableName, innerPropertyName, outerPropertyName)
-        let result = QuerySource<'Result>()
-        result.Tables <- mergedTables
-        result.Query <- { outerSource.Query with Joins = outerSource.Query.Joins @ [join] }
-        result
+        QuerySource<'Result>({ outerSource.Query with Joins = outerSource.Query.Joins @ [join] }, mergedTables)
 
     /// LEFT JOIN table where COLNAME equals to another COLUMN (including TABLE name)
     [<CustomOperation("leftJoin", MaintainsVariableSpace = true, IsLikeJoin = true, JoinConditionWord = "on")>]
@@ -156,89 +151,73 @@ type SelectExpressionBuilder<'T>() =
             | Some schema -> sprintf "%s.%s" schema tbl.Name
             | None -> tbl.Name
         let join = LeftJoin (innerTableName, innerPropertyName, outerPropertyName)
-        let result = QuerySource<'Result>()
-        result.Tables <- mergedTables
-        result.Query <- { outerSource.Query with Joins = outerSource.Query.Joins @ [join] }
-
-        result
+        QuerySource<'Result>({ outerSource.Query with Joins = outerSource.Query.Joins @ [join] }, mergedTables)
 
     /// Sets the ORDER BY for single column
     [<CustomOperation("groupBy", MaintainsVariableSpace = true)>]
     member __.GroupBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let properties = LinqExpressionVisitors.visitGroupBy<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
-        state.Query <- { state.Query with GroupBy = state.Query.GroupBy @ properties}
-        state
+        QuerySource<'T>({ state.Query with GroupBy = state.Query.GroupBy @ properties}, state.Tables)
 
     /// COUNT aggregate function for COLNAME (or * symbol) and map it to ALIAS
     [<CustomOperation("count", MaintainsVariableSpace = true)>]
     member __.Count (state:QuerySource<'T>, colName, alias) = 
-        state.Query <- { state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Count(colName, alias)] }
-        state
+        QuerySource<'T>({ state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Count(colName, alias)] }, state.Tables)
 
     /// COUNT aggregate function for the selected column
     [<CustomOperation("countBy", MaintainsVariableSpace = true)>]
     member __.CountBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
-        state.Query <- { state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Count(propertyName, propertyName)] }
-        state
+        QuerySource<'T>({ state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Count(propertyName, propertyName)] }, state.Tables)
 
     /// AVG aggregate function for COLNAME (or * symbol) and map it to ALIAS
     [<CustomOperation("avg", MaintainsVariableSpace = true)>]
     member __.Avg (state:QuerySource<'T>, colName, alias) = 
-        state.Query <- { state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Avg(colName, alias)] }
-        state
+        QuerySource<'T>({ state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Avg(colName, alias)] }, state.Tables)
 
     /// AVG aggregate function for the selected column
     [<CustomOperation("avgBy", MaintainsVariableSpace = true)>]
     member __.AvgBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
-        state.Query <- { state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Avg(propertyName, propertyName)] }
-        state
+        QuerySource<'T>({ state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Avg(propertyName, propertyName)] }, state.Tables)
     
     /// SUM aggregate function for COLNAME (or * symbol) and map it to ALIAS
     [<CustomOperation("sum", MaintainsVariableSpace = true)>]
     member __.Sum (state:QuerySource<'T>, colName, alias) = 
-        state.Query <- { state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Sum(colName, alias)] }
-        state
+        QuerySource<'T>({ state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Sum(colName, alias)] }, state.Tables)
 
     /// SUM aggregate function for the selected column
     [<CustomOperation("sumBy", MaintainsVariableSpace = true)>]
     member __.SumBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
-        state.Query <- { state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Sum(propertyName, propertyName)] }
-        state
+        QuerySource<'T>({ state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Sum(propertyName, propertyName)] }, state.Tables)
     
     /// MIN aggregate function for COLNAME (or * symbol) and map it to ALIAS
     [<CustomOperation("min", MaintainsVariableSpace = true)>]
     member __.Min (state:QuerySource<'T>, colName, alias) = 
-        state.Query <- { state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Min(colName, alias)] }
-        state
+        QuerySource<'T>({ state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Min(colName, alias)] }, state.Tables)
 
     /// MIN aggregate function for the selected column
     [<CustomOperation("minBy", MaintainsVariableSpace = true)>]
     member __.MinBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
-        state.Query <- { state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Min(propertyName, propertyName)] }
-        state
+        QuerySource<'T>({ state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Min(propertyName, propertyName)] }, state.Tables)
     
     /// MIN aggregate function for COLNAME (or * symbol) and map it to ALIAS
     [<CustomOperation("max", MaintainsVariableSpace = true)>]
     member __.Max (state:QuerySource<'T>, colName, alias) = 
-        state.Query <- { state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Max(colName, alias)] }
-        state
+        QuerySource<'T>({ state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Max(colName, alias)] }, state.Tables)
 
     /// MIN aggregate function for the selected column
     [<CustomOperation("maxBy", MaintainsVariableSpace = true)>]
     member __.MaxBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector (fullyQualifyColumn state.Tables)
-        state.Query <- { state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Max(propertyName, propertyName)] }
-        state
+        QuerySource<'T>({ state.Query with Aggregates = state.Query.Aggregates @ [Aggregate.Max(propertyName, propertyName)] }, state.Tables)
     
     /// Sets query to return DISTINCT values
     [<CustomOperation("distinct", MaintainsVariableSpace = true)>]
     member __.Distinct (state:QuerySource<'T>) = 
-        state.Query <- { state.Query with Distinct = true }
-        state
+        QuerySource<'T>({ state.Query with Distinct = true }, state.Tables)
 
     /// Selects all (needed only when there are no other clauses "for" or "join").
     [<CustomOperation("selectAll", MaintainsVariableSpace = true)>]
@@ -252,24 +231,20 @@ let select<'T> = SelectExpressionBuilder<'T>()
 
 /// Maps the entity 'T to a table of the same name.
 let entity<'T> = 
-    let qs = QuerySource<'T>()
     let entityName = typeof<'T>.Name
-    qs.Query <- { qs.Query with Table = entityName }
-    qs.Tables <- qs.Tables.Add(entityName, { Name = entityName; Schema = None })
-    qs
+    let tables = Map [entityName, { Name = entityName; Schema = None }]
+    QuerySource<'T>({ defQuery with Table = entityName }, tables)
 
 /// Maps the entity 'T to a table of the given name.
 let mapTable<'T> (tableName: string) (qs: QuerySource<'T>) = 
-    qs.Query <- { qs.Query with Table = tableName }
     let entityName = typeof<'T>.Name
     let tbl = qs.Tables.[entityName]
-    qs.Tables <- qs.Tables.Add(entityName, { tbl with Name = tableName })
-    qs
+    let tables = qs.Tables.Add(entityName, { tbl with Name = tableName })
+    QuerySource<'T>({ qs.Query with Table = tableName }, tables)
 
 /// Maps the entity 'T to a schema of the given name.
 let mapSchema<'T> (schemaName: string) (qs: QuerySource<'T>) =
-    qs.Query <- { qs.Query with Schema = Some schemaName }
     let entityName = typeof<'T>.Name
     let tbl = qs.Tables.[entityName]
-    qs.Tables <- qs.Tables.Add(entityName, { tbl with Schema = Some schemaName })
-    qs
+    let tables = qs.Tables.Add(entityName, { tbl with Schema = Some schemaName })
+    QuerySource<'T>({ qs.Query with Schema = Some schemaName }, tables)
