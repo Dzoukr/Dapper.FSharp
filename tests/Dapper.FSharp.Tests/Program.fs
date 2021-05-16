@@ -18,17 +18,18 @@ let mssqlTests connString =
     let crud = MSSQL.Database.getCrud conn
     let init = MSSQL.Database.getInitializer conn
     [   
-        //DeleteTests.testsBasic crud init
-        //DeleteTests.testsOutput crud init
-        //InsertTests.testsBasic crud init
-        //InsertTests.testsOutput crud init
-        //IssuesTests.testsBasic crud init
-        //IssuesTests.testsOutput crud init
-        //UpdateTests.testsBasic crud init
-        //UpdateTests.testsOutput crud init
-        //SelectTests.testsBasic crud init        
+        DeleteTests.testsBasic crud init
+        DeleteTests.testsOutput crud init
+        InsertTests.testsBasic crud init
+        InsertTests.testsOutput crud init
+        IssuesTests.testsBasic crud init
+        IssuesTests.testsOutput crud init
+        UpdateTests.testsBasic crud init
+        UpdateTests.testsOutput crud init
+        SelectTests.testsBasic crud init        
+        LinqSelectTests.unitTests()
         LinqSelectTests.integrationTests crud init
-        //MSSQL.AggregatesTests.tests conn
+        MSSQL.AggregatesTests.tests conn
     ]
     |> testList "MSSQL"
     |> testSequenced

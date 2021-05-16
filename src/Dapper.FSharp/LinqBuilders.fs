@@ -5,12 +5,6 @@ open System.Linq.Expressions
 open System
 open System.Collections.Generic
 
-// Where filters
-let isIn<'P> (prop: 'P) (values: 'P list) = true
-let isNotIn<'P> (prop: 'P) (values: 'P list) = true
-let like<'P> (prop: 'P) (pattern: string) = true
-let notLike<'P> (prop: 'P) (pattern: string) = true
-
 type TableInfo = {
     Name: string
     Schema: string option
@@ -27,24 +21,30 @@ let private defQuery =
       GroupBy = []
       Distinct = false } : SelectQuery
 
+[<AutoOpen>]
+module FQ = 
+    /// Fully qualified entity type name
+    type FQName = private FQName of string
+    let fqName (t: Type) = FQName t.FullName
+
 type QuerySource<'T>(query, tables) =
     interface IEnumerable<'T> with
         member this.GetEnumerator() = Seq.empty<'T>.GetEnumerator() :> Collections.IEnumerator
         member this.GetEnumerator() = Seq.empty<'T>.GetEnumerator()
 
     member val Query : SelectQuery = query
-    member val Tables : Map<string, TableInfo> = tables
+    member val Tables : Map<FQName, TableInfo> = tables
 
 type SelectExpressionBuilder<'T>() =
     let def = new QuerySource<'T>(defQuery, Map.empty)
 
     /// Merges two maps of table info records
-    let mergeTables (a: Map<string, TableInfo>, b: Map<string, TableInfo>) =
+    let mergeTables (a: Map<FQName, TableInfo>, b: Map<FQName, TableInfo>) =
         Map (Seq.concat [ (Map.toSeq a); (Map.toSeq b) ])
 
     /// Fully qualifies a column with: {schema}.{table}.{column}
-    let fullyQualifyColumn (tables: Map<string, TableInfo>) (property: Reflection.MemberInfo) =
-        let tbl = tables.[property.DeclaringType.FullName]
+    let fullyQualifyColumn (tables: Map<FQName, TableInfo>) (property: Reflection.MemberInfo) =
+        let tbl = tables.[fqName property.DeclaringType]
         match tbl.Schema with
         | Some schema -> sprintf "%s.%s.%s" schema tbl.Name property.Name
         | None -> sprintf "%s.%s" tbl.Name property.Name
@@ -122,7 +122,7 @@ type SelectExpressionBuilder<'T>() =
         let innerProperty = LinqExpressionVisitors.visitPropertySelector<'TInner, 'Key> innerKeySelector
 
         let innerTableName = 
-            let tbl = mergedTables.[innerProperty.DeclaringType.FullName]
+            let tbl = mergedTables.[fqName innerProperty.DeclaringType]
             match tbl.Schema with
             | Some schema -> sprintf "%s.%s" schema tbl.Name
             | None -> tbl.Name
@@ -144,7 +144,7 @@ type SelectExpressionBuilder<'T>() =
         let innerProperty = LinqExpressionVisitors.visitPropertySelector<'TInner, 'Key> innerKeySelector
 
         let innerTableName = 
-            let tbl = mergedTables.[innerProperty.DeclaringType.FullName]
+            let tbl = mergedTables.[fqName innerProperty.DeclaringType]
             match tbl.Schema with
             | Some schema -> sprintf "%s.%s" schema tbl.Name
             | None -> tbl.Name
@@ -229,20 +229,31 @@ let select<'T> = SelectExpressionBuilder<'T>()
 
 /// Maps the entity 'T to a table of the same name.
 let entity<'T> = 
-    let entityFullName = typeof<'T>.FullName
-    let tables = Map [entityFullName, { Name = entityFullName; Schema = None }]
-    QuerySource<'T>({ defQuery with Table = entityFullName }, tables)
+    let ent = typeof<'T>
+    let tables = Map [fqName ent, { Name = ent.Name; Schema = None }]
+    QuerySource<'T>({ defQuery with Table = ent.Name }, tables)
 
 /// Maps the entity 'T to a table of the given name.
 let mapTable<'T> (tableName: string) (qs: QuerySource<'T>) = 
-    let entityFullName = typeof<'T>.FullName
-    let tbl = qs.Tables.[entityFullName]
-    let tables = qs.Tables.Add(entityFullName, { tbl with Name = tableName })
+    let ent = typeof<'T>
+    let fqn = fqName ent
+    let tbl = qs.Tables.[fqn]
+    let tables = qs.Tables.Add(fqn, { tbl with Name = tableName })
     QuerySource<'T>({ qs.Query with Table = tableName }, tables)
 
 /// Maps the entity 'T to a schema of the given name.
 let mapSchema<'T> (schemaName: string) (qs: QuerySource<'T>) =
-    let entityFullName = typeof<'T>.FullName
-    let tbl = qs.Tables.[entityFullName]
-    let tables = qs.Tables.Add(entityFullName, { tbl with Schema = Some schemaName })
+    let ent = typeof<'T>
+    let fqn = fqName ent
+    let tbl = qs.Tables.[fqn]
+    let tables = qs.Tables.Add(fqn, { tbl with Schema = Some schemaName })
     QuerySource<'T>({ qs.Query with Schema = Some schemaName }, tables)
+
+/// WHERE column is IN values
+let isIn<'P> (prop: 'P) (values: 'P list) = true
+/// WHERE column is NOT IN values
+let isNotIn<'P> (prop: 'P) (values: 'P list) = true
+/// WHERE column like value   
+let like<'P> (prop: 'P) (pattern: string) = true
+/// WHERE column not like value   
+let notLike<'P> (prop: 'P) (pattern: string) = true
