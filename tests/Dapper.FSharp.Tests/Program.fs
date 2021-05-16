@@ -72,20 +72,13 @@ let postgresTests connString =
 
 [<EntryPoint>]
 let main argv =
-    match argv with
-    | [| "LINQ" |] -> 
-        [LinqSelectTests.unitTests()]
-        |> testList "LINQ"
-        |> testSequenced
-        |> runTests testConfig
-    | _ -> 
-        // Run all tests
-        let conf = (ConfigurationBuilder()).AddJsonFile("local.settings.json").Build()
-        Dapper.FSharp.OptionTypes.register()
-        [
-            conf.["mssqlConnectionString"] |> mssqlTests
-            conf.["mysqlConnectionString"] |> mysqlTests
-            conf.["postgresConnectionString"] |> postgresTests
-        ]
-        |> testList ""
-        |> runTests testConfig
+
+    let conf = (ConfigurationBuilder()).AddJsonFile("local.settings.json").Build()
+    Dapper.FSharp.OptionTypes.register()
+    [
+        conf.["mssqlConnectionString"] |> mssqlTests
+        conf.["mysqlConnectionString"] |> mysqlTests
+        conf.["postgresConnectionString"] |> postgresTests
+    ]
+    |> testList ""
+    |> runTests testConfig

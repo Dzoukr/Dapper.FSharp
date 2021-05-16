@@ -185,20 +185,27 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
         | MethodCall m when m.Method.Name = "isIn" || m.Method.Name = "isNotIn" ->
             let comparisonType = if m.Method.Name = "isIn" then In else NotIn
             match m.Arguments.[0], m.Arguments.[1] with
-            | Member col, MethodCall lst ->
+            | Property p, MethodCall lst ->
                 let lstValues = unwrapListExpr ([], lst)                
-                Column (qualifyColumn col.Member, comparisonType lstValues)
-            | Member col, Constant c -> 
-                let lstValues = (c.Value :?> System.Collections.IEnumerable) |> Seq.cast<obj> |> Seq.toList
-                Column (qualifyColumn col.Member, comparisonType lstValues)
+                Column (qualifyColumn p, comparisonType lstValues)
+            | Property p, Value value -> 
+                let lstValues = (value :?> System.Collections.IEnumerable) |> Seq.cast<obj> |> Seq.toList
+                Column (qualifyColumn p, comparisonType lstValues)
             | _ -> notImpl()
         | MethodCall m when m.Method.Name = "like" || m.Method.Name = "notLike" ->
             match m.Arguments.[0], m.Arguments.[1] with
-            | Member col, Constant c -> 
-                let pattern = string c.Value
+            | Property p, Value value -> 
+                let pattern = string value
                 if m.Method.Name = "like"
-                then like (qualifyColumn col.Member) pattern
-                else notLike (qualifyColumn col.Member) pattern
+                then like (qualifyColumn p) pattern
+                else notLike (qualifyColumn p) pattern
+            | _ -> notImpl()
+        | MethodCall m when m.Method.Name = "isNullValue" || m.Method.Name = "isNotNullValue" ->
+            match m.Arguments.[0] with
+            | Property p -> 
+                if m.Method.Name = "isNullValue" 
+                then Column (qualifyColumn p, ColumnComparison.IsNull)
+                else Column (qualifyColumn p, ColumnComparison.IsNotNull)
             | _ -> notImpl()
         | BinaryAnd x ->
             let lt = visit x.Left

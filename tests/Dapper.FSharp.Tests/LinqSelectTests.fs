@@ -71,6 +71,30 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
         Expect.equal query.Where (Expr "Person.MI = Person.LName") "Expected WHERE Person.MI = Person.LName"
     }
 
+    testTask "isNullValue Where" {
+        let query = 
+            select {
+                for p in entity<Person> do
+                where (isNullValue p.Age || isNullValue p.MI || isNullValue p.FName)
+            }
+    
+        Expect.equal query.Where (
+            Builders.isNullValue "Person.Age" * Builders.isNullValue "Person.MI" * Builders.isNullValue "Person.FName"
+        ) "Expected all three fields to check for NULL"
+    }
+
+    testTask "isNotNullValue Where" {
+        let query = 
+            select {
+                for p in entity<Person> do
+                where (isNotNullValue p.Age || isNotNullValue p.MI || isNotNullValue p.FName)
+            }
+    
+        Expect.equal query.Where (
+            Builders.isNotNullValue "Person.Age" * Builders.isNotNullValue "Person.MI" * Builders.isNotNullValue "Person.FName"
+        ) "Expected all three fields to check for NOT NULL"
+    }
+
     testTask "Binary Where" {
         let query = 
             select {
@@ -128,7 +152,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
                 where (p.MI = None)
             }
     
-        Expect.equal query.Where (isNullValue "Person.MI") "Expected Person.MI IS NULL"
+        Expect.equal query.Where (Builders.isNullValue "Person.MI") "Expected Person.MI IS NULL"
     }
 
     testTask "Optional Column is not None" {
@@ -138,7 +162,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
                 where (p.MI <> None)
             }
     
-        Expect.equal query.Where (isNotNullValue "Person.MI") "Expected MI IS NOT NULL"
+        Expect.equal query.Where (Builders.isNotNullValue "Person.MI") "Expected MI IS NOT NULL"
     }
 
     testTask "Optional Column = Some value" {

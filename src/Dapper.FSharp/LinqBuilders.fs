@@ -257,3 +257,7 @@ let isNotIn<'P> (prop: 'P) (values: 'P list) = true
 let like<'P> (prop: 'P) (pattern: string) = true
 /// WHERE column not like value   
 let notLike<'P> (prop: 'P) (pattern: string) = true
+/// WHERE column IS NULL
+let isNullValue<'P> (prop: 'P) = true
+/// WHERE column IS NOT NULL
+let isNotNullValue<'P> (prop: 'P) = true
