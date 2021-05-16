@@ -169,16 +169,21 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
                     let value = c.Value
                     let columnComparison = getColumnComparison(exp.NodeType, value)
                     Column (qualifyColumn col.Member, columnComparison)
-                | Member col, MethodCall c when c.Type |> isOptionType ->
+                | Member col, MethodCall opt when opt.Type |> isOptionType ->
                     // Handle optional column comparisons
-                    if c.Arguments.Count > 0 then 
-                        match c.Arguments.[0] with
+                    if opt.Arguments.Count > 0 then // Option.Some 
+                        match opt.Arguments.[0] with
                         | Constant optVal -> 
                             let columnComparison = getColumnComparison(exp.NodeType, optVal.Value)
                             Column (qualifyColumn col.Member, columnComparison)
+                        | Member optM -> 
+                            let lt = qualifyColumn col.Member
+                            let cp = getComparison exp.NodeType
+                            let rt = qualifyColumn optM.Member
+                            Expr (sprintf "%s %s %s" lt cp rt)
                         | _ -> 
                             notImpl()
-                    else
+                    else // Option.None
                         let columnComparison = getColumnComparison(exp.NodeType, null)
                         Column (qualifyColumn col.Member, columnComparison)
                 | _ ->

@@ -51,6 +51,16 @@ let testsBasic() = testList "SELECT EXPRESSION" [
         Expect.equal query.Where (Expr "Person.FName = Person.LName") "Expected WHERE Person.FName = Person.LName"
     }
 
+    testTask "Col = Some Col Where" {
+        let query = 
+            select {
+                for p in entity<Person> do
+                where (p.MI = Some p.LName)
+            }
+        
+        Expect.equal query.Where (Expr "Person.MI = Person.LName") "Expected WHERE Person.MI = Person.LName"
+    }
+
     testTask "Binary Where" {
         let query = 
             select {
