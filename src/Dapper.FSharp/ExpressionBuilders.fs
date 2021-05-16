@@ -238,6 +238,11 @@ type SelectExpressionBuilder<'T>() =
         state.Query <- { state.Query with Distinct = true }
         state
 
+    /// Selects all (needed only when there are no other clauses "for" or "join").
+    [<CustomOperation("selectAll", MaintainsVariableSpace = true)>]
+    member __.Select (state:QuerySource<'T>) = 
+        state
+
     member __.Run (state: QuerySource<'T>) =
         state.Query
 
