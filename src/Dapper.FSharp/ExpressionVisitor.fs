@@ -154,6 +154,8 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: (Type * 
                     let value = c.Value
                     let columnComparison = getColumnComparison(exp.NodeType, value)
                     Column (qualifyColumn(col.Member.DeclaringType, col.Member.Name), columnComparison)
+                | Constant _, Constant _ ->
+                    notImplMsg("Constant comparisons are not currently supported. Ex: 'where (1 = 1)'")
                 | Member col, MethodCall c when c.Type |> isOptionType ->
                     // Handle optional column comparisons
                     if c.Arguments.Count > 0 then 
