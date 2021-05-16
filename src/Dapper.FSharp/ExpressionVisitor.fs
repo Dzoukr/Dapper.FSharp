@@ -147,16 +147,17 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
                 match x.Left, x.Right with
                 | Member col1, Member col2 ->
                     // Handle col to col comparisons
-                    let columnComparison = getColumnComparison(exp.NodeType, qualifyColumn(col2.Member))
-                    Column (qualifyColumn(col1.Member), columnComparison)                
+                    // Not supported by Dapper.FSharp because all comparisons currently add the right side as a parameter.
+                    // Support can easily be added here later if Dapper.FSharp adds support for this feature.
+                    notImplMsg("Column to Column comparisons are not currently supported. Ex: 'where (p.FName = p.LName)'")
+                | Constant _, Constant _ ->
+                    notImplMsg("Constant to Constant comparisons are not currently supported. Ex: 'where (1 = 1)'")
                 | Member col, Constant c
                 | Constant c, Member col ->
                     // Handle regular column comparisons
                     let value = c.Value
                     let columnComparison = getColumnComparison(exp.NodeType, value)
-                    Column (qualifyColumn(col.Member), columnComparison)
-                | Constant _, Constant _ ->
-                    notImplMsg("Constant comparisons are not currently supported. Ex: 'where (1 = 1)'")
+                    Column (qualifyColumn(col.Member), columnComparison)                
                 | Member col, MethodCall c when c.Type |> isOptionType ->
                     // Handle optional column comparisons
                     if c.Arguments.Count > 0 then 

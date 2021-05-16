@@ -178,11 +178,11 @@ let testsBasic() = testList "SELECT EXPRESSION" [
             select {
                 for p in entity<Person> do
                 join a in entity<Address> on (p.Id = a.PersonId) 
-                where (p.Id = a.PersonId) 
+                where (p.Id = 1 && a.PersonId = 2) 
             }
     
         Expect.equal query.Joins [InnerJoin ("Address", "PersonId", "Person.Id")] "Expected INNER JOIN Address ON Person.Id = Address.PersonId"
-        Expect.equal query.Where (Column ("Person.Id", Eq "Address.PersonId")) "Expected Person.Id = Address.PersonId"
+        Expect.equal query.Where (eq "Person.Id" 1 + eq "Address.PersonId" 2) "Expected both types in where clause"
     }
     
     testTask "Join2" {
@@ -191,7 +191,7 @@ let testsBasic() = testList "SELECT EXPRESSION" [
                 for p in entity<Person> do
                 join a in entity<Address> on (p.Id = a.PersonId) 
                 join c in entity<Contact> on (p.Id = c.PersonId)
-                where (p.Id = a.PersonId && c.Phone = "919-765-4321")
+                selectAll
             }
     
         Expect.equal query.Joins [
@@ -205,11 +205,11 @@ let testsBasic() = testList "SELECT EXPRESSION" [
             select {
                 for p in entity<Person> do
                 leftJoin a in entity<Address> on (p.Id = a.PersonId) 
-                where (p.Id = a.PersonId) 
+                where (p.Id = 1 && a.PersonId = 2) 
             }
     
         Expect.equal query.Joins [LeftJoin ("Address", "PersonId", "Person.Id")] "Expected LEFT JOIN Address ON Person.Id = Address.PersonId"
-        Expect.equal query.Where (Column ("Person.Id", Eq "Address.PersonId")) "Expected Person.Id = Address.PersonId"
+        Expect.equal query.Where (eq "Person.Id" 1 + eq "Address.PersonId" 2) "Expected both types in where clause"
     }
 
     testTask "LeftJoin2" {        
@@ -218,13 +218,14 @@ let testsBasic() = testList "SELECT EXPRESSION" [
                 for p in entity<Person> do
                 leftJoin a in entity<Address> on (p.Id = a.PersonId) 
                 leftJoin c in entity<Contact> on (p.Id = c.PersonId)
-                where (p.Id = a.PersonId && c.Phone = "919-765-4321")
+                where (p.Id = 1 && a.PersonId = 2 && c.Phone = "919-765-4321")
             }
     
         Expect.equal query.Joins [
             LeftJoin ("Address", "PersonId", "Person.Id")
             LeftJoin ("Contact", "PersonId", "Person.Id")
         ] "Expected LEFT JOIN Address ON Person.Id = Address.PersonId"
+        Expect.equal query.Where (eq "Person.Id" 1 + eq "Address.PersonId" 2 + eq "Contact.Phone" "919-765-4321") "Expected all types in where clause"
     }
 
     testTask "Join2 with Custom Schema and Table Names" {
