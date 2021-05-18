@@ -24,7 +24,16 @@ type QuerySource<'T>(tableMappings) =
     interface IEnumerable<'T> with
         member this.GetEnumerator() = Seq.empty<'T>.GetEnumerator() :> Collections.IEnumerator
         member this.GetEnumerator() = Seq.empty<'T>.GetEnumerator()
+    
     member val TableMappings : Map<FQName, TableMapping> = tableMappings
+    
+    member __.GetOuterTableMapping() = 
+        let outerEntity = typeof<'T>
+        let fqn = 
+            if outerEntity.Name.StartsWith "Tuple" // True for joined tables
+            then outerEntity.GetGenericArguments() |> Array.head |> fqName
+            else outerEntity |> fqName
+        __.TableMappings.[fqn]
 
 type SelectQuerySource<'T>(query, tableMappings) = 
     inherit QuerySource<'T>(tableMappings)
@@ -76,15 +85,7 @@ type SelectExpressionBuilder<'T>() =
         Map (Seq.concat [ (Map.toSeq a); (Map.toSeq b) ])
 
     member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
-        let fqn = 
-            let t = typeof<'T>
-            if t.Name.StartsWith "Tuple" then
-                let args = t.GetGenericArguments()
-                fqName args.[0]
-            else
-                fqName t
-
-        let tbl = state.TableMappings.[fqn]
+        let tbl = state.GetOuterTableMapping()
         let query = state |> getQueryOrDefault
         SelectQuerySource({ query with Table = tbl.Name; Schema = tbl.Schema }, state.TableMappings)
 
@@ -292,15 +293,7 @@ type DeleteExpressionBuilder<'T>() =
               Where = Where.Empty } : DeleteQuery
 
     member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
-        let fqn = 
-            let t = typeof<'T>
-            if t.Name.StartsWith "Tuple" then
-                let args = t.GetGenericArguments()
-                fqName args.[0]
-            else
-                fqName t
-
-        let tbl = state.TableMappings.[fqn]
+        let tbl = state.GetOuterTableMapping()
         let query = state |> getQueryOrDefault
         DeleteQuerySource({ query with Table = tbl.Name; Schema = tbl.Schema }, state.TableMappings)
 
