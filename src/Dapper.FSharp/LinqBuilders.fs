@@ -307,6 +307,11 @@ type DeleteExpressionBuilder<'T>() =
         let where = LinqExpressionVisitors.visitWhere<'T> whereExpression (fullyQualifyColumn state.TableMappings)
         DeleteQuerySource<'T>({ query with Where = where }, state.TableMappings)
 
+    /// Deletes all records in the table (only when there are is no where clause)
+    [<CustomOperation("deleteAll", MaintainsVariableSpace = true)>]
+    member __.DeleteAll (state:QuerySource<'T>) = 
+        state :?> DeleteQuerySource<'T>
+
     /// Unwraps the query
     member __.Run (state: QuerySource<'T>) =
         state |> getQueryOrDefault
