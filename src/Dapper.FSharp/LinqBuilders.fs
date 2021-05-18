@@ -312,8 +312,43 @@ type DeleteExpressionBuilder<'T>() =
     member __.Run (state: QuerySource<'T>) =
         state |> getQueryOrDefault
 
+type InsertExpressionBuilder<'T>() =
+
+    let getQueryOrDefault (state: QuerySource<'Result>) =
+        match state with
+        | :? QuerySource<'Result, InsertQuery<'T>> as qs -> qs.Query
+        | _ -> 
+            { Schema = None
+              Table = ""
+              Values = [] } : InsertQuery<'T>
+
+    member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
+        let tbl = state.GetOuterTableMapping()
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, InsertQuery<'T>>({ query with Table = tbl.Name; Schema = tbl.Schema }, state.TableMappings)
+
+    member __.Yield _ =
+        QuerySource<'T>(Map.empty)
+
+    /// Sets the list of values for INSERT
+    [<CustomOperation "values">]
+    member __.Values (state: QuerySource<'T>, values:'T list) = 
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, InsertQuery<'T>>({ query with Values = values }, state.TableMappings)
+
+    /// Sets the single value for INSERT
+    [<CustomOperation "value">]
+    member __.Value (state:QuerySource<'T>, value:'T) = 
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, InsertQuery<'T>>({ query with Values = [value] }, state.TableMappings)
+
+    /// Unwraps the query
+    member __.Run (state: QuerySource<'T>) =
+        state |> getQueryOrDefault
+
 let select<'T> = SelectExpressionBuilder<'T>()
 let delete<'T> = DeleteExpressionBuilder<'T>()
+let insert<'T> = InsertExpressionBuilder<'T>()
 
 /// WHERE column is IN values
 let isIn<'P> (prop: 'P) (values: 'P list) = true
