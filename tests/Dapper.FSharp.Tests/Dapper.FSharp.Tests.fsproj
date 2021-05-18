@@ -24,6 +24,7 @@
     <Compile Include="IssuesTests.fs" />
     <Compile Include="UpdateTests.fs" />
     <Compile Include="SelectTests.fs" />
+    <Compile Include="LinqDeleteTests.fs" />
     <Compile Include="LinqSelectTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

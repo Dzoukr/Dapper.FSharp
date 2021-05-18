@@ -27,9 +27,11 @@ let mssqlTests connString =
         UpdateTests.testsBasic crud init
         UpdateTests.testsOutput crud init
         SelectTests.testsBasic crud init        
+        MSSQL.AggregatesTests.tests conn
         LinqSelectTests.unitTests()
         LinqSelectTests.integrationTests crud init
-        MSSQL.AggregatesTests.tests conn
+        LinqDeleteTests.testsBasic crud init
+        LinqDeleteTests.testsOutput crud init
     ]
     |> testList "MSSQL"
     |> testSequenced

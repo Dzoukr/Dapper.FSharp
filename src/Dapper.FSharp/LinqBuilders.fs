@@ -13,6 +13,13 @@ module FQ =
 
 type TableMapping = { Name: string; Schema: string option }
 
+/// Fully qualifies a column with: {?schema}.{table}.{column}
+let private fullyQualifyColumn (tables: Map<FQName, TableMapping>) (property: Reflection.MemberInfo) =
+    let tbl = tables.[fqName property.DeclaringType]
+    match tbl.Schema with
+    | Some schema -> sprintf "%s.%s.%s" schema tbl.Name property.Name
+    | None -> sprintf "%s.%s" tbl.Name property.Name
+
 type QuerySource<'T>(tableMappings) =
     interface IEnumerable<'T> with
         member this.GetEnumerator() = Seq.empty<'T>.GetEnumerator() :> Collections.IEnumerator
@@ -22,6 +29,10 @@ type QuerySource<'T>(tableMappings) =
 type SelectQuerySource<'T>(query, tableMappings) = 
     inherit QuerySource<'T>(tableMappings)
     member val Query : SelectQuery = query
+
+type DeleteQuerySource<'T>(query, tableMappings) =
+    inherit QuerySource<'T>(tableMappings)
+    member val Query : DeleteQuery = query
 
 /// Maps the entity 'T to a table of the same name.
 let entity<'T> = 
@@ -45,7 +56,6 @@ let mapSchema<'T> (schemaName: string) (qs: QuerySource<'T>) =
     let tables = qs.TableMappings.Add(fqn, { tbl with Schema = Some schemaName })
     QuerySource<'T>(tables)
 
-
 type SelectExpressionBuilder<'T>() =
 
     let getQueryOrDefault (state: QuerySource<'Result>) =
@@ -64,13 +74,6 @@ type SelectExpressionBuilder<'T>() =
 
     let mergeTableMappings (a: Map<FQName, TableMapping>, b: Map<FQName, TableMapping>) =
         Map (Seq.concat [ (Map.toSeq a); (Map.toSeq b) ])
-
-    /// Fully qualifies a column with: {?schema}.{table}.{column}
-    let fullyQualifyColumn (tables: Map<FQName, TableMapping>) (property: Reflection.MemberInfo) =
-        let tbl = tables.[fqName property.DeclaringType]
-        match tbl.Schema with
-        | Some schema -> sprintf "%s.%s.%s" schema tbl.Name property.Name
-        | None -> sprintf "%s.%s" tbl.Name property.Name
 
     member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
         let fqn = 
@@ -278,8 +281,45 @@ type SelectExpressionBuilder<'T>() =
     member __.Run (state: QuerySource<'T>) =
         state |> getQueryOrDefault
 
+type DeleteExpressionBuilder<'T>() =
+
+    let getQueryOrDefault (state: QuerySource<'Result>) =
+        match state with
+        | :? DeleteQuerySource<'Result> as dqs -> dqs.Query
+        | _ -> 
+            { Schema = None
+              Table = ""
+              Where = Where.Empty } : DeleteQuery
+
+    member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
+        let fqn = 
+            let t = typeof<'T>
+            if t.Name.StartsWith "Tuple" then
+                let args = t.GetGenericArguments()
+                fqName args.[0]
+            else
+                fqName t
+
+        let tbl = state.TableMappings.[fqn]
+        let query = state |> getQueryOrDefault
+        DeleteQuerySource({ query with Table = tbl.Name; Schema = tbl.Schema }, state.TableMappings)
+
+    member __.Yield _ =
+        QuerySource<'T>(Map.empty)
+
+    /// Sets the WHERE condition
+    [<CustomOperation("where", MaintainsVariableSpace = true)>]
+    member __.Where (state:QuerySource<'T>, [<ProjectionParameter>] whereExpression) = 
+        let query = state |> getQueryOrDefault
+        let where = LinqExpressionVisitors.visitWhere<'T> whereExpression (fullyQualifyColumn state.TableMappings)
+        DeleteQuerySource<'T>({ query with Where = where }, state.TableMappings)
+
+    /// Unwraps the query
+    member __.Run (state: QuerySource<'T>) =
+        state |> getQueryOrDefault
 
 let select<'T> = SelectExpressionBuilder<'T>()
+let delete<'T> = DeleteExpressionBuilder<'T>()
 
 /// WHERE column is IN values
 let isIn<'P> (prop: 'P) (values: 'P list) = true
