@@ -22,10 +22,10 @@ let private fullyQualifyColumn (tables: Map<FQName, TableMapping>) (property: Re
 
 type QuerySource<'T>(tableMappings) =
     interface IEnumerable<'T> with
-        member this.GetEnumerator() = Seq.empty<'T>.GetEnumerator() :> Collections.IEnumerator
-        member this.GetEnumerator() = Seq.empty<'T>.GetEnumerator()
+        member __.GetEnumerator() = Seq.empty<'T>.GetEnumerator() :> Collections.IEnumerator
+        member __.GetEnumerator() = Seq.empty<'T>.GetEnumerator()
     
-    member val TableMappings : Map<FQName, TableMapping> = tableMappings
+    member __.TableMappings : Map<FQName, TableMapping> = tableMappings
     
     member __.GetOuterTableMapping() = 
         let outerEntity = typeof<'T>
@@ -35,13 +35,9 @@ type QuerySource<'T>(tableMappings) =
             else outerEntity |> fqName
         __.TableMappings.[fqn]
 
-type SelectQuerySource<'T>(query, tableMappings) = 
+type QuerySource<'T, 'Query>(query, tableMappings) = 
     inherit QuerySource<'T>(tableMappings)
-    member val Query : SelectQuery = query
-
-type DeleteQuerySource<'T>(query, tableMappings) =
-    inherit QuerySource<'T>(tableMappings)
-    member val Query : DeleteQuery = query
+    member __.Query : 'Query = query
 
 /// Maps the entity 'T to a table of the same name.
 let entity<'T> = 
@@ -69,7 +65,7 @@ type SelectExpressionBuilder<'T>() =
 
     let getQueryOrDefault (state: QuerySource<'Result>) =
         match state with
-        | :? SelectQuerySource<'Result> as sqs -> sqs.Query
+        | :? QuerySource<'Result, SelectQuery> as qs -> qs.Query
         | _ -> 
             { Schema = None
               Table = ""
@@ -87,7 +83,7 @@ type SelectExpressionBuilder<'T>() =
     member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
         let tbl = state.GetOuterTableMapping()
         let query = state |> getQueryOrDefault
-        SelectQuerySource({ query with Table = tbl.Name; Schema = tbl.Schema }, state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with Table = tbl.Name; Schema = tbl.Schema }, state.TableMappings)
 
     member __.Yield _ =
         QuerySource<'T>(Map.empty)
@@ -97,7 +93,7 @@ type SelectExpressionBuilder<'T>() =
     member __.Where (state:QuerySource<'T>, [<ProjectionParameter>] whereExpression) = 
         let query = state |> getQueryOrDefault
         let where = LinqExpressionVisitors.visitWhere<'T> whereExpression (fullyQualifyColumn state.TableMappings)
-        SelectQuerySource<'T>({ query with Where = where }, state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with Where = where }, state.TableMappings)
 
     /// Sets the ORDER BY for single column
     [<CustomOperation("orderBy", MaintainsVariableSpace = true)>]
@@ -105,7 +101,7 @@ type SelectExpressionBuilder<'T>() =
         let query = state |> getQueryOrDefault
         let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
         let orderBy = OrderBy (propertyName, Asc)
-        SelectQuerySource<'T>({ query with OrderBy = query.OrderBy @ [orderBy] }, state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with OrderBy = query.OrderBy @ [orderBy] }, state.TableMappings)
 
     /// Sets the ORDER BY for single column
     [<CustomOperation("thenBy", MaintainsVariableSpace = true)>]
@@ -113,7 +109,7 @@ type SelectExpressionBuilder<'T>() =
         let query = state |> getQueryOrDefault
         let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
         let orderBy = OrderBy (propertyName, Asc)
-        SelectQuerySource<'T>({ query with OrderBy = query.OrderBy @ [orderBy] }, state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with OrderBy = query.OrderBy @ [orderBy] }, state.TableMappings)
 
     /// Sets the ORDER BY DESC for single column
     [<CustomOperation("orderByDescending", MaintainsVariableSpace = true)>]
@@ -121,7 +117,7 @@ type SelectExpressionBuilder<'T>() =
         let query = state |> getQueryOrDefault
         let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
         let orderBy = OrderBy (propertyName, Desc)
-        SelectQuerySource<'T>({ query with OrderBy = query.OrderBy @ [orderBy] }, state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with OrderBy = query.OrderBy @ [orderBy] }, state.TableMappings)
 
     /// Sets the ORDER BY DESC for single column
     [<CustomOperation("thenByDescending", MaintainsVariableSpace = true)>]
@@ -129,25 +125,25 @@ type SelectExpressionBuilder<'T>() =
         let query = state |> getQueryOrDefault
         let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
         let orderBy = OrderBy (propertyName, Desc)
-        SelectQuerySource<'T>({ query with OrderBy = query.OrderBy @ [orderBy] }, state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with OrderBy = query.OrderBy @ [orderBy] }, state.TableMappings)
 
     /// Sets the SKIP value for query
     [<CustomOperation("skip", MaintainsVariableSpace = true)>]
     member __.Skip (state:QuerySource<'T>, skip) = 
         let query = state |> getQueryOrDefault
-        SelectQuerySource<'T>({ query with Pagination = { query.Pagination with Skip = skip } }, state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with Pagination = { query.Pagination with Skip = skip } }, state.TableMappings)
     
     /// Sets the TAKE value for query
     [<CustomOperation("take", MaintainsVariableSpace = true)>]
     member __.Take (state:QuerySource<'T>, take) = 
         let query = state |> getQueryOrDefault
-        SelectQuerySource<'T>({ query with Pagination = { query.Pagination with Take = Some take } }, state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with Pagination = { query.Pagination with Take = Some take } }, state.TableMappings)
 
     /// Sets the SKIP and TAKE value for query
     [<CustomOperation("skipTake", MaintainsVariableSpace = true)>]
     member __.SkipTake (state:QuerySource<'T>, skip, take) = 
         let query = state |> getQueryOrDefault
-        SelectQuerySource<'T>({ query with Pagination = { query.Pagination with Skip = skip; Take = Some take } }, state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with Pagination = { query.Pagination with Skip = skip; Take = Some take } }, state.TableMappings)
 
     /// INNER JOIN table where COLNAME equals to another COLUMN (including TABLE name)
     [<CustomOperation("join", MaintainsVariableSpace = true, IsLikeJoin = true, JoinConditionWord = "on")>]
@@ -170,7 +166,7 @@ type SelectExpressionBuilder<'T>() =
 
         let join = InnerJoin (innerTableName, innerProperty.Name, outerPropertyName)
         let outerQuery = outerSource |> getQueryOrDefault
-        SelectQuerySource<'Result>({ outerQuery with Joins = outerQuery.Joins @ [join] }, mergedTables)
+        QuerySource<'Result, SelectQuery>({ outerQuery with Joins = outerQuery.Joins @ [join] }, mergedTables)
 
     /// LEFT JOIN table where COLNAME equals to another COLUMN (including TABLE name)
     [<CustomOperation("leftJoin", MaintainsVariableSpace = true, IsLikeJoin = true, JoinConditionWord = "on")>]
@@ -193,90 +189,90 @@ type SelectExpressionBuilder<'T>() =
 
         let join = LeftJoin (innerTableName, innerProperty.Name, outerPropertyName)
         let outerQuery = outerSource |> getQueryOrDefault
-        SelectQuerySource<'Result>({ outerQuery with Joins = outerQuery.Joins @ [join] }, mergedTables)
+        QuerySource<'Result, SelectQuery>({ outerQuery with Joins = outerQuery.Joins @ [join] }, mergedTables)
 
     /// Sets the ORDER BY for single column
     [<CustomOperation("groupBy", MaintainsVariableSpace = true)>]
     member __.GroupBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let query = state |> getQueryOrDefault
         let properties = LinqExpressionVisitors.visitGroupBy<'T, 'Prop> propertySelector (fullyQualifyColumn state.TableMappings)
-        SelectQuerySource<'T>({ query with GroupBy = query.GroupBy @ properties}, state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with GroupBy = query.GroupBy @ properties}, state.TableMappings)
 
     /// COUNT aggregate function for COLNAME (or * symbol) and map it to ALIAS
     [<CustomOperation("count", MaintainsVariableSpace = true)>]
     member __.Count (state:QuerySource<'T>, colName, alias) = 
         let query = state |> getQueryOrDefault
-        SelectQuerySource<'T>({ query with Aggregates = query.Aggregates @ [Aggregate.Count(colName, alias)] }, state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Count(colName, alias)] }, state.TableMappings)
 
     /// COUNT aggregate function for the selected column
     [<CustomOperation("countBy", MaintainsVariableSpace = true)>]
     member __.CountBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let query = state |> getQueryOrDefault
         let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
-        SelectQuerySource<'T>({ query with Aggregates = query.Aggregates @ [Aggregate.Count(propertyName, propertyName)] }, state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Count(propertyName, propertyName)] }, state.TableMappings)
 
     /// AVG aggregate function for COLNAME (or * symbol) and map it to ALIAS
     [<CustomOperation("avg", MaintainsVariableSpace = true)>]
     member __.Avg (state:QuerySource<'T>, colName, alias) = 
         let query = state |> getQueryOrDefault
-        SelectQuerySource<'T>({ query with Aggregates = query.Aggregates @ [Aggregate.Avg(colName, alias)] }, state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Avg(colName, alias)] }, state.TableMappings)
 
     /// AVG aggregate function for the selected column
     [<CustomOperation("avgBy", MaintainsVariableSpace = true)>]
     member __.AvgBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let query = state |> getQueryOrDefault
         let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
-        SelectQuerySource<'T>({ query with Aggregates = query.Aggregates @ [Aggregate.Avg(propertyName, propertyName)] }, state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Avg(propertyName, propertyName)] }, state.TableMappings)
     
     /// SUM aggregate function for COLNAME (or * symbol) and map it to ALIAS
     [<CustomOperation("sum", MaintainsVariableSpace = true)>]
     member __.Sum (state:QuerySource<'T>, colName, alias) = 
         let query = state |> getQueryOrDefault
-        SelectQuerySource<'T>({ query with Aggregates = query.Aggregates @ [Aggregate.Sum(colName, alias)] }, state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Sum(colName, alias)] }, state.TableMappings)
 
     /// SUM aggregate function for the selected column
     [<CustomOperation("sumBy", MaintainsVariableSpace = true)>]
     member __.SumBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let query = state |> getQueryOrDefault
         let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
-        SelectQuerySource<'T>({ query with Aggregates = query.Aggregates @ [Aggregate.Sum(propertyName, propertyName)] }, state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Sum(propertyName, propertyName)] }, state.TableMappings)
     
     /// MIN aggregate function for COLNAME (or * symbol) and map it to ALIAS
     [<CustomOperation("min", MaintainsVariableSpace = true)>]
     member __.Min (state:QuerySource<'T>, colName, alias) = 
         let query = state |> getQueryOrDefault
-        SelectQuerySource<'T>({ query with Aggregates = query.Aggregates @ [Aggregate.Min(colName, alias)] }, state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Min(colName, alias)] }, state.TableMappings)
 
     /// MIN aggregate function for the selected column
     [<CustomOperation("minBy", MaintainsVariableSpace = true)>]
     member __.MinBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let query = state |> getQueryOrDefault
         let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
-        SelectQuerySource<'T>({ query with Aggregates = query.Aggregates @ [Aggregate.Min(propertyName, propertyName)] }, state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Min(propertyName, propertyName)] }, state.TableMappings)
     
     /// MIN aggregate function for COLNAME (or * symbol) and map it to ALIAS
     [<CustomOperation("max", MaintainsVariableSpace = true)>]
     member __.Max (state:QuerySource<'T>, colName, alias) = 
         let query = state |> getQueryOrDefault
-        SelectQuerySource<'T>({ query with Aggregates = query.Aggregates @ [Aggregate.Max(colName, alias)] }, state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Max(colName, alias)] }, state.TableMappings)
 
     /// MIN aggregate function for the selected column
     [<CustomOperation("maxBy", MaintainsVariableSpace = true)>]
     member __.MaxBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let query = state |> getQueryOrDefault
         let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
-        SelectQuerySource<'T>({ query with Aggregates = query.Aggregates @ [Aggregate.Max(propertyName, propertyName)] }, state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Max(propertyName, propertyName)] }, state.TableMappings)
     
     /// Sets query to return DISTINCT values
     [<CustomOperation("distinct", MaintainsVariableSpace = true)>]
     member __.Distinct (state:QuerySource<'T>) = 
         let query = state |> getQueryOrDefault
-        SelectQuerySource<'T>({ query with Distinct = true }, state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with Distinct = true }, state.TableMappings)
 
     /// Selects all (needed only when there are no other clauses after "for" or "join")
     [<CustomOperation("selectAll", MaintainsVariableSpace = true)>]
     member __.SelectAll (state:QuerySource<'T>) = 
-        state :?> SelectQuerySource<'T>
+        state :?> QuerySource<'T, SelectQuery>
 
     /// Unwraps the query
     member __.Run (state: QuerySource<'T>) =
@@ -286,7 +282,7 @@ type DeleteExpressionBuilder<'T>() =
 
     let getQueryOrDefault (state: QuerySource<'Result>) =
         match state with
-        | :? DeleteQuerySource<'Result> as dqs -> dqs.Query
+        | :? QuerySource<'Result, DeleteQuery> as qs -> qs.Query
         | _ -> 
             { Schema = None
               Table = ""
@@ -295,7 +291,7 @@ type DeleteExpressionBuilder<'T>() =
     member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
         let tbl = state.GetOuterTableMapping()
         let query = state |> getQueryOrDefault
-        DeleteQuerySource({ query with Table = tbl.Name; Schema = tbl.Schema }, state.TableMappings)
+        QuerySource<'T, DeleteQuery>({ query with Table = tbl.Name; Schema = tbl.Schema }, state.TableMappings)
 
     member __.Yield _ =
         QuerySource<'T>(Map.empty)
@@ -305,12 +301,12 @@ type DeleteExpressionBuilder<'T>() =
     member __.Where (state:QuerySource<'T>, [<ProjectionParameter>] whereExpression) = 
         let query = state |> getQueryOrDefault
         let where = LinqExpressionVisitors.visitWhere<'T> whereExpression (fullyQualifyColumn state.TableMappings)
-        DeleteQuerySource<'T>({ query with Where = where }, state.TableMappings)
+        QuerySource<'T, DeleteQuery>({ query with Where = where }, state.TableMappings)
 
     /// Deletes all records in the table (only when there are is no where clause)
     [<CustomOperation("deleteAll", MaintainsVariableSpace = true)>]
     member __.DeleteAll (state:QuerySource<'T>) = 
-        state :?> DeleteQuerySource<'T>
+        state :?> QuerySource<'T, DeleteQuery>
 
     /// Unwraps the query
     member __.Run (state: QuerySource<'T>) =
