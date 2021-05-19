@@ -63,7 +63,7 @@ let mapSchema<'T> (schemaName: string) (qs: QuerySource<'T>) =
 
 type SelectExpressionBuilder<'T>() =
 
-    let getQueryOrDefault (state: QuerySource<'Result>) =
+    let getQueryOrDefault (state: QuerySource<'Result>) = // 'Result allows 'T to vary as the result of joins
         match state with
         | :? QuerySource<'Result, SelectQuery> as qs -> qs.Query
         | _ -> 
@@ -346,9 +346,46 @@ type InsertExpressionBuilder<'T>() =
     member __.Run (state: QuerySource<'T>) =
         state |> getQueryOrDefault
 
+type UpdateExpressionBuilder<'T, 'U>() =
+    
+    let getQueryOrDefault (state: QuerySource<'Result>) =
+        match state with
+        | :? QuerySource<'Result, UpdateQuery<'U>> as qs -> qs.Query
+        | _ -> 
+            { Schema = None
+              Table = ""
+              Value = Unchecked.defaultof<'U>
+              Where = Where.Empty } : UpdateQuery<'U>
+
+    member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
+        let tbl = state.GetOuterTableMapping()
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, UpdateQuery<'U>>({ query with Table = tbl.Name; Schema = tbl.Schema }, state.TableMappings)
+
+    member __.Yield _ =
+        QuerySource<'T>(Map.empty)
+
+    /// Sets the SET of value ('U) to UPDATE
+    [<CustomOperation("set", MaintainsVariableSpace = true)>]
+    member __.Set (state: QuerySource<'T>, value: 'U) = 
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, UpdateQuery<'U>>({ query with Value = value }, state.TableMappings)
+
+    /// Sets the WHERE condition
+    [<CustomOperation("where", MaintainsVariableSpace = true)>]
+    member __.Where (state: QuerySource<'T>, [<ProjectionParameter>] whereExpression) = 
+        let query = state |> getQueryOrDefault
+        let where = LinqExpressionVisitors.visitWhere<'T> whereExpression (fullyQualifyColumn state.TableMappings)
+        QuerySource<'T, UpdateQuery<'U>>({ query with Where = where }, state.TableMappings)
+
+    /// Unwraps the query
+    member __.Run (state: QuerySource<'T>) =
+        state |> getQueryOrDefault
+
 let select<'T> = SelectExpressionBuilder<'T>()
 let delete<'T> = DeleteExpressionBuilder<'T>()
 let insert<'T> = InsertExpressionBuilder<'T>()
+let update<'T, 'U> = UpdateExpressionBuilder<'T, 'U>()
 
 /// WHERE column is IN values
 let isIn<'P> (prop: 'P) (values: 'P list) = true
