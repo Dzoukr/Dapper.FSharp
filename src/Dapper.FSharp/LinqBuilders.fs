@@ -40,7 +40,7 @@ type QuerySource<'T, 'Query>(query, tableMappings) =
     member __.Query : 'Query = query
 
 /// Maps the entity 'T to a table of the same name.
-let entity<'T> = 
+let table<'T> = 
     let ent = typeof<'T>
     let tables = Map [fqName ent, { Name = ent.Name; Schema = None }]
     QuerySource<'T>(tables)

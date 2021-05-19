@@ -31,7 +31,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     testTask "Most Simple Query" {
         let query = 
             select {
-                for p in entity<Person> do
+                for p in table<Person> do
                 selectAll
             }
 
@@ -41,7 +41,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     testTask "Simple Query" {
         let query = 
             select {
-                for p in entity<Person> do
+                for p in table<Person> do
                 where (p.FName = "John")
                 orderBy p.LName
             }
@@ -54,7 +54,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     testTask "Col = Col Where" {
         let query = 
             select {
-                for p in entity<Person> do
+                for p in table<Person> do
                 where (p.FName = p.LName)
             }
         
@@ -64,7 +64,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     testTask "Col option = Col option Where" {
         let query = 
             select {
-                for p in entity<Person> do
+                for p in table<Person> do
                 where (p.MI = p.MI)
             }
         
@@ -74,7 +74,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     testTask "Col = Some Col Where" {
         let query = 
             select {
-                for p in entity<Person> do
+                for p in table<Person> do
                 where (p.MI = Some p.LName)
             }
         
@@ -91,7 +91,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
 
         let query = 
             select {
-                for p in entity<Person> do
+                for p in table<Person> do
                 where (p.Age < personInstance.Age)
             }
         
@@ -101,7 +101,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     testTask "isNullValue Where" {
         let query = 
             select {
-                for p in entity<Person> do
+                for p in table<Person> do
                 where (isNullValue p.Age || isNullValue p.MI || isNullValue p.FName)
             }
     
@@ -113,7 +113,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     testTask "isNotNullValue Where" {
         let query = 
             select {
-                for p in entity<Person> do
+                for p in table<Person> do
                 where (isNotNullValue p.Age || isNotNullValue p.MI || isNotNullValue p.FName)
             }
     
@@ -125,7 +125,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     testTask "Binary Where" {
         let query = 
             select {
-                for p in entity<Person> do
+                for p in table<Person> do
                 where (p.FName = "John" && p.LName = "Doe")
                 orderByDescending p.LName
                 thenByDescending p.Age
@@ -139,7 +139,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     testTask "Unary Not" {
         let query = 
             select {
-                for p in entity<Person> do
+                for p in table<Person> do
                 where (not (p.FName = "John"))
             }
     
@@ -149,7 +149,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     testTask "Group By" {
         let query = 
             select {
-                for p in entity<Person> do
+                for p in table<Person> do
                 count "*" "Count"
                 where (not (p.FName = "John"))
                 groupBy p.Age
@@ -162,8 +162,8 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     testTask "Group By Many" {
         let query = 
             select {
-                for p in entity<Person> do
-                join c in entity<Contact> on (p.Id = c.PersonId)
+                for p in table<Person> do
+                join c in table<Contact> on (p.Id = c.PersonId)
                 groupBy (p.FName, p.LName)
                 count "*" "Count"
             }
@@ -175,7 +175,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     testTask "Optional Column is None" {
         let query = 
             select {
-                for p in entity<Person> do
+                for p in table<Person> do
                 where (p.MI = None)
             }
     
@@ -185,7 +185,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     testTask "Optional Column is not None" {
         let query = 
             select {
-                for p in entity<Person> do
+                for p in table<Person> do
                 where (p.MI <> None)
             }
     
@@ -195,7 +195,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     testTask "Optional Column = Some value" {
         let query = 
             select {
-                for p in entity<Person> do
+                for p in table<Person> do
                 where (p.MI = Some "N")
             }
     
@@ -205,7 +205,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     testTask "SqlMethods.isIn" {
         let query = 
             select {
-                for p in entity<Person> do
+                for p in table<Person> do
                 where (isIn p.Age [18;21])
             }
     
@@ -216,7 +216,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
         let ages = [1..5]
         let query = 
             select {
-                for p in entity<Person> do
+                for p in table<Person> do
                 where (isNotIn p.Age ages)
             }
     
@@ -226,7 +226,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     testTask "Like" {
         let query = 
             select {
-                for p in entity<Person> do
+                for p in table<Person> do
                 where (like p.LName "D%")
             }
     
@@ -236,7 +236,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     testTask "Count" {
         let query = 
             select {
-                for p in entity<Person> do
+                for p in table<Person> do
                 count "*" "Count"
                 where (not (p.FName = "John"))
             }
@@ -257,8 +257,8 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     testTask "Join" {
         let query = 
             select {
-                for p in entity<Person> do
-                join a in entity<Address> on (p.Id = a.PersonId) 
+                for p in table<Person> do
+                join a in table<Address> on (p.Id = a.PersonId) 
                 where (p.Id = 1 && a.PersonId = 2) 
             }
     
@@ -269,9 +269,9 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     testTask "Join2" {
         let query = 
             select {
-                for p in entity<Person> do
-                join a in entity<Address> on (p.Id = a.PersonId) 
-                join c in entity<Contact> on (p.Id = c.PersonId)
+                for p in table<Person> do
+                join a in table<Address> on (p.Id = a.PersonId) 
+                join c in table<Contact> on (p.Id = c.PersonId)
                 selectAll
             }
     
@@ -284,8 +284,8 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     testTask "LeftJoin" {
         let query = 
             select {
-                for p in entity<Person> do
-                leftJoin a in entity<Address> on (p.Id = a.PersonId) 
+                for p in table<Person> do
+                leftJoin a in table<Address> on (p.Id = a.PersonId) 
                 where (p.Id = 1 && a.PersonId = 2) 
             }
     
@@ -296,9 +296,9 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     testTask "LeftJoin2" {        
         let query = 
             select {
-                for p in entity<Person> do
-                leftJoin a in entity<Address> on (p.Id = a.PersonId) 
-                leftJoin c in entity<Contact> on (p.Id = c.PersonId)
+                for p in table<Person> do
+                leftJoin a in table<Address> on (p.Id = a.PersonId) 
+                leftJoin c in table<Contact> on (p.Id = c.PersonId)
                 where (p.Id = 1 && a.PersonId = 2 && c.Phone = "919-765-4321")
             }
     
@@ -310,9 +310,9 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     }
 
     testTask "Join2 with Custom Schema and Table Names" {
-        let personTable = entity<Person> |> mapSchema "dbo"  |> mapTable "People"
-        let addressTable = entity<Address> |> mapSchema "dbo"  |> mapTable "Addresses"
-        let contactTable = entity<Contact> |> mapSchema "dbo"  |> mapTable "Contacts"
+        let personTable = table<Person> |> mapSchema "dbo"  |> mapTable "People"
+        let addressTable = table<Address> |> mapSchema "dbo"  |> mapTable "Addresses"
+        let contactTable = table<Contact> |> mapSchema "dbo"  |> mapTable "Contacts"
 
         let query = 
             select {
@@ -342,9 +342,9 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     }
 
     testTask "LeftJoin2 with Custom Schema and Table Names" {
-        let personTable = entity<Person> |> mapTable "People" |> mapSchema "dbo"
-        let addressTable = entity<Address> |> mapTable "Addresses" |> mapSchema "dbo"
-        let contactTable = entity<Contact> |> mapTable "Contacts" |> mapSchema "dbo"
+        let personTable = table<Person> |> mapTable "People" |> mapSchema "dbo"
+        let addressTable = table<Address> |> mapTable "Addresses" |> mapSchema "dbo"
+        let contactTable = table<Contact> |> mapTable "Contacts" |> mapSchema "dbo"
                                                                     
         let query = 
             select {
@@ -376,9 +376,9 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
 
 let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELECT INTEGRATION TESTS" [
 
-    let personsView = entity<Persons.View> |> mapTable "Persons"
-    let dogsView = entity<Dogs.View> |> mapTable "Dogs"
-    let dogsWeightsView = entity<DogsWeights.View> |> mapTable "DogsWeights"
+    let personsView = table<Persons.View> |> mapTable "Persons"
+    let dogsView = table<Dogs.View> |> mapTable "Dogs"
+    let dogsWeightsView = table<DogsWeights.View> |> mapTable "DogsWeights"
     
     testTask "Selects by single where condition" {
         do! init.InitPersons()
