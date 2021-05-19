@@ -395,19 +395,19 @@ You can either specify your tables within the query, or you can specify them abo
 The following will assume that the table name exactly matches the record name, "Person":
 
 ```F#
-let personTable = entity<Person>
+let personTable = table<Person>
 ```
 
 If you record type name does not match the table name, you can map it:
 
 ```F#
-let personTable = entity<Person> |> mapTable "People"
+let personTable = table<Person> |> mapTable "People"
 ```
 
 If you want to include a schema name:
 
 ```F#
-let personTable = entity<Person> |> mapTable "People" |> mapSchema "dbo"
+let personTable = table<Person> |> mapTable "People" |> mapSchema "dbo"
 ```
 
 ### INSERT
@@ -421,7 +421,7 @@ let conn : IDbConnection = ... // get it somewhere
 
 let newPerson = { Id = Guid.NewGuid(); FirstName = "Roman"; LastName = "Provaznik"; Position = 1; DateOfBirth = None }
 
-let personTable = entity<Person>
+let personTable = table<Person>
 
 insert {
     into personTable
@@ -581,9 +581,9 @@ For simple queries with join, you can use innerJoin and leftJoin in combination 
 
 ```F#
 
-let personTable = entity<Person>
-let dogsTable = entity<Dog>
-let dogsWeightsTable = entity<DogsWeight>
+let personTable = table<Person>
+let dogsTable = table<Dog>
+let dogsWeightsTable = table<DogsWeight>
 
 select {
     for p in personTable do
