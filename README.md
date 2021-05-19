@@ -398,16 +398,16 @@ The following will assume that the table name exactly matches the record name, "
 let personTable = table<Person>
 ```
 
-If you record type name does not match the table name, you can map it:
+If your record maps to a table with a different name:
 
 ```F#
-let personTable = table<Person> |> mapTable "People"
+let personTable = table'<Person> "People"
 ```
 
 If you want to include a schema name:
 
 ```F#
-let personTable = table<Person> |> mapTable "People" |> mapSchema "dbo"
+let personTable = table'<Person> "People" |> inSchema "dbo"
 ```
 
 ### INSERT
