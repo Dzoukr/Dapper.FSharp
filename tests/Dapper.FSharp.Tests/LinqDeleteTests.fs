@@ -7,7 +7,7 @@ open Expecto
 
 let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "LINQ DELETE" [
 
-    let personsView = table<Persons.View> |> mapTable "Persons"
+    let personsView = table'<Persons.View> "Persons"
     
     testTask "Deletes single records" {
         do! init.InitPersons()
@@ -56,7 +56,8 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "LINQ DELETE" [
 
 let testsOutput (crud:ICrudOutput) (init:ICrudInitializer) = testList "LINQ DELETE OUTPUT" [
     
-    let personsView = table<Persons.View> |> mapTable "Persons"
+    let personsView = table'<Persons.View> "Persons"
+
 
     testTask "Deletes and outputs single record" {
         do! init.InitPersons()

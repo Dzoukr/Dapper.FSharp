@@ -7,7 +7,7 @@ open Expecto
 
 let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "LINQ INSERT" [
     
-    let personsView = table<Persons.View> |> mapTable "Persons"
+    let personsView = table'<Persons.View> "Persons"
 
     testTask "Inserts new record" {
         do! init.InitPersons()
@@ -26,7 +26,7 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "LINQ INSERT" [
     }
 
     testTask "Inserts partial record" {        
-        let personsRequired = table<Persons.ViewRequired> |> mapTable "Persons"
+        let personsRequired = table'<Persons.ViewRequired> "Persons"
 
         do! init.InitPersons()
         let r =
@@ -65,7 +65,7 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "LINQ INSERT" [
 
 let testsOutput (crud:ICrudOutput) (init:ICrudInitializer) = testList "LINQ INSERT OUTPUT" [
     
-    let personsView = table<Persons.View> |> mapTable "Persons"
+    let personsView = table'<Persons.View> "Persons"
 
     testTask "Inserts and outputs single record" {
         do! init.InitPersons()

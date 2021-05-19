@@ -9,7 +9,7 @@ open FSharp.Control.Tasks.V2
 
 let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "LINQ UPDATE" [
     
-    let personsView = table<Persons.View> |> mapTable "Persons"
+    let personsView = table'<Persons.View> "Persons"
 
     testTask "Updates single records" {
         do! init.InitPersons()
@@ -83,7 +83,7 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "LINQ UPDATE" [
 
 let testsOutput (crud:ICrudOutput) (init:ICrudInitializer) = testList "LINQ UPDATE OUTPUT" [
     
-    let personsView = table<Persons.View> |> mapTable "Persons"
+    let personsView = table'<Persons.View> "Persons"
 
     testTask "Updates option field to Some" {
         do! init.InitPersons()

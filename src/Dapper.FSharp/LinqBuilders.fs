@@ -39,27 +39,28 @@ type QuerySource<'T, 'Query>(query, tableMappings) =
     inherit QuerySource<'T>(tableMappings)
     member __.Query : 'Query = query
 
-/// Maps the entity 'T to a table of the same name.
-let table<'T> = 
-    let ent = typeof<'T>
-    let tables = Map [fqName ent, { Name = ent.Name; Schema = None }]
-    QuerySource<'T>(tables)
+[<AutoOpen>]
+module Table = 
 
-/// Maps the entity 'T to a table of the given name.
-let mapTable<'T> (tableName: string) (qs: QuerySource<'T>) = 
-    let ent = typeof<'T>
-    let fqn = fqName ent
-    let tbl = qs.TableMappings.[fqn]
-    let tables = qs.TableMappings.Add(fqn, { tbl with Name = tableName })
-    QuerySource<'T>(tables)
+    /// Maps the entity 'T to a table of the exact same name.
+    let table<'T> = 
+        let ent = typeof<'T>
+        let tables = Map [fqName ent, { Name = ent.Name; Schema = None }]
+        QuerySource<'T>(tables)
 
-/// Maps the entity 'T to a schema of the given name.
-let mapSchema<'T> (schemaName: string) (qs: QuerySource<'T>) =
-    let ent = typeof<'T>
-    let fqn = fqName ent
-    let tbl = qs.TableMappings.[fqn]
-    let tables = qs.TableMappings.Add(fqn, { tbl with Schema = Some schemaName })
-    QuerySource<'T>(tables)
+    /// Maps the entity 'T to a table of the given name.
+    let table'<'T> (tableName: string) = 
+        let ent = typeof<'T>
+        let tables = Map [fqName ent, { Name = tableName; Schema = None }]
+        QuerySource<'T>(tables)
+
+    /// Maps the entity 'T to a schema of the given name.
+    let inSchema<'T> (schemaName: string) (qs: QuerySource<'T>) =
+        let ent = typeof<'T>
+        let fqn = fqName ent
+        let tbl = qs.TableMappings.[fqn]
+        let tables = qs.TableMappings.Add(fqn, { tbl with Schema = Some schemaName })
+        QuerySource<'T>(tables)
 
 type SelectExpressionBuilder<'T>() =
 

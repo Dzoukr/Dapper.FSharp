@@ -310,9 +310,9 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     }
 
     testTask "Join2 with Custom Schema and Table Names" {
-        let personTable = table<Person> |> mapSchema "dbo"  |> mapTable "People"
-        let addressTable = table<Address> |> mapSchema "dbo"  |> mapTable "Addresses"
-        let contactTable = table<Contact> |> mapSchema "dbo"  |> mapTable "Contacts"
+        let personTable = table'<Person> "People" |> inSchema "dbo"
+        let addressTable = table'<Address> "Addresses" |> inSchema "dbo"
+        let contactTable = table'<Contact> "Contacts" |> inSchema "dbo"
 
         let query = 
             select {
@@ -342,9 +342,9 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     }
 
     testTask "LeftJoin2 with Custom Schema and Table Names" {
-        let personTable = table<Person> |> mapTable "People" |> mapSchema "dbo"
-        let addressTable = table<Address> |> mapTable "Addresses" |> mapSchema "dbo"
-        let contactTable = table<Contact> |> mapTable "Contacts" |> mapSchema "dbo"
+        let personTable = table'<Person> "People" |> inSchema "dbo"
+        let addressTable = table'<Address> "Addresses" |> inSchema "dbo"
+        let contactTable = table'<Contact> "Contacts" |> inSchema "dbo"
                                                                     
         let query = 
             select {
@@ -376,9 +376,9 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
 
 let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELECT INTEGRATION TESTS" [
 
-    let personsView = table<Persons.View> |> mapTable "Persons"
-    let dogsView = table<Dogs.View> |> mapTable "Dogs"
-    let dogsWeightsView = table<DogsWeights.View> |> mapTable "DogsWeights"
+    let personsView = table'<Persons.View> "Persons" |> inSchema "dbo"
+    let dogsView = table'<Dogs.View> "Dogs" |> inSchema "dbo"
+    let dogsWeightsView = table'<DogsWeights.View> "DogsWeights" |> inSchema "dbo"
     
     testTask "Selects by single where condition" {
         do! init.InitPersons()
