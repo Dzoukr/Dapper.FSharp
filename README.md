@@ -11,6 +11,7 @@ Lightweight F# extension for StackOverflow Dapper with support for MSSQL, MySQL 
 - No *auto-attribute-based-only-author-maybe-knows-magic* behavior
 - Support for F# records / anonymous records
 - Support for F# options
+- [LINQ Query Provider](#linq-api)
 - Support for SQL Server 2012 (11.x) and later / Azure SQL Database, MySQL 8.0, PostgreSQL 12.0
 - Support for SELECT (including JOINs), INSERT, UPDATE (full / partial), DELETE
 - Support for OUTPUT clause (MSSQL only)
@@ -85,6 +86,27 @@ type Person = {
 ```
 
 *Hint: Check tests located under tests/Dapper.FSharp.Tests folder for more examples*
+
+
+## API Overview
+There are two sets of Computation Expression builders:
+
+[BASE API](#base-api)
+
+The base `Builders` module is opened by default and contains all the core pieces for creating queries.
+This includes the `insert`, `update`, `delete` and `select` computation expressions and supporting query functions.
+
+
+
+[LINQ API](#linq-api)
+
+The new `LinqBuilders` module provides a full LINQ expression query provider, similar to the standard F# `query` computation expression, that feeds the Base API.
+This includes the `insert`, `update`, `delete` and `select` computation expressions and supporting query functions.
+(You must open `Dapper.FSharp.LinqBuilders` to use the Linq builders.)
+
+
+
+## BASE API
 
 ### INSERT
 
@@ -364,4 +386,231 @@ printfn "%A" values
 //      ("Id0", 8cc6a7ed-7c17-4bea-a0ca-04a3985d2c7e); 
 //      ("LastName0", "Great");
 //      ("Position0", 1)]
+```
+
+## LINQ API
+
+### Table Mappings
+You can either specify your tables within the query, or you can specify them above your queries (which is recommended since it makes them sharable between your queries).
+The following will assume that the table name exactly matches the record name, "Person":
+
+```F#
+let personTable = entity<Person>
+```
+
+If you record type name does not match the table name, you can map it:
+
+```F#
+let personTable = entity<Person> |> mapTable "People"
+```
+
+If you want to include a schema name:
+
+```F#
+let personTable = entity<Person> |> mapTable "People" |> mapSchema "dbo"
+```
+
+### INSERT
+
+```f#
+open Dapper.FSharp
+open Dapper.FSharp.LinqBuilders
+open Dapper.FSharp.MSSQL
+
+let conn : IDbConnection = ... // get it somewhere
+
+let newPerson = { Id = Guid.NewGuid(); FirstName = "Roman"; LastName = "Provaznik"; Position = 1; DateOfBirth = None }
+
+let personTable = entity<Person>
+
+insert {
+    into personTable
+    value newPerson
+} |> conn.InsertAsync
+```
+
+### UPDATE
+
+```F#
+let updatedPerson = { existingPerson with LastName = "Vorezprut" }
+
+update {
+    for p in personTable do
+    set updatedPerson
+    where (p.Id = updatedPerson.Id)
+} |> conn.UpdateAsync
+```
+
+Partial updates are also possible:
+
+```F#
+update {
+    for p in personTable do
+    set {| LastName = "UPDATED" |}
+    where (p.Position = 1)
+} |> conn.UpdateAsync
+```
+
+### DELETE
+
+```F#
+delete {
+    for p in personTable do
+    where (p.Position = 10)
+} |> conn.DeleteAsync
+```
+
+And if you really want to delete the whole table, you must use the `deleteAll` keyword:
+
+```F#
+delete {
+    for p in personTable do
+    deleteAll
+} |> conn.DeleteAsync
+```
+
+### SELECT
+
+To select all records in a table, you must use the `selectAll` keyword:
+
+```F#
+select {
+    for p in personTable do
+    selectAll
+} |> conn.SelectAsync<Person>
+```
+
+NOTE: You also need to use `selectAll` if you have a no `where` and no `orderBy` clauses because a query cannot consist of only `for` or `join` statements.
+
+Filtering with where statement:
+
+```F#
+select {
+    for p in personTable do
+    where (p.Position > 5 && p.Position < 10)
+} |> conn.SelectAsync<Person>
+```
+
+To flip boolean logic in `where` condition, use `not` operator (unary NOT):
+
+```F#
+select {
+    for p in personTable do
+    where (not (p.Position > 5 && p.Position < 10))
+} |> conn.SelectAsync<Person>
+```
+
+NOTE: The forward pipe `|>` operator in you query expressions because it's not implemented, so don't do it (unless you like exceptions)!
+
+To use LIKE operator in `where` condition, use `like`:
+```F#
+select {
+    for p in personTable do
+    where (like p.FirstName "%partofname%")
+} |> conn.SelectAsync<Person>
+```
+
+Sorting:
+
+```F#
+select {
+    for p in personTable do
+    where (p.Position > 5 && p.Position < 10)
+    orderBy p.Position
+    thenByDescending p.LastName
+} |> conn.SelectAsync<Person>
+```
+
+If you need to skip some values or take only subset of results, use skip, take and skipTake. Keep in mind that for correct paging, you need to order results as well.
+
+```F#
+select {
+    for p in personTable do
+    where (p.Position > 5 && p.Position < 10)
+    orderBy p.Position
+    skipTake 2 3 // skip first 2 rows, take next 3
+} |> conn.SelectAsync<Person>
+```
+
+#### Option Types and Nulls
+
+Checking for null on an Option type:
+```F#
+select {
+    for p in personTable do
+    where (p.DateOfBirth = None)
+    orderBy p.Position
+} |> conn.SelectAsync<Person>
+```
+
+Checking for null on a nullable type:
+```F#
+select {
+    for p in personTable do
+    where (p.LastName = null)
+    orderBy p.Position
+} |> conn.SelectAsync<Person>
+```
+
+Checking for null (works for any type):
+```F#
+select {
+    for p in personTable do
+    where (isNullValue p.LastName && isNotNullValue p.FirstName)
+    orderBy p.Position
+} |> conn.SelectAsync<Person>
+```
+
+Comparing an Option Type
+
+```F#
+let dob = DateTime.Today
+
+select {
+    for p in personTable do
+    where (p.DateOfBirth = Some dob)
+    orderBy p.Position
+} |> conn.SelectAsync<Person>
+```
+
+
+### JOINS
+
+For simple queries with join, you can use innerJoin and leftJoin in combination with SelectAsync overload:
+
+
+```F#
+
+let personTable = entity<Person>
+let dogsTable = entity<Dog>
+let dogsWeightsTable = entity<DogsWeight>
+
+select {
+    for p in personTable do
+    join d in dogsTable on (p.Id = d.OwnerId)
+    orderBy p.Position
+} |> conn.SelectAsync<Person, Dog>
+```
+
+`Dapper.FSharp` will map each joined table into separate record and return it as list of `'a * 'b` tuples. Currently up to 2 joins are supported, so you can also join another table here:
+
+```F#
+select {
+    for p in personTable do
+    join d in dogsTable on (p.Id = d.OwnerId)
+    join dw in dogsWeightsTable on (d.Nickname = dw.DogNickname)
+    orderBy p.Position
+} |> conn.SelectAsync<Person, Dog, DogsWeight>
+```
+
+The problem with LEFT JOIN is that tables "on the right side" can be full of null values. Luckily we can use SelectAsyncOption to map joined values to Option types:
+
+```F#
+// this will return seq<(Person * Dog option * DogWeight option)>
+select {
+    for p in personTable do
+    leftJoin d in dogsTable on (p.Id = d.OwnerId)
+    leftJoin dw in dogsWeightsTable on (d.Nickname = dw.DogNickname)
+    orderBy p.Position
+} |> conn.SelectAsyncOption<Person, Dog, DogsWeight>
 ```
