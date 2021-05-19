@@ -28,10 +28,16 @@ let mssqlTests connString =
         UpdateTests.testsOutput crud init
         SelectTests.testsBasic crud init        
         MSSQL.AggregatesTests.tests conn
+
+        // LINQ TEST
         LinqSelectTests.unitTests()
         LinqSelectTests.integrationTests crud init
         LinqDeleteTests.testsBasic crud init
         LinqDeleteTests.testsOutput crud init
+        LinqUpdateTests.testsBasic crud init
+        LinqUpdateTests.testsOutput crud init
+        LinqInsertTests.testsBasic crud init
+        LinqInsertTests.testsOutput crud init
     ]
     |> testList "MSSQL"
     |> testSequenced
