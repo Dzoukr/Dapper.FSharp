@@ -81,6 +81,23 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
         Expect.equal query.Where (Expr "Person.MI = Person.LName") "Expected WHERE Person.MI = Person.LName"
     }
 
+    testTask "Col = Constant Record.Property Value Where" {
+
+        // This test ensures that "personInstance.Age" property value is treated as a real value,
+        // Good: "Person.Age = 100"
+        // Bad: "Person.Age = Person.Age".
+        // In other words, it needs to be able to detect that this is Col = Member Value, not a column = column expression.
+        let personInstance = { Person.Id = 123; FName = "Jordan"; LName = "Marr"; MI = None; Age = 100 }
+
+        let query = 
+            select {
+                for p in entity<Person> do
+                where (p.Age < personInstance.Age)
+            }
+        
+        Expect.equal query.Where (lt "Person.Age" 100) "Expected WHERE Age constant value of 100 to be unwrapped from property"
+    }
+
     testTask "isNullValue Where" {
         let query = 
             select {

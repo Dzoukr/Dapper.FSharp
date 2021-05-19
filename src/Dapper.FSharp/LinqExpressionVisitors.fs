@@ -117,7 +117,8 @@ module SqlPatterns =
     /// A property member or a property wrapped in 'Some'.
     let (|Property|_|) (exp: Expression) =
         match exp with
-        | Member m -> Some m.Member
+        | Member m when m.Expression.NodeType = ExpressionType.Parameter -> 
+            Some m.Member
         | MethodCall opt when opt.Type |> isOptionType ->        
             if opt.Arguments.Count > 0 then
                 // Option.Some
@@ -130,6 +131,18 @@ module SqlPatterns =
     /// A constant value or an optional constant value
     let (|Value|_|) (exp: Expression) =
         match exp with
+        | Member m when m.Expression.NodeType = ExpressionType.Constant -> 
+            // Extract constant value from property (probably a record property)
+            // NOTE: This currently does not unwind nested properties! 
+            // NOTE: This uses reflection; it is more performant for user to manually unwrap and pass in constant.
+            let parentObject = (m.Expression :?> ConstantExpression).Value
+            match m.Member.MemberType with
+            | MemberTypes.Field -> (m.Member :?> FieldInfo).GetValue(parentObject) |> Some
+            | MemberTypes.Property -> (m.Member :?> PropertyInfo).GetValue(parentObject) |> Some
+            | _ -> notImplMsg(sprintf "Unable to unwrap where value for '%s'" m.Member.Name)
+        | Member m when m.Expression.NodeType = ExpressionType.MemberAccess -> 
+            // Extract constant value from nested object/properties
+            notImplMsg "Nested property value extraction is not supported in 'where' statements. Try manually unwrapping and passing in the value."
         | Constant c -> Some c.Value
         | MethodCall opt when opt.Type |> isOptionType ->        
             if opt.Arguments.Count > 0 then

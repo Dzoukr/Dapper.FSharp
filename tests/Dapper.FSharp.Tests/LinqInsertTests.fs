@@ -25,26 +25,26 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "LINQ INSERT" [
         Expect.equal r (Seq.head fromDb) ""
     }
 
-    // Not supported in Linq insert.
-    // May possibly support as "partialValue" and "partialValues".
-    //testTask "Inserts partial record" {
-    //    do! init.InitPersons()
-    //    let r =
-    //        Persons.View.generate 1
-    //        |> List.head
-    //        |> fun x -> ({ Id = x.Id; FirstName = x.FirstName; LastName = x.LastName; Position = x.Position } : Persons.ViewRequired)
-    //    let! _ =
-    //        insert {
-    //            into personsView
-    //            value r
-    //        } |> crud.InsertAsync
-    //    let! fromDb =
-    //        select {
-    //            for p in personsView do
-    //            where (p.Id = r.Id)
-    //        } |> crud.SelectAsync<Persons.ViewRequired>
-    //    Expect.equal r (Seq.head fromDb) ""
-    //}
+    testTask "Inserts partial record" {        
+        let personsRequired = entity<Persons.ViewRequired> |> mapTable "Persons"
+
+        do! init.InitPersons()
+        let r =
+            Persons.View.generate 1
+            |> List.head
+            |> fun x -> ({ Id = x.Id; FirstName = x.FirstName; LastName = x.LastName; Position = x.Position } : Persons.ViewRequired)
+        let! _ =
+            insert {
+                into personsRequired
+                value r
+            } |> crud.InsertAsync
+        let! fromDb =
+            select {
+                for p in personsRequired do
+                where (p.Id = r.Id)
+            } |> crud.SelectAsync<Persons.ViewRequired>
+        Expect.equal r (Seq.head fromDb) ""
+    }
 
     testTask "Inserts more records" {
         do! init.InitPersons()
