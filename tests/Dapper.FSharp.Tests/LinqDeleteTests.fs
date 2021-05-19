@@ -14,7 +14,7 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "LINQ DELETE" [
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                for _ in personsView do
+                into personsView
                 values rs
             } |> crud.InsertAsync
         let! _ =
@@ -36,7 +36,7 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "LINQ DELETE" [
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                for _ in personsView do
+                into personsView
                 values rs
             } |> crud.InsertAsync
         let! _ =
@@ -63,7 +63,7 @@ let testsOutput (crud:ICrudOutput) (init:ICrudInitializer) = testList "LINQ DELE
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                for _ in personsView do
+                into personsView
                 values rs
             } |> crud.InsertAsync
         let! fromDb =
@@ -80,7 +80,7 @@ let testsOutput (crud:ICrudOutput) (init:ICrudInitializer) = testList "LINQ DELE
         let rs = Persons.View.generate 10
         let! insertedPersonIds =
             insert {
-                for _ in personsView do
+                into personsView
                 values rs
             } |> crud.InsertOutputAsync
         let personIds = insertedPersonIds |> Seq.map (fun (p:{| Id:System.Guid |}) -> p.Id) |> Seq.toList

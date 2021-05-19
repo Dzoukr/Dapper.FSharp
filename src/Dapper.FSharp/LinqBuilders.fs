@@ -80,7 +80,7 @@ type SelectExpressionBuilder<'T>() =
     let mergeTableMappings (a: Map<FQName, TableMapping>, b: Map<FQName, TableMapping>) =
         Map (Seq.concat [ (Map.toSeq a); (Map.toSeq b) ])
 
-    member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
+    member __.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
         let tbl = state.GetOuterTableMapping()
         let query = state |> getQueryOrDefault
         QuerySource<'T, SelectQuery>({ query with Table = tbl.Name; Schema = tbl.Schema }, state.TableMappings)
@@ -288,7 +288,7 @@ type DeleteExpressionBuilder<'T>() =
               Table = ""
               Where = Where.Empty } : DeleteQuery
 
-    member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
+    member __.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
         let tbl = state.GetOuterTableMapping()
         let query = state |> getQueryOrDefault
         QuerySource<'T, DeleteQuery>({ query with Table = tbl.Name; Schema = tbl.Schema }, state.TableMappings)
@@ -322,8 +322,15 @@ type InsertExpressionBuilder<'T>() =
               Table = ""
               Values = [] } : InsertQuery<'T>
 
-    member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
-        let tbl = state.GetOuterTableMapping()
+    //member __.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
+    //    let tbl = state.GetOuterTableMapping()
+    //    let query = state |> getQueryOrDefault
+    //    QuerySource<'T, InsertQuery<'T>>({ query with Table = tbl.Name; Schema = tbl.Schema }, state.TableMappings)
+
+    /// Sets the TABLE name for query.
+    [<CustomOperation "into">]
+    member __.Into (state: QuerySource<'T>, table: QuerySource<'T>) =
+        let tbl = table.GetOuterTableMapping()
         let query = state |> getQueryOrDefault
         QuerySource<'T, InsertQuery<'T>>({ query with Table = tbl.Name; Schema = tbl.Schema }, state.TableMappings)
 
@@ -357,7 +364,7 @@ type UpdateExpressionBuilder<'T, 'U>() =
               Value = Unchecked.defaultof<'U>
               Where = Where.Empty } : UpdateQuery<'U>
 
-    member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
+    member __.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
         let tbl = state.GetOuterTableMapping()
         let query = state |> getQueryOrDefault
         QuerySource<'T, UpdateQuery<'U>>({ query with Table = tbl.Name; Schema = tbl.Schema }, state.TableMappings)
