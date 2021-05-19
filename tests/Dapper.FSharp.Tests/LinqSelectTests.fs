@@ -244,15 +244,15 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
         Expect.equal query.Aggregates [Count ("*", "Count")] "Expected count(*) as [Count]"
     }
     
-    testTask "Max By" {
-        let query = 
-            select {
-                for p in entity do
-                maxBy p.Age
-            }
+    //testTask "Max By" {
+    //    let query = 
+    //        select {
+    //            for p in entity do
+    //            maxBy p.Age
+    //        }
     
-        Expect.equal query.Aggregates [Max ("Person.Age", "Person.Age")] "Expected max(Age) as [Age]"
-    }
+    //    Expect.equal query.Aggregates [Max ("Person.Age", "Person.Age")] "Expected max(Age) as [Age]"
+    //}
     
     testTask "Join" {
         let query = 
