@@ -54,6 +54,12 @@ let mysqlTests connString =
         UpdateTests.testsBasic crud init
         SelectTests.testsBasic crud init
         MySQL.AggregatesTests.tests conn
+        
+        // LINQ TEST
+        LinqSelectTests.unitTests()
+        LinqDeleteTests.testsBasic crud init
+        LinqUpdateTests.testsBasic crud init
+        LinqInsertTests.testsBasic crud init
     ]
     |> testList "MySQL"
     |> testSequenced
@@ -74,6 +80,12 @@ let postgresTests connString =
         UpdateTests.testsOutput crud init
         SelectTests.testsBasic crud init
         PostgreSQL.AggregatesTests.tests conn
+        
+        // LINQ TEST
+        LinqSelectTests.unitTests()
+        LinqDeleteTests.testsBasic crud init
+        LinqUpdateTests.testsBasic crud init
+        LinqInsertTests.testsBasic crud init
     ]
     |> testList "PostgreSQL"
     |> testSequenced
