@@ -32,6 +32,7 @@ type Where =
     | Column of string * ColumnComparison
     | Binary of Where * BinaryOperation * Where
     | Unary of UnaryOperation * Where
+    | Expr of string
     static member (+) (a, b) = Binary(a, And, b)
     static member (*) (a, b) = Binary(a, Or, b)
     static member (!!) a = Unary (Not, a)

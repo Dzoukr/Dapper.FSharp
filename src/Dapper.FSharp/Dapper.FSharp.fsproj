@@ -8,10 +8,10 @@
     <PackageProjectUrl>https://github.com/Dzoukr/Dapper.FSharp</PackageProjectUrl>
     <PackageLicenseUrl>https://github.com/Dzoukr/Dapper.FSharp/blob/master/LICENSE</PackageLicenseUrl>
     <PackageIconUrl>https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png</PackageIconUrl>
-    <PackageTags>fsharp;dapper;database;mssql;mysql;postgresql</PackageTags>
+    <PackageTags>fsharp;dapper;linq;database;mssql;mysql;postgresql</PackageTags>
     <Authors>Roman Provazník</Authors>
-    <Version>0.17.0</Version>
-    <PackageReleaseNotes>Take list of join clauses for Innerjoin.</PackageReleaseNotes>
+    <Version>2.0.0</Version>
+    <PackageReleaseNotes>Major version release - Linq builders #26 thanks to @JordanMarr</PackageReleaseNotes>
 
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
@@ -28,6 +28,8 @@
     <Compile Include="MySQL.fs" />
     <Compile Include="PostgreSQL.fs" />
     <Compile Include="Builders.fs" />
+    <Compile Include="LinqExpressionVisitors.fs" />
+    <Compile Include="LinqBuilders.fs" />
     <Compile Include="OptionTypes.fs" />
   </ItemGroup>
 

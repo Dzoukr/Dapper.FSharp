@@ -26,6 +26,7 @@ module private Evaluators =
     let rec evalWhere (meta:WhereAnalyzer.FieldWhereMetadata list) (w:Where) =
         match w with
         | Empty -> ""
+        | Expr expr -> expr
         | Column (field, comp) ->
             let fieldMeta = meta |> List.find (fun x -> x.Key = (field,comp))
             let withField op = sprintf "%s %s @%s" (inBrackets fieldMeta.Name) op fieldMeta.ParameterName

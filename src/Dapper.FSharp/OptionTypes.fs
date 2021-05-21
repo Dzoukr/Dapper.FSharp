@@ -6,7 +6,7 @@ open System
 type OptionHandler<'T>() =
     inherit SqlMapper.TypeHandler<option<'T>>()
 
-    override __.SetValue(param, value) =
+    override _.SetValue(param, value) =
         let valueOrNull =
             match value with
             | Some x -> box x
@@ -14,7 +14,7 @@ type OptionHandler<'T>() =
 
         param.Value <- valueOrNull
 
-    override __.Parse value =
+    override _.Parse value =
         if isNull value || value = box DBNull.Value
         then None
         else Some (value :?> 'T)
