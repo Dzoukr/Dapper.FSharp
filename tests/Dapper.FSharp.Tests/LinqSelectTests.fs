@@ -372,6 +372,24 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
             OrderBy ("dbo.Contacts.Phone", Desc)
         ] "Expected tables and columns to be fully qualified with schema and overriden table names"
     }
+
+    testTask "Join should unwrap option types in 'on' condition" {
+        let personTable = table'<Person> "People" |> inSchema "dbo"
+        let addressTable = table'<Address> "Addresses" |> inSchema "dbo"
+        let contactTable = table'<Contact> "Contacts" |> inSchema "dbo"
+
+        // This is a nonsensical join, but the point is to test unwrapping MI option type in join "on"
+        let query = 
+            select {
+                for p in personTable do
+                join a in addressTable on (p.MI = Some a.City) 
+                selectAll
+            }
+
+        Expect.equal query.Joins [
+            InnerJoin ("dbo.Addresses", "City", "dbo.People.MI")
+        ] "Expected that option column (MI) should be unwrapped."
+    }
 ]
 
 let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELECT INTEGRATION TESTS" [
