@@ -17,7 +17,7 @@ let mssqlTests connString =
     conn |> Dapper.FSharp.Tests.MSSQL.Database.init
     let crud = MSSQL.Database.getCrud conn
     let init = MSSQL.Database.getInitializer conn
-    [
+    [   
         DeleteTests.testsBasic crud init
         DeleteTests.testsOutput crud init
         InsertTests.testsBasic crud init
@@ -26,8 +26,18 @@ let mssqlTests connString =
         IssuesTests.testsOutput crud init
         UpdateTests.testsBasic crud init
         UpdateTests.testsOutput crud init
-        SelectTests.testsBasic crud init
+        SelectTests.testsBasic crud init        
         MSSQL.AggregatesTests.tests conn
+
+        // LINQ TEST
+        LinqSelectTests.unitTests()
+        LinqSelectTests.integrationTests crud init
+        LinqDeleteTests.testsBasic crud init
+        LinqDeleteTests.testsOutput crud init
+        LinqUpdateTests.testsBasic crud init
+        LinqUpdateTests.testsOutput crud init
+        LinqInsertTests.testsBasic crud init
+        LinqInsertTests.testsOutput crud init
     ]
     |> testList "MSSQL"
     |> testSequenced
@@ -44,6 +54,12 @@ let mysqlTests connString =
         UpdateTests.testsBasic crud init
         SelectTests.testsBasic crud init
         MySQL.AggregatesTests.tests conn
+        
+        // LINQ TEST
+        LinqSelectTests.unitTests()
+        LinqDeleteTests.testsBasic crud init
+        LinqUpdateTests.testsBasic crud init
+        LinqInsertTests.testsBasic crud init
     ]
     |> testList "MySQL"
     |> testSequenced
@@ -64,16 +80,21 @@ let postgresTests connString =
         UpdateTests.testsOutput crud init
         SelectTests.testsBasic crud init
         PostgreSQL.AggregatesTests.tests conn
+        
+        // LINQ TEST
+        LinqSelectTests.unitTests()
+        LinqDeleteTests.testsBasic crud init
+        LinqUpdateTests.testsBasic crud init
+        LinqInsertTests.testsBasic crud init
     ]
     |> testList "PostgreSQL"
     |> testSequenced
 
 [<EntryPoint>]
-let main _ =
+let main argv =
+
     let conf = (ConfigurationBuilder()).AddJsonFile("local.settings.json").Build()
-    
     Dapper.FSharp.OptionTypes.register()
-    
     [
         conf.["mssqlConnectionString"] |> mssqlTests
         conf.["mysqlConnectionString"] |> mysqlTests

@@ -11,7 +11,7 @@ Lightweight F# extension for StackOverflow Dapper with support for MSSQL, MySQL 
 - No *auto-attribute-based-only-author-maybe-knows-magic* behavior
 - Support for F# records / anonymous records
 - Support for F# options
-- [Linq Expression Queries](#linq-api)
+- [LINQ Query Provider](#linq-api)
 - Support for SQL Server 2012 (11.x) and later / Azure SQL Database, MySQL 8.0, PostgreSQL 12.0
 - Support for SELECT (including JOINs), INSERT, UPDATE (full / partial), DELETE
 - Support for OUTPUT clause (MSSQL only)
@@ -395,19 +395,19 @@ You can either specify your tables within the query, or you can specify them abo
 The following will assume that the table name exactly matches the record name, "Person":
 
 ```F#
-let personTable = entity<Person>
+let personTable = table<Person>
 ```
 
-If you record type name does not match the table name, you can map it:
+If your record maps to a table with a different name:
 
 ```F#
-let personTable = entity<Person> |> mapTable "People"
+let personTable = table'<Person> "People"
 ```
 
 If you want to include a schema name:
 
 ```F#
-let personTable = entity<Person> |> mapTable "People" |> mapSchema "dbo"
+let personTable = table'<Person> "People" |> inSchema "dbo"
 ```
 
 ### INSERT
@@ -421,7 +421,7 @@ let conn : IDbConnection = ... // get it somewhere
 
 let newPerson = { Id = Guid.NewGuid(); FirstName = "Roman"; LastName = "Provaznik"; Position = 1; DateOfBirth = None }
 
-let personTable = entity<Person>
+let personTable = table<Person>
 
 insert {
     into personTable
@@ -581,9 +581,9 @@ For simple queries with join, you can use innerJoin and leftJoin in combination 
 
 ```F#
 
-let personTable = entity<Person>
-let dogsTable = entity<Dog>
-let dogsWeightsTable = entity<DogsWeight>
+let personTable = table<Person>
+let dogsTable = table<Dog>
+let dogsWeightsTable = table<DogsWeight>
 
 select {
     for p in personTable do
