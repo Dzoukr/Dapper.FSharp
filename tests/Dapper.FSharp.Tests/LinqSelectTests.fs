@@ -171,6 +171,17 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
         Expect.equal query.GroupBy ["Person.FName"; "Person.LName"] "Expected GROUP BY Person.FName, Person.LName"
         Expect.equal query.Aggregates [Count ("*", "Count")] "Expected COUNT(*) as [Count]"
     }
+    
+    testTask "Group By Optional Property" {
+        let query = 
+            select {
+                for p in table<Person> do
+                count "*" "Count"
+                groupBy p.MI
+            }
+        
+        Expect.equal query.GroupBy ["Person.MI"] "Expected GROUP BY Person.MI"
+    }
 
     testTask "Optional Column is None" {
         let query = 
@@ -389,6 +400,43 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
         Expect.equal query.Joins [
             InnerJoin ("dbo.Addresses", "City", "dbo.People.MI")
         ] "Expected that option column (MI) should be unwrapped."
+    }
+    
+    testTask "Insert with 1 excluded field" {
+        let person = 
+            { Id = 0
+              FName = "John"
+              MI = None
+              LName = "Doe"
+              Age = 100 }
+    
+        let query =
+            insert {
+                for p in table<Person> do
+                value person
+                exclude p.Id
+            }
+            
+        Expect.equal query.Fields (Some ["FName"; "MI"; "LName"; "Age"]) "Expected all fields except 'Id'."
+    }
+    
+    testTask "Insert with 2 excluded fields" {
+        let person = 
+            { Id = 0
+              FName = "John"
+              MI = None
+              LName = "Doe"
+              Age = 100 }
+    
+        let query =
+            insert {
+                for p in table<Person> do
+                value person
+                exclude p.Id
+                exclude p.MI
+            }
+            
+        Expect.equal query.Fields (Some ["FName"; "LName"; "Age"]) "Expected all fields except 'Id' and 'MI'."
     }
 ]
 
