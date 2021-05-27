@@ -438,6 +438,25 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
             
         Expect.equal query.Fields (Some ["FName"; "LName"; "Age"]) "Expected all fields except 'Id' and 'MI'."
     }
+
+    testTask "Update with 2 excluded fields" {
+        let person = 
+            { Id = 1
+              FName = "John"
+              MI = None
+              LName = "Doe"
+              Age = 100 }
+    
+        let query =
+            update {
+                for p in table<Person> do
+                set person
+                exclude p.Id
+                exclude p.MI
+            }
+            
+        Expect.equal query.Fields (Some ["FName"; "LName"; "Age"]) "Expected all fields except 'Id' and 'MI'."
+    }
 ]
 
 let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELECT INTEGRATION TESTS" [

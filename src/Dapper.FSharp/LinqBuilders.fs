@@ -380,6 +380,7 @@ type UpdateExpressionBuilder<'T, 'U>() =
             { Schema = None
               Table = ""
               Value = Unchecked.defaultof<'U>
+              Fields = None
               Where = Where.Empty } : UpdateQuery<'U>
 
     member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
@@ -395,6 +396,22 @@ type UpdateExpressionBuilder<'T, 'U>() =
     member this.Set (state: QuerySource<'T>, value: 'U) = 
         let query = state |> getQueryOrDefault
         QuerySource<'T, UpdateQuery<'U>>({ query with Value = value }, state.TableMappings)
+
+    /// Excludes a column from the update query.
+    [<CustomOperation("exclude", MaintainsVariableSpace = true)>]
+    member this.Exclude (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+        let query = state |> getQueryOrDefault
+        let prop = LinqExpressionVisitors.visitPropertySelector<'U, 'Prop> propertySelector
+        let newQuery = 
+            match query.Fields with
+            | Some fields  -> 
+                let filteredFields = fields |> List.filter (fun f -> f <> prop.Name)
+                { query with Fields = Some filteredFields }
+            | None -> 
+                let filteredFields = Reflection.getFields typeof<'T> |> List.filter (fun f -> f <> prop.Name)
+                { query with Fields = Some filteredFields }
+
+        QuerySource<'T, UpdateQuery<'U>>(newQuery, state.TableMappings)
 
     /// Sets the WHERE condition
     [<CustomOperation("where", MaintainsVariableSpace = true)>]

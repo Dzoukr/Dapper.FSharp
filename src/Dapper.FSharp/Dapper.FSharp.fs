@@ -81,6 +81,7 @@ type UpdateQuery<'a> = {
     Schema : string option
     Table : string
     Value : 'a
+    Fields : string list option
     Where : Where
 }
 

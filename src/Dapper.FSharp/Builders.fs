@@ -52,6 +52,7 @@ type UpdateBuilder<'a>() =
             Schema = None
             Table = ""
             Value = Unchecked.defaultof<'a>
+            Fields = None
             Where = Where.Empty
         } : UpdateQuery<'a>
 
