@@ -41,7 +41,7 @@ let private _insert evalInsertQuery (q:InsertQuery<_>) fields outputFields =
     let query : string = evalInsertQuery fields outputFields q
     let pars =
         q.Values
-        |> List.map (Reflection.getValues >> List.zip fields)
+        |> List.map (Reflection.getValuesForFields fields >> List.zip fields)
         |> List.mapi (fun i values ->
             values |> List.map (fun (key,value) -> sprintf "%s%i" key i, Reflection.boxify value))
         |> List.collect id
@@ -49,7 +49,10 @@ let private _insert evalInsertQuery (q:InsertQuery<_>) fields outputFields =
     query, pars
 
 let insert evalInsertQuery (q:InsertQuery<'a>) =
-    let fields = typeof<'a> |> Reflection.getFields
+    let fields = 
+        match q.Fields with
+        | Some fields -> fields
+        | None -> typeof<'a> |> Reflection.getFields
     _insert evalInsertQuery q fields []
 
 let insertOutput<'Input, 'Output> evalInsertQuery (q:InsertQuery<'Input>) =

@@ -6,6 +6,7 @@ type InsertBuilder<'a>() =
         {
             Schema = None
             Table = ""
+            Fields = None
             Values = []
         } : InsertQuery<'a>
 

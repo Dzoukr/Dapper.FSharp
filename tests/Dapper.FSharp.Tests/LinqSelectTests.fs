@@ -372,6 +372,44 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
             OrderBy ("dbo.Contacts.Phone", Desc)
         ] "Expected tables and columns to be fully qualified with schema and overriden table names"
     }
+
+    testTask "Insert with excluded fields" {
+        let person = 
+            { Id = 0
+              FName = "John"
+              MI = None
+              LName = "Doe"
+              Age = 100 }
+
+        let query =
+            insert {
+                for p in table<Person> do
+                value person
+                exclude p.Id
+            }
+        
+        Expect.equal query.Fields (Some ["FName"; "MI"; "LName"; "Age"]) "Expected all fields except 'Id'."
+    }
+
+    testTask "Insert with 2 excluded fields" {
+        let person = 
+            { Id = 0
+              FName = "John"
+              MI = None
+              LName = "Doe"
+              Age = 100 }
+
+        let query =
+            insert {
+                for p in table<Person> do
+                value person
+                exclude p.Id
+                exclude p.MI
+            }
+        
+        Expect.equal query.Fields (Some ["FName"; "LName"; "Age"]) "Expected all fields except 'Id' and 'MI'."
+    }
+
 ]
 
 let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELECT INTEGRATION TESTS" [

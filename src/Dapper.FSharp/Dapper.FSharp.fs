@@ -73,6 +73,7 @@ type SelectQuery = {
 type InsertQuery<'a> = {
     Schema : string option
     Table : string
+    Fields : string list option
     Values : 'a list
 }
 
