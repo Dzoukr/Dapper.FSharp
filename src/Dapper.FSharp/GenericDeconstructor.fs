@@ -56,7 +56,10 @@ let insert evalInsertQuery (q:InsertQuery<'a>) =
     _insert evalInsertQuery q fields []
 
 let insertOutput<'Input, 'Output> evalInsertQuery (q:InsertQuery<'Input>) =
-    let fields = typeof<'Input> |> Reflection.getFields
+    let fields = 
+        match q.Fields with
+        | Some fields -> fields
+        | None -> typeof<'Input> |> Reflection.getFields
     let outputFields = typeof<'Output> |> Reflection.getFields
     _insert evalInsertQuery q fields outputFields
 
