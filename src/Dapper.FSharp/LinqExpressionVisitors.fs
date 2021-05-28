@@ -131,6 +131,9 @@ module SqlPatterns =
     /// A constant value or an optional constant value
     let (|Value|_|) (exp: Expression) =
         match exp with
+        | New n when n.Type.Name = "Guid" -> 
+            let value = (n.Arguments.[0] :?> ConstantExpression).Value :?> string
+            Some (Guid(value) |> box)
         | Member m when m.Expression.NodeType = ExpressionType.Constant -> 
             // Extract constant value from property (probably a record property)
             // NOTE: This currently does not unwind nested properties! 
