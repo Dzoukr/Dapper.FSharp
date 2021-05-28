@@ -485,12 +485,25 @@ update {
 } |> conn.UpdateAsync
 ```
 
-Partial updates are also possible:
+Partial updates are possible by manually specifying one or more `column` properties:
 
 ```F#
 update {
     for p in personTable do
-    set {| LastName = "UPDATED" |}
+    set modifiedPerson
+    column p.FirstName
+    column p.LastName
+    where (p.Position = 1)
+} |> conn.UpdateAsync
+```
+
+
+Partial updates are also possible by using an anonymous record:
+
+```F#
+update {
+    for p in personTable do
+    set {| FirstName = "UPDATED"; LastName = "UPDATED" |}
     where (p.Position = 1)
 } |> conn.UpdateAsync
 ```
