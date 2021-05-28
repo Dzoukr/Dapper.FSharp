@@ -26,6 +26,12 @@ type Contact = {
     Phone: string
 }
 
+type Vehicle = {
+    Id: System.Guid
+    Make: string
+    Model: string
+}
+
 let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     
     testTask "Most Simple Query" {
@@ -456,6 +462,16 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
             }
             
         Expect.equal query.Fields (Some ["FName"; "LName"; "Age"]) "Expected all fields except 'Id' and 'MI'."
+    }
+
+    testTask "Guid in Where" {
+        let query = 
+            select {
+                for v in table<Vehicle> do
+                where (v.Id = System.Guid("c586871d-3329-4fca-a231-fd11203a937d"))
+            }
+
+        Expect.equal query.Where (eq "Vehicle.Id" (System.Guid("c586871d-3329-4fca-a231-fd11203a937d"))) "Expected WHERE to contain a guid"
     }
 ]
 
