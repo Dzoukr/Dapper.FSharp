@@ -412,6 +412,8 @@ let personTable = table'<Person> "People" |> inSchema "dbo"
 
 ### INSERT
 
+Inserting a single record:
+
 ```f#
 open Dapper.FSharp
 open Dapper.FSharp.LinqBuilders
@@ -428,6 +430,48 @@ insert {
     value newPerson
 } |> conn.InsertAsync
 ```
+
+Inserting Multiple Records:
+
+```f#
+open Dapper.FSharp
+open Dapper.FSharp.LinqBuilders
+open Dapper.FSharp.MSSQL
+
+let conn : IDbConnection = ... // get it somewhere
+
+let person1 = { Id = Guid.NewGuid(); FirstName = "Roman"; LastName = "Provaznik"; Position = 1; DateOfBirth = None }
+let person2 = { Id = Guid.NewGuid(); FirstName = "Ptero"; LastName = "Dactyl"; Position = 2; DateOfBirth = None }
+
+let personTable = table<Person>
+
+insert {
+    into personTable
+    values [ person1; person2 ]
+} |> conn.InsertAsync
+```
+
+Excluding Fields from the Insert:
+
+```f#
+open Dapper.FSharp
+open Dapper.FSharp.LinqBuilders
+open Dapper.FSharp.MSSQL
+
+let conn : IDbConnection = ... // get it somewhere
+
+let newPerson = { Id = Guid.NewGuid(); FirstName = "Roman"; LastName = "Provaznik"; Position = 1; DateOfBirth = None }
+
+let personTable = table<Person>
+
+insert {
+    for p in personTable do
+    value newPerson
+    exclude p.DateOfBirth
+} |> conn.InsertAsync
+```
+
+_NOTE: You can exclude multiple fields by using multiple `exclude` statements._
 
 ### UPDATE
 
