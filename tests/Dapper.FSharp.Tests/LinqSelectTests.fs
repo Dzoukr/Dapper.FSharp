@@ -445,6 +445,25 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
         Expect.equal query.Fields (Some ["FName"; "LName"; "Age"]) "Expected all fields except 'Id' and 'MI'."
     }
 
+    testTask "Insert with 2 included fields" {
+        let person = 
+            { Id = 0
+              FName = "John"
+              MI = None
+              LName = "Doe"
+              Age = 100 }
+    
+        let query =
+            insert {
+                for p in table<Person> do
+                value person
+                column p.FName
+                column p.LName
+            }
+            
+        Expect.equal query.Fields (Some ["FName"; "LName"]) "Expected only 2 fields."
+    }
+
     testTask "Update with 2 excluded fields" {
         let person = 
             { Id = 1
@@ -462,6 +481,25 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
             }
             
         Expect.equal query.Fields (Some ["FName"; "LName"; "Age"]) "Expected all fields except 'Id' and 'MI'."
+    }
+
+    testTask "Update with 2 included fields" {
+        let person = 
+            { Id = 1
+              FName = "John"
+              MI = None
+              LName = "Doe"
+              Age = 100 }
+    
+        let query =
+            update {
+                for p in table<Person> do
+                set person
+                column p.FName
+                column p.LName
+            }
+            
+        Expect.equal query.Fields (Some ["FName"; "LName"]) "Expected only 2 fields."
     }
 
     testTask "Guid in Where" {

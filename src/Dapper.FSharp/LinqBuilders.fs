@@ -351,6 +351,18 @@ type InsertExpressionBuilder<'T>() =
         let query = state |> getQueryOrDefault
         QuerySource<'T, InsertQuery<'T>>({ query with Values = [value] }, state.TableMappings)
 
+    /// Includes a column in the insert query.
+    [<CustomOperation("column", MaintainsVariableSpace = true)>]
+    member this.Column (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+        let query = state |> getQueryOrDefault
+        let prop = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector
+        let newQuery = 
+            match query.Fields with
+            | Some fields  -> { query with Fields = Some (fields @ [prop.Name]) }
+            | None -> { query with Fields = Some [prop.Name] }
+
+        QuerySource<'T, InsertQuery<'T>>(newQuery, state.TableMappings)
+
     /// Excludes a column from the insert query.
     [<CustomOperation("exclude", MaintainsVariableSpace = true)>]
     member this.Exclude (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
@@ -396,6 +408,18 @@ type UpdateExpressionBuilder<'T, 'U>() =
     member this.Set (state: QuerySource<'T>, value: 'U) = 
         let query = state |> getQueryOrDefault
         QuerySource<'T, UpdateQuery<'U>>({ query with Value = value }, state.TableMappings)
+
+    /// Includes a column in the update query.
+    [<CustomOperation("column", MaintainsVariableSpace = true)>]
+    member this.Column (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+        let query = state |> getQueryOrDefault
+        let prop = LinqExpressionVisitors.visitPropertySelector<'U, 'Prop> propertySelector
+        let newQuery = 
+            match query.Fields with
+            | Some fields  -> { query with Fields = Some (fields @ [prop.Name]) }
+            | None -> { query with Fields = Some [prop.Name] }
+
+        QuerySource<'T, UpdateQuery<'U>>(newQuery, state.TableMappings)
 
     /// Excludes a column from the update query.
     [<CustomOperation("exclude", MaintainsVariableSpace = true)>]
