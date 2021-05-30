@@ -89,6 +89,10 @@ type SelectExpressionBuilder<'T>() =
     member _.Yield _ =
         QuerySource<'T>(Map.empty)
 
+    // Prevents errors while typing join statement if rest of query is not filled in yet.
+    member this.Zero _ = 
+        QuerySource<'T>(Map.empty)
+
     /// Sets the WHERE condition
     [<CustomOperation("where", MaintainsVariableSpace = true)>]
     member _.Where (state:QuerySource<'T>, [<ProjectionParameter>] whereExpression) = 
