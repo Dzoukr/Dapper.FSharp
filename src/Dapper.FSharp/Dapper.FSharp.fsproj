@@ -10,8 +10,8 @@
     <PackageIconUrl>https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png</PackageIconUrl>
     <PackageTags>fsharp;dapper;linq;database;mssql;mysql;postgresql</PackageTags>
     <Authors>Roman Provazník</Authors>
-    <Version>2.0.2</Version>
-    <PackageReleaseNotes>Preemptively fixed Linq support for Guid values #30</PackageReleaseNotes>
+    <Version>2.0.3</Version>
+    <PackageReleaseNotes>Fixes annoying Zero errors when typing joins. #31</PackageReleaseNotes>
 
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
