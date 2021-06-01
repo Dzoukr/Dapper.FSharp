@@ -420,10 +420,10 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
             insert {
                 for p in table<Person> do
                 value person
-                exclude p.Id
+                excludeColumn p.Id
             }
             
-        Expect.equal query.Fields (Some ["FName"; "MI"; "LName"; "Age"]) "Expected all fields except 'Id'."
+        Expect.equal query.Fields ["FName"; "MI"; "LName"; "Age"] "Expected all fields except 'Id'."
     }
     
     testTask "Insert with 2 excluded fields" {
@@ -438,31 +438,14 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
             insert {
                 for p in table<Person> do
                 value person
-                exclude p.Id
-                exclude p.MI
+                excludeColumn p.Id
+                excludeColumn p.MI
             }
             
-        Expect.equal query.Fields (Some ["FName"; "LName"; "Age"]) "Expected all fields except 'Id' and 'MI'."
+        Expect.equal query.Fields ["FName"; "LName"; "Age"] "Expected all fields except 'Id' and 'MI'."
     }
 
-    testTask "Insert with 2 included fields" {
-        let person = 
-            { Id = 0
-              FName = "John"
-              MI = None
-              LName = "Doe"
-              Age = 100 }
     
-        let query =
-            insert {
-                for p in table<Person> do
-                value person
-                column p.FName
-                column p.LName
-            }
-            
-        Expect.equal query.Fields (Some ["FName"; "LName"]) "Expected only 2 fields."
-    }
 
     testTask "Update with 2 excluded fields" {
         let person = 
@@ -476,31 +459,14 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
             update {
                 for p in table<Person> do
                 set person
-                exclude p.Id
-                exclude p.MI
+                excludeColumn p.Id
+                excludeColumn p.MI
             }
             
-        Expect.equal query.Fields (Some ["FName"; "LName"; "Age"]) "Expected all fields except 'Id' and 'MI'."
+        Expect.equal query.Fields ["FName"; "LName"; "Age"] "Expected all fields except 'Id' and 'MI'."
     }
 
-    testTask "Update with 2 included fields" {
-        let person = 
-            { Id = 1
-              FName = "John"
-              MI = None
-              LName = "Doe"
-              Age = 100 }
     
-        let query =
-            update {
-                for p in table<Person> do
-                set person
-                column p.FName
-                column p.LName
-            }
-            
-        Expect.equal query.Fields (Some ["FName"; "LName"]) "Expected only 2 fields."
-    }
 
     testTask "Guid in Where" {
         let query = 

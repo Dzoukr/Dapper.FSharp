@@ -5,6 +5,14 @@ open Dapper.FSharp.LinqBuilders
 open Dapper.FSharp.Tests.Database
 open Expecto
 
+type Person = {
+    Id: int
+    FName: string
+    MI: string option
+    LName: string
+    Age: int
+}
+
 let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "LINQ INSERT" [
     
     let personsView = table'<Persons.View> "Persons"
@@ -46,7 +54,7 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "LINQ INSERT" [
         Expect.equal r (Seq.head fromDb) ""
     }
 
-    testTask "Inserts partial record using 'exclude'" {        
+    testTask "Inserts partial record using 'excludeColumn'" {        
         let personsView = table'<Persons.View> "Persons"
 
         do! init.InitPersons()
@@ -57,7 +65,7 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "LINQ INSERT" [
             insert {
                 for p in personsView do
                 value r
-                exclude r.DateOfBirth
+                excludeColumn r.DateOfBirth
             } |> crud.InsertAsync
         let! fromDb =
             select {
@@ -82,6 +90,25 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "LINQ INSERT" [
                 orderBy p.Position
             } |> crud.SelectAsync<Persons.View>
         Expect.equal rs (Seq.toList fromDb) ""
+    }
+    
+    testTask "Insert with 2 included fields" {
+        let person = 
+            { Id = 0
+              FName = "John"
+              MI = None
+              LName = "Doe"
+              Age = 100 }
+    
+        let query =
+            insert {
+                for p in table<Person> do
+                value person
+                includeColumn p.FName
+                includeColumn p.LName
+            }
+            
+        Expect.equal query.Fields ["FName"; "LName"] "Expected only 2 fields."
     }
 ]
 

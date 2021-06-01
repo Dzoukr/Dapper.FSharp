@@ -9,9 +9,9 @@
     <PackageLicenseUrl>https://github.com/Dzoukr/Dapper.FSharp/blob/master/LICENSE</PackageLicenseUrl>
     <PackageIconUrl>https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png</PackageIconUrl>
     <PackageTags>fsharp;dapper;linq;database;mssql;mysql;postgresql</PackageTags>
-    <Authors>Roman Provazník</Authors>
-    <Version>2.0.3</Version>
-    <PackageReleaseNotes>Fixes annoying Zero errors when typing joins. #31</PackageReleaseNotes>
+    <Authors>Roman Provazník;Jordan Marr</Authors>
+    <Version>2.1.0</Version>
+    <PackageReleaseNotes>Exclude columns for insert / update #29</PackageReleaseNotes>
 
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>

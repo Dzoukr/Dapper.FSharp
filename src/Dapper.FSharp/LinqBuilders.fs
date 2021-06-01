@@ -325,7 +325,7 @@ type InsertExpressionBuilder<'T>() =
         | _ -> 
             { Schema = None
               Table = ""
-              Fields = None
+              Fields = []
               Values = [] } : InsertQuery<'T>
 
     member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
@@ -355,32 +355,31 @@ type InsertExpressionBuilder<'T>() =
         let query = state |> getQueryOrDefault
         QuerySource<'T, InsertQuery<'T>>({ query with Values = [value] }, state.TableMappings)
 
-    /// Includes a column in the insert query.
-    [<CustomOperation("column", MaintainsVariableSpace = true)>]
-    member this.Column (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+    /// Includes a list of columns in the insert query.
+    [<CustomOperation("includeColumns", MaintainsVariableSpace = true)>]
+    member this.IncludeColumns (state: QuerySource<'T>, [<ProjectionParameter>] propertySelectors) = 
         let query = state |> getQueryOrDefault
-        let prop = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector
-        let newQuery = 
-            match query.Fields with
-            | Some fields  -> { query with Fields = Some (fields @ [prop.Name]) }
-            | None -> { query with Fields = Some [prop.Name] }
-
+        let props = propertySelectors |> List.map LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> |> List.map (fun x -> x.Name)
+        let newQuery = { query with Fields = (query.Fields @ props) }
         QuerySource<'T, InsertQuery<'T>>(newQuery, state.TableMappings)
+    
+    /// Includes a column in the insert query.
+    [<CustomOperation("includeColumn", MaintainsVariableSpace = true)>]
+    member this.IncludeColumn (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+        this.IncludeColumns(state, [propertySelector])
 
     /// Excludes a column from the insert query.
-    [<CustomOperation("exclude", MaintainsVariableSpace = true)>]
-    member this.Exclude (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+    [<CustomOperation("excludeColumn", MaintainsVariableSpace = true)>]
+    member this.ExcludeColumn (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let query = state |> getQueryOrDefault
         let prop = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector
-        let newQuery = 
-            match query.Fields with
-            | Some fields  -> 
-                let filteredFields = fields |> List.filter (fun f -> f <> prop.Name)
-                { query with Fields = Some filteredFields }
-            | None -> 
-                let filteredFields = Reflection.getFields typeof<'T> |> List.filter (fun f -> f <> prop.Name)
-                { query with Fields = Some filteredFields }
-
+        let newQuery =
+            query.Fields
+            |> function
+                | [] -> Reflection.getFields typeof<'T>
+                | fields -> fields
+            |> List.filter (fun f -> f <> prop.Name)
+            |> (fun x -> { query with Fields = x })
         QuerySource<'T, InsertQuery<'T>>(newQuery, state.TableMappings)
 
     /// Unwraps the query
@@ -396,7 +395,7 @@ type UpdateExpressionBuilder<'T, 'U>() =
             { Schema = None
               Table = ""
               Value = Unchecked.defaultof<'U>
-              Fields = None
+              Fields = []
               Where = Where.Empty } : UpdateQuery<'U>
 
     member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
@@ -414,31 +413,25 @@ type UpdateExpressionBuilder<'T, 'U>() =
         QuerySource<'T, UpdateQuery<'U>>({ query with Value = value }, state.TableMappings)
 
     /// Includes a column in the update query.
-    [<CustomOperation("column", MaintainsVariableSpace = true)>]
-    member this.Column (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+    [<CustomOperation("includeColumn", MaintainsVariableSpace = true)>]
+    member this.IncludeColumn (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let query = state |> getQueryOrDefault
         let prop = LinqExpressionVisitors.visitPropertySelector<'U, 'Prop> propertySelector
-        let newQuery = 
-            match query.Fields with
-            | Some fields  -> { query with Fields = Some (fields @ [prop.Name]) }
-            | None -> { query with Fields = Some [prop.Name] }
-
+        let newQuery = { query with Fields = (query.Fields @ [prop.Name]) }
         QuerySource<'T, UpdateQuery<'U>>(newQuery, state.TableMappings)
 
     /// Excludes a column from the update query.
-    [<CustomOperation("exclude", MaintainsVariableSpace = true)>]
-    member this.Exclude (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+    [<CustomOperation("excludeColumn", MaintainsVariableSpace = true)>]
+    member this.ExcludeColumn (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let query = state |> getQueryOrDefault
         let prop = LinqExpressionVisitors.visitPropertySelector<'U, 'Prop> propertySelector
         let newQuery = 
-            match query.Fields with
-            | Some fields  -> 
-                let filteredFields = fields |> List.filter (fun f -> f <> prop.Name)
-                { query with Fields = Some filteredFields }
-            | None -> 
-                let filteredFields = Reflection.getFields typeof<'T> |> List.filter (fun f -> f <> prop.Name)
-                { query with Fields = Some filteredFields }
-
+            query.Fields
+            |> function
+                | [] -> Reflection.getFields typeof<'T>
+                | fields -> fields
+            |> List.filter (fun f -> f <> prop.Name)
+            |> (fun x -> { query with Fields = x })
         QuerySource<'T, UpdateQuery<'U>>(newQuery, state.TableMappings)
 
     /// Sets the WHERE condition

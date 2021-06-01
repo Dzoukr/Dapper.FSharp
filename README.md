@@ -147,6 +147,7 @@ insert {
 } |> conn.InsertAsync
 ```
 
+
 *Note: All methods are asynchronous (returning Task) so you must "bang" (await) them. This part is skipped in examples.*
 
 ### WHERE condition
@@ -181,7 +182,19 @@ update {
 } |> conn.UpdateAsync
 ```
 
-Partial updates are also possible:
+Partial updates are also possible by manually specifying one or more `includeColumn` properties:
+
+```F#
+// this updates only LastName, other value from updatedPerson are ignored
+update {
+    table "Persons"
+    set updatedPerson
+    includeColumn (nameof(updatedPerson.LastName))
+    where (eq "Position" 1)
+} |> conn.UpdateAsync
+```
+
+Or use anonymous record for Partial updates:
 
 ```f#
 update {
@@ -190,6 +203,7 @@ update {
     where (eq "Position" 1)
 } |> conn.UpdateAsync
 ```
+
 
 ### DELETE
 
@@ -451,35 +465,27 @@ insert {
 } |> conn.InsertAsync
 ```
 
-[comment]: <> (Excluding Fields from the Insert:)
+Excluding Fields from the Insert:
 
-[comment]: <> (```f#)
+```f#
+open Dapper.FSharp
+open Dapper.FSharp.LinqBuilders
+open Dapper.FSharp.MSSQL
 
-[comment]: <> (open Dapper.FSharp)
+let conn : IDbConnection = ... // get it somewhere
 
-[comment]: <> (open Dapper.FSharp.LinqBuilders)
+let newPerson = { Id = Guid.NewGuid(); FirstName = "Roman"; LastName = "Provaznik"; Position = 1; DateOfBirth = None }
 
-[comment]: <> (open Dapper.FSharp.MSSQL)
+let personTable = table<Person>
 
-[comment]: <> (let conn : IDbConnection = ... // get it somewhere)
+insert {
+    for p in personTable do
+    value newPerson
+    excludeColumn p.DateOfBirth
+} |> conn.InsertAsync
+```
 
-[comment]: <> (let newPerson = { Id = Guid.NewGuid&#40;&#41;; FirstName = "Roman"; LastName = "Provaznik"; Position = 1; DateOfBirth = None })
-
-[comment]: <> (let personTable = table<Person>)
-
-[comment]: <> (insert {)
-
-[comment]: <> (    for p in personTable do)
-
-[comment]: <> (    value newPerson)
-
-[comment]: <> (    exclude p.DateOfBirth)
-
-[comment]: <> (} |> conn.InsertAsync)
-
-[comment]: <> (```)
-
-[comment]: <> (_NOTE: You can exclude multiple fields by using multiple `exclude` statements._)
+_NOTE: You can exclude multiple fields by using multiple `excludeColumn` statements._
 
 ### UPDATE
 
@@ -493,25 +499,18 @@ update {
 } |> conn.UpdateAsync
 ```
 
-[comment]: <> (Partial updates are possible by manually specifying one or more `column` properties:)
+Partial updates are possible by manually specifying one or more `includeColumn` properties:
 
-[comment]: <> (```F#)
+```F#
 
-[comment]: <> (update {)
-
-[comment]: <> (    for p in personTable do)
-
-[comment]: <> (    set modifiedPerson)
-
-[comment]: <> (    column p.FirstName)
-
-[comment]: <> (    column p.LastName)
-
-[comment]: <> (    where &#40;p.Position = 1&#41;)
-
-[comment]: <> (} |> conn.UpdateAsync)
-
-[comment]: <> (```)
+update {
+    for p in personTable do
+    set modifiedPerson
+    includeColumn p.FirstName
+    includeColumn p.LastName
+    where (p.Position = 1)
+} |> conn.UpdateAsync
+```
 
 
 Partial updates are also possible by using an anonymous record:
@@ -687,3 +686,15 @@ select {
     orderBy p.Position
 } |> conn.SelectAsyncOption<Person, Dog, DogsWeight>
 ```
+
+## IncludeColumn vs ExcludeColumn (there can be a 🐲)
+
+New keywords added in `v2` - `excludeColumn` and `includeColumn` are a great addition to this library, especially when you want to do partial updates / inserts. However, be aware that you should **never mix both** in a same computation expression!
+
+### ExcludeColumn 
+If used for the first time within computation expression all fields from record will be used and removed (ignored) those you provided in keyword. When used more times, already filtered fields will be filtered again.
+
+### IncludeColumn
+If used, only specified columns will be used and all the others will be ignored.
+
+With great power comes the great responsibility.

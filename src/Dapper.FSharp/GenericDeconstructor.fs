@@ -51,15 +51,15 @@ let private _insert evalInsertQuery (q:InsertQuery<_>) fields outputFields =
 let insert evalInsertQuery (q:InsertQuery<'a>) =
     let fields = 
         match q.Fields with
-        | Some fields -> fields
-        | None -> typeof<'a> |> Reflection.getFields
+        | [] -> typeof<'a> |> Reflection.getFields
+        | fields -> fields
     _insert evalInsertQuery q fields []
 
 let insertOutput<'Input, 'Output> evalInsertQuery (q:InsertQuery<'Input>) =
     let fields = 
         match q.Fields with
-        | Some fields -> fields
-        | None -> typeof<'Input> |> Reflection.getFields
+        | [] -> typeof<'Input> |> Reflection.getFields
+        | fields -> fields
     let outputFields = typeof<'Output> |> Reflection.getFields
     _insert evalInsertQuery q fields outputFields
 
@@ -74,15 +74,15 @@ let private _update evalUpdateQuery (q:UpdateQuery<_>) fields (outputFields:stri
 let update<'a> evalUpdateQuery (q:UpdateQuery<'a>) =
     let fields = 
         match q.Fields with
-        | Some fields -> fields
-        | None -> typeof<'a> |> Reflection.getFields
+        | [] -> typeof<'a> |> Reflection.getFields
+        | fields -> fields
     _update evalUpdateQuery q fields [] 
     
 let updateOutput<'Input, 'Output> evalUpdateQuery (q:UpdateQuery<'Input>) =
     let fields = 
         match q.Fields with
-        | Some fields -> fields
-        | None -> typeof<'Input> |> Reflection.getFields
+        | [] -> typeof<'Input> |> Reflection.getFields
+        | fields -> fields
     let outputFields = typeof<'Output> |> Reflection.getFields
     _update evalUpdateQuery q fields outputFields 
 

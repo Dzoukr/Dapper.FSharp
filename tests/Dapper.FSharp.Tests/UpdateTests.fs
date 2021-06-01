@@ -76,6 +76,32 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "UPDATE" [
             } |> crud.SelectAsync<Persons.View>
         Expect.equal 3 (Seq.length fromDb) ""
     }
+    
+    testTask "Updates values using `excludeColumn`" {
+        do! init.InitPersons()
+        let rs = Persons.View.generate 10 |> List.map (fun p -> { p with DateOfBirth = Some System.DateTime.UtcNow })
+        let toUpdate = rs |> List.find (fun x -> x.Position = 2)
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> crud.InsertAsync
+        let! _ =
+            update {
+                table "Persons"
+                set ({ toUpdate with LastName = "CHANGED"; FirstName = "ALSO CHANGED" })
+                where (eq "Position" 2)
+                excludeColumn (nameof(toUpdate.Id))
+                excludeColumn (nameof(toUpdate.FirstName))
+            } |> crud.UpdateAsync
+        let! fromDb =
+            select {
+                table "Persons"
+                where (eq "Position" 2)
+            } |> crud.SelectAsync<Persons.View>
+        Expect.equal "CHANGED" (fromDb |> Seq.head |> fun (x:Persons.View) -> x.LastName) ""
+        Expect.equal toUpdate.FirstName (fromDb |> Seq.head |> fun (x:Persons.View) -> x.FirstName) ""
+    }
 ]
 
 let testsOutput (crud:ICrudOutput) (init:ICrudInitializer) = testList "UPDATE OUTPUT" [
