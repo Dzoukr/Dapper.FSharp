@@ -451,27 +451,35 @@ insert {
 } |> conn.InsertAsync
 ```
 
-Excluding Fields from the Insert:
+[comment]: <> (Excluding Fields from the Insert:)
 
-```f#
-open Dapper.FSharp
-open Dapper.FSharp.LinqBuilders
-open Dapper.FSharp.MSSQL
+[comment]: <> (```f#)
 
-let conn : IDbConnection = ... // get it somewhere
+[comment]: <> (open Dapper.FSharp)
 
-let newPerson = { Id = Guid.NewGuid(); FirstName = "Roman"; LastName = "Provaznik"; Position = 1; DateOfBirth = None }
+[comment]: <> (open Dapper.FSharp.LinqBuilders)
 
-let personTable = table<Person>
+[comment]: <> (open Dapper.FSharp.MSSQL)
 
-insert {
-    for p in personTable do
-    value newPerson
-    exclude p.DateOfBirth
-} |> conn.InsertAsync
-```
+[comment]: <> (let conn : IDbConnection = ... // get it somewhere)
 
-_NOTE: You can exclude multiple fields by using multiple `exclude` statements._
+[comment]: <> (let newPerson = { Id = Guid.NewGuid&#40;&#41;; FirstName = "Roman"; LastName = "Provaznik"; Position = 1; DateOfBirth = None })
+
+[comment]: <> (let personTable = table<Person>)
+
+[comment]: <> (insert {)
+
+[comment]: <> (    for p in personTable do)
+
+[comment]: <> (    value newPerson)
+
+[comment]: <> (    exclude p.DateOfBirth)
+
+[comment]: <> (} |> conn.InsertAsync)
+
+[comment]: <> (```)
+
+[comment]: <> (_NOTE: You can exclude multiple fields by using multiple `exclude` statements._)
 
 ### UPDATE
 
@@ -485,17 +493,25 @@ update {
 } |> conn.UpdateAsync
 ```
 
-Partial updates are possible by manually specifying one or more `column` properties:
+[comment]: <> (Partial updates are possible by manually specifying one or more `column` properties:)
 
-```F#
-update {
-    for p in personTable do
-    set modifiedPerson
-    column p.FirstName
-    column p.LastName
-    where (p.Position = 1)
-} |> conn.UpdateAsync
-```
+[comment]: <> (```F#)
+
+[comment]: <> (update {)
+
+[comment]: <> (    for p in personTable do)
+
+[comment]: <> (    set modifiedPerson)
+
+[comment]: <> (    column p.FirstName)
+
+[comment]: <> (    column p.LastName)
+
+[comment]: <> (    where &#40;p.Position = 1&#41;)
+
+[comment]: <> (} |> conn.UpdateAsync)
+
+[comment]: <> (```)
 
 
 Partial updates are also possible by using an anonymous record:
