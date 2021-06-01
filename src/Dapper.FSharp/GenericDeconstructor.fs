@@ -41,7 +41,7 @@ let private _insert evalInsertQuery (q:InsertQuery<_>) fields outputFields =
     let query : string = evalInsertQuery fields outputFields q
     let pars =
         q.Values
-        |> List.map (Reflection.getValues >> List.zip fields)
+        |> List.map (Reflection.getValuesForFields fields >> List.zip fields)
         |> List.mapi (fun i values ->
             values |> List.map (fun (key,value) -> sprintf "%s%i" key i, Reflection.boxify value))
         |> List.collect id
@@ -49,16 +49,22 @@ let private _insert evalInsertQuery (q:InsertQuery<_>) fields outputFields =
     query, pars
 
 let insert evalInsertQuery (q:InsertQuery<'a>) =
-    let fields = typeof<'a> |> Reflection.getFields
+    let fields = 
+        match q.Fields with
+        | Some fields -> fields
+        | None -> typeof<'a> |> Reflection.getFields
     _insert evalInsertQuery q fields []
 
 let insertOutput<'Input, 'Output> evalInsertQuery (q:InsertQuery<'Input>) =
-    let fields = typeof<'Input> |> Reflection.getFields
+    let fields = 
+        match q.Fields with
+        | Some fields -> fields
+        | None -> typeof<'Input> |> Reflection.getFields
     let outputFields = typeof<'Output> |> Reflection.getFields
     _insert evalInsertQuery q fields outputFields
 
 let private _update evalUpdateQuery (q:UpdateQuery<_>) fields (outputFields:string list) =
-    let values = Reflection.getValues q.Value |> List.map Reflection.boxify
+    let values = Reflection.getValuesForFields fields q.Value |> List.map Reflection.boxify
     // extract metadata
     let meta = WhereAnalyzer.getWhereMetadata [] q.Where
     let pars = (WhereAnalyzer.extractWhereParams meta) @ (List.zip fields values) |> Map.ofList
@@ -66,11 +72,17 @@ let private _update evalUpdateQuery (q:UpdateQuery<_>) fields (outputFields:stri
     query, pars
     
 let update<'a> evalUpdateQuery (q:UpdateQuery<'a>) =
-    let fields = typeof<'a> |> Reflection.getFields
+    let fields = 
+        match q.Fields with
+        | Some fields -> fields
+        | None -> typeof<'a> |> Reflection.getFields
     _update evalUpdateQuery q fields [] 
     
 let updateOutput<'Input, 'Output> evalUpdateQuery (q:UpdateQuery<'Input>) =
-    let fields = typeof<'Input> |> Reflection.getFields
+    let fields = 
+        match q.Fields with
+        | Some fields -> fields
+        | None -> typeof<'Input> |> Reflection.getFields
     let outputFields = typeof<'Output> |> Reflection.getFields
     _update evalUpdateQuery q fields outputFields 
 

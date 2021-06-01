@@ -177,6 +177,17 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
         Expect.equal query.GroupBy ["Person.FName"; "Person.LName"] "Expected GROUP BY Person.FName, Person.LName"
         Expect.equal query.Aggregates [Count ("*", "Count")] "Expected COUNT(*) as [Count]"
     }
+    
+    testTask "Group By Optional Property" {
+        let query = 
+            select {
+                for p in table<Person> do
+                count "*" "Count"
+                groupBy p.MI
+            }
+        
+        Expect.equal query.GroupBy ["Person.MI"] "Expected GROUP BY Person.MI"
+    }
 
     testTask "Optional Column is None" {
         let query = 
@@ -397,6 +408,100 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
         ] "Expected that option column (MI) should be unwrapped."
     }
     
+    testTask "Insert with 1 excluded field" {
+        let person = 
+            { Id = 0
+              FName = "John"
+              MI = None
+              LName = "Doe"
+              Age = 100 }
+    
+        let query =
+            insert {
+                for p in table<Person> do
+                value person
+                exclude p.Id
+            }
+            
+        Expect.equal query.Fields (Some ["FName"; "MI"; "LName"; "Age"]) "Expected all fields except 'Id'."
+    }
+    
+    testTask "Insert with 2 excluded fields" {
+        let person = 
+            { Id = 0
+              FName = "John"
+              MI = None
+              LName = "Doe"
+              Age = 100 }
+    
+        let query =
+            insert {
+                for p in table<Person> do
+                value person
+                exclude p.Id
+                exclude p.MI
+            }
+            
+        Expect.equal query.Fields (Some ["FName"; "LName"; "Age"]) "Expected all fields except 'Id' and 'MI'."
+    }
+
+    testTask "Insert with 2 included fields" {
+        let person = 
+            { Id = 0
+              FName = "John"
+              MI = None
+              LName = "Doe"
+              Age = 100 }
+    
+        let query =
+            insert {
+                for p in table<Person> do
+                value person
+                column p.FName
+                column p.LName
+            }
+            
+        Expect.equal query.Fields (Some ["FName"; "LName"]) "Expected only 2 fields."
+    }
+
+    testTask "Update with 2 excluded fields" {
+        let person = 
+            { Id = 1
+              FName = "John"
+              MI = None
+              LName = "Doe"
+              Age = 100 }
+    
+        let query =
+            update {
+                for p in table<Person> do
+                set person
+                exclude p.Id
+                exclude p.MI
+            }
+            
+        Expect.equal query.Fields (Some ["FName"; "LName"; "Age"]) "Expected all fields except 'Id' and 'MI'."
+    }
+
+    testTask "Update with 2 included fields" {
+        let person = 
+            { Id = 1
+              FName = "John"
+              MI = None
+              LName = "Doe"
+              Age = 100 }
+    
+        let query =
+            update {
+                for p in table<Person> do
+                set person
+                column p.FName
+                column p.LName
+            }
+            
+        Expect.equal query.Fields (Some ["FName"; "LName"]) "Expected only 2 fields."
+    }
+
     testTask "Guid in Where" {
         let query = 
             select {

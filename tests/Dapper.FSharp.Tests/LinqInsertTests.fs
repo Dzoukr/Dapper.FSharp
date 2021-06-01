@@ -46,6 +46,28 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "LINQ INSERT" [
         Expect.equal r (Seq.head fromDb) ""
     }
 
+    testTask "Inserts partial record using 'exclude'" {        
+        let personsView = table'<Persons.View> "Persons"
+
+        do! init.InitPersons()
+        let r =
+            Persons.View.generate 1
+            |> List.head
+        let! _ =
+            insert {
+                for p in personsView do
+                value r
+                exclude r.DateOfBirth
+            } |> crud.InsertAsync
+        let! fromDb =
+            select {
+                for p in personsView do
+                where (p.Id = r.Id)
+            } |> crud.SelectAsync<Persons.View>
+        
+        Expect.equal { r with DateOfBirth = None } (Seq.head fromDb) ""
+    }
+
     testTask "Inserts more records" {
         do! init.InitPersons()
         let rs = Persons.View.generate 10
