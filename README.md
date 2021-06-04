@@ -698,3 +698,13 @@ If used for the first time within computation expression all fields from record 
 If used, only specified columns will be used and all the others will be ignored.
 
 With great power comes the great responsibility.
+
+## Contribution Guide
+
+Every new idea how to make library even better is more than welcome! However please be aware that there is process we should all follow:
+
+- [Create an issue](https://github.com/Dzoukr/Dapper.FSharp/issues/new) with description of proposed changes
+- Describe expected impact on library (API, performance, ...)
+- Define if it's minor or breaking change
+- Wait for Approve / Deny
+- Send a PR (or wait until taken by some of contributors)
