@@ -353,12 +353,12 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
         let! fromDb =
             select {
                 table "Dogs"
-                innerJoinOnMany "VaccinationHistory" ["PetOwnerId", "Dogs.OwnerId"; "DogNickname", "Dogs.Nickname"]
-                orderBy "Dogs.Nickname" Asc
+                innerJoin "VaccinationHistory" ["PetOwnerId", "Dogs.OwnerId"; "DogNickname", "Dogs.Nickname"]
+                orderByMany [OrderBy ("Dogs.Nickname", Asc); OrderBy ("VaccinationDate", Desc)]
             } |> crud.SelectAsync<Dogs.View>
 
-        Expect.equal 10 (Seq.length fromDb) ""
-        Expect.equal (dogs.Head) (Seq.head fromDb) ""
+        Expect.equal 10 (Seq.length fromDb) "Expecting 10 records from db"
+        Expect.equal dogs.Head (Seq.head fromDb) "First record should match."
     }
 
     testTask "Selects with one inner join on 2 columns - 1:N" {
@@ -386,8 +386,8 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
         let! fromDb =
             select {
                 table "Dogs"
-                innerJoinOnMany "VaccinationHistory" ["PetOwnerId", "Dogs.OwnerId"; "DogNickname", "Dogs.Nickname"]
-                orderByMany ["Dogs.Nickname", Asc; "VaccinationHistory.VaccinationDate", Asc]
+                innerJoin "VaccinationHistory" ["PetOwnerId", "Dogs.OwnerId"; "DogNickname", "Dogs.Nickname"]
+                orderByMany ["Dogs.Nickname", Asc; "VaccinationHistory.VaccinationDate", Desc]
             } |> crud.SelectAsync<Dogs.View, DogVaccinationHistory.View>
 
         let byDog = fromDb |> Seq.groupBy fst
