@@ -26,6 +26,12 @@ type Contact = {
     Phone: string
 }
 
+type Vehicle = {
+    Id: System.Guid
+    Make: string
+    Model: string
+}
+
 let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     
     testTask "Most Simple Query" {
@@ -170,6 +176,17 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     
         Expect.equal query.GroupBy ["Person.FName"; "Person.LName"] "Expected GROUP BY Person.FName, Person.LName"
         Expect.equal query.Aggregates [Count ("*", "Count")] "Expected COUNT(*) as [Count]"
+    }
+    
+    testTask "Group By Optional Property" {
+        let query = 
+            select {
+                for p in table<Person> do
+                count "*" "Count"
+                groupBy p.MI
+            }
+        
+        Expect.equal query.GroupBy ["Person.MI"] "Expected GROUP BY Person.MI"
     }
 
     testTask "Optional Column is None" {
@@ -371,6 +388,94 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
             OrderBy ("dbo.Addresses.City", Asc)
             OrderBy ("dbo.Contacts.Phone", Desc)
         ] "Expected tables and columns to be fully qualified with schema and overriden table names"
+    }
+
+    testTask "Join should unwrap option types in 'on' condition" {
+        let personTable = table'<Person> "People" |> inSchema "dbo"
+        let addressTable = table'<Address> "Addresses" |> inSchema "dbo"
+        let contactTable = table'<Contact> "Contacts" |> inSchema "dbo"
+
+        // This is a nonsensical join, but the point is to test unwrapping MI option type in join "on"
+        let query = 
+            select {
+                for p in personTable do
+                join a in addressTable on (p.MI = Some a.City) 
+                selectAll
+            }
+
+        Expect.equal query.Joins [
+            InnerJoin ("dbo.Addresses", "City", "dbo.People.MI")
+        ] "Expected that option column (MI) should be unwrapped."
+    }
+    
+    testTask "Insert with 1 excluded field" {
+        let person = 
+            { Id = 0
+              FName = "John"
+              MI = None
+              LName = "Doe"
+              Age = 100 }
+    
+        let query =
+            insert {
+                for p in table<Person> do
+                value person
+                excludeColumn p.Id
+            }
+            
+        Expect.equal query.Fields ["FName"; "MI"; "LName"; "Age"] "Expected all fields except 'Id'."
+    }
+    
+    testTask "Insert with 2 excluded fields" {
+        let person = 
+            { Id = 0
+              FName = "John"
+              MI = None
+              LName = "Doe"
+              Age = 100 }
+    
+        let query =
+            insert {
+                for p in table<Person> do
+                value person
+                excludeColumn p.Id
+                excludeColumn p.MI
+            }
+            
+        Expect.equal query.Fields ["FName"; "LName"; "Age"] "Expected all fields except 'Id' and 'MI'."
+    }
+
+    
+
+    testTask "Update with 2 excluded fields" {
+        let person = 
+            { Id = 1
+              FName = "John"
+              MI = None
+              LName = "Doe"
+              Age = 100 }
+    
+        let query =
+            update {
+                for p in table<Person> do
+                set person
+                excludeColumn p.Id
+                excludeColumn p.MI
+            }
+            
+        Expect.equal query.Fields ["FName"; "LName"; "Age"] "Expected all fields except 'Id' and 'MI'."
+    }
+
+    
+
+    testTask "Guid in Where" {
+        let query = 
+            select {
+                for v in table<Vehicle> do
+                where (v.Id = System.Guid("c586871d-3329-4fca-a231-fd11203a937d"))
+            }
+
+        Expect.equal query.Where (eq "Vehicle.Id" (System.Guid("c586871d-3329-4fca-a231-fd11203a937d"))) "Expected WHERE to contain a guid"
     }
 ]
 

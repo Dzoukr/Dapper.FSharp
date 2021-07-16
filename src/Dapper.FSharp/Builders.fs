@@ -6,6 +6,7 @@ type InsertBuilder<'a>() =
         {
             Schema = None
             Table = ""
+            Fields = []
             Values = []
         } : InsertQuery<'a>
 
@@ -24,6 +25,20 @@ type InsertBuilder<'a>() =
     /// Sets the single value for INSERT
     [<CustomOperation "value">]
     member _.Value (state:InsertQuery<'a>, value:'a) = { state with Values = [value] }
+    
+    /// Includes a column in the insert query.
+    [<CustomOperation("includeColumn")>]
+    member _.IncludeColumn (state: InsertQuery<'T>, name:string) = { state with Fields = state.Fields @ [name]  } 
+    
+    /// Excludes a column from the insert query.
+    [<CustomOperation("excludeColumn")>]
+    member _.ExcludeColumn (state: InsertQuery<'T>, name:string) =
+        state.Fields
+        |> function
+            | [] -> Reflection.getFields typeof<'T>
+            | fields -> fields
+        |> List.filter (fun f -> f <> name)
+        |> (fun x -> { state with Fields = x })
 
 type DeleteBuilder() =
     member _.Yield _ =
@@ -51,6 +66,7 @@ type UpdateBuilder<'a>() =
             Schema = None
             Table = ""
             Value = Unchecked.defaultof<'a>
+            Fields = []
             Where = Where.Empty
         } : UpdateQuery<'a>
 
@@ -69,6 +85,20 @@ type UpdateBuilder<'a>() =
     /// Sets the WHERE condition
     [<CustomOperation "where">]
     member _.Where (state:UpdateQuery<_>, where:Where) = { state with Where = where }
+    
+    /// Includes a column in the update query.
+    [<CustomOperation("includeColumn")>]
+    member _.IncludeColumn (state: UpdateQuery<'T>, name:string) = { state with Fields = state.Fields @ [name]  } 
+    
+    /// Excludes a column from the update query.
+    [<CustomOperation("excludeColumn")>]
+    member _.ExcludeColumn (state: UpdateQuery<'T>, name:string) =
+        state.Fields
+        |> function
+            | [] -> Reflection.getFields typeof<'T>
+            | fields -> fields
+        |> List.filter (fun f -> f <> name)
+        |> (fun x -> { state with Fields = x })
 
 type SelectBuilder() =
     member _.Yield _ =

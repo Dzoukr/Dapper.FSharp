@@ -147,6 +147,7 @@ insert {
 } |> conn.InsertAsync
 ```
 
+
 *Note: All methods are asynchronous (returning Task) so you must "bang" (await) them. This part is skipped in examples.*
 
 ### WHERE condition
@@ -181,7 +182,19 @@ update {
 } |> conn.UpdateAsync
 ```
 
-Partial updates are also possible:
+Partial updates are also possible by manually specifying one or more `includeColumn` properties:
+
+```F#
+// this updates only LastName, other value from updatedPerson are ignored
+update {
+    table "Persons"
+    set updatedPerson
+    includeColumn (nameof(updatedPerson.LastName))
+    where (eq "Position" 1)
+} |> conn.UpdateAsync
+```
+
+Or use anonymous record for Partial updates:
 
 ```f#
 update {
@@ -190,6 +203,7 @@ update {
     where (eq "Position" 1)
 } |> conn.UpdateAsync
 ```
+
 
 ### DELETE
 
@@ -412,6 +426,8 @@ let personTable = table'<Person> "People" |> inSchema "dbo"
 
 ### INSERT
 
+Inserting a single record:
+
 ```f#
 open Dapper.FSharp
 open Dapper.FSharp.LinqBuilders
@@ -429,6 +445,48 @@ insert {
 } |> conn.InsertAsync
 ```
 
+Inserting Multiple Records:
+
+```f#
+open Dapper.FSharp
+open Dapper.FSharp.LinqBuilders
+open Dapper.FSharp.MSSQL
+
+let conn : IDbConnection = ... // get it somewhere
+
+let person1 = { Id = Guid.NewGuid(); FirstName = "Roman"; LastName = "Provaznik"; Position = 1; DateOfBirth = None }
+let person2 = { Id = Guid.NewGuid(); FirstName = "Ptero"; LastName = "Dactyl"; Position = 2; DateOfBirth = None }
+
+let personTable = table<Person>
+
+insert {
+    into personTable
+    values [ person1; person2 ]
+} |> conn.InsertAsync
+```
+
+Excluding Fields from the Insert:
+
+```f#
+open Dapper.FSharp
+open Dapper.FSharp.LinqBuilders
+open Dapper.FSharp.MSSQL
+
+let conn : IDbConnection = ... // get it somewhere
+
+let newPerson = { Id = Guid.NewGuid(); FirstName = "Roman"; LastName = "Provaznik"; Position = 1; DateOfBirth = None }
+
+let personTable = table<Person>
+
+insert {
+    for p in personTable do
+    value newPerson
+    excludeColumn p.DateOfBirth
+} |> conn.InsertAsync
+```
+
+_NOTE: You can exclude multiple fields by using multiple `excludeColumn` statements._
+
 ### UPDATE
 
 ```F#
@@ -441,12 +499,26 @@ update {
 } |> conn.UpdateAsync
 ```
 
-Partial updates are also possible:
+Partial updates are possible by manually specifying one or more `includeColumn` properties:
+
+```F#
+
+update {
+    for p in personTable do
+    set modifiedPerson
+    includeColumn p.FirstName
+    includeColumn p.LastName
+    where (p.Position = 1)
+} |> conn.UpdateAsync
+```
+
+
+Partial updates are also possible by using an anonymous record:
 
 ```F#
 update {
     for p in personTable do
-    set {| LastName = "UPDATED" |}
+    set {| FirstName = "UPDATED"; LastName = "UPDATED" |}
     where (p.Position = 1)
 } |> conn.UpdateAsync
 ```
@@ -614,3 +686,25 @@ select {
     orderBy p.Position
 } |> conn.SelectAsyncOption<Person, Dog, DogsWeight>
 ```
+
+## IncludeColumn vs ExcludeColumn (there can be a 🐲)
+
+New keywords added in `v2` - `excludeColumn` and `includeColumn` are a great addition to this library, especially when you want to do partial updates / inserts. However, be aware that you should **never mix both** in a same computation expression!
+
+### ExcludeColumn 
+If used for the first time within computation expression all fields from record will be used and removed (ignored) those you provided in keyword. When used more times, already filtered fields will be filtered again.
+
+### IncludeColumn
+If used, only specified columns will be used and all the others will be ignored.
+
+With great power comes the great responsibility.
+
+## Contribution Guide
+
+Every new idea how to make library even better is more than welcome! However please be aware that there is process we should all follow:
+
+- [Create an issue](https://github.com/Dzoukr/Dapper.FSharp/issues/new) with description of proposed changes
+- Describe expected impact on library (API, performance, ...)
+- Define if it's minor or breaking change
+- Wait for Approve / Deny
+- Send a PR (or wait until taken by some of contributors)
