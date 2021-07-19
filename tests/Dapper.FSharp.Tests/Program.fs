@@ -7,8 +7,8 @@ open Microsoft.Extensions.Configuration
 open MySql.Data.MySqlClient
 open Npgsql
 
-let testConfig = 
-    { defaultConfig with 
+let testConfig =
+    { defaultConfig with
         parallelWorkers = 4
         verbosity = LogLevel.Debug }
 
@@ -17,7 +17,7 @@ let mssqlTests connString =
     conn |> Dapper.FSharp.Tests.MSSQL.Database.init
     let crud = MSSQL.Database.getCrud conn
     let init = MSSQL.Database.getInitializer conn
-    [   
+    [
         DeleteTests.testsBasic crud init
         DeleteTests.testsOutput crud init
         InsertTests.testsBasic crud init
@@ -26,7 +26,7 @@ let mssqlTests connString =
         IssuesTests.testsOutput crud init
         UpdateTests.testsBasic crud init
         UpdateTests.testsOutput crud init
-        SelectTests.testsBasic crud init        
+        SelectTests.testsBasic crud init
         MSSQL.AggregatesTests.tests conn
 
         // LINQ TEST
@@ -54,7 +54,7 @@ let mysqlTests connString =
         UpdateTests.testsBasic crud init
         SelectTests.testsBasic crud init
         MySQL.AggregatesTests.tests conn
-        
+
         // LINQ TEST
         LinqSelectTests.unitTests()
         LinqDeleteTests.testsBasic crud init
@@ -80,7 +80,7 @@ let postgresTests connString =
         UpdateTests.testsOutput crud init
         SelectTests.testsBasic crud init
         PostgreSQL.AggregatesTests.tests conn
-        
+
         // LINQ TEST
         LinqSelectTests.unitTests()
         LinqDeleteTests.testsBasic crud init

@@ -40,7 +40,7 @@ module Persons =
         }
 
 module Articles =
-    
+
     let init (conn:IDbConnection) =
         task {
             do! "drop table Articles" |> conn.ExecuteCatchIgnore
@@ -59,7 +59,7 @@ module Articles =
         }
 
 module Dogs =
-   
+
     let init (conn:IDbConnection) =
         task {
             do! "drop table Dogs" |> conn.ExecuteCatchIgnore
@@ -68,6 +68,23 @@ module Dogs =
                 CREATE TABLE Dogs (
                     OwnerId char(36) not null,
                     Nickname longtext not null
+                )
+                """
+                |> conn.ExecuteIgnore
+            return ()
+        }
+
+module VaccinationHistory =
+
+    let init (conn:IDbConnection) =
+        task {
+            do! "drop table VaccinationHistory" |> conn.ExecuteCatchIgnore
+            do!
+                """
+                CREATE TABLE VaccinationHistory (
+                    PetOwnerId char(36) not null,
+                    DogNickname longtext not null,
+                    VaccinationDate datetime not null
                 )
                 """
                 |> conn.ExecuteIgnore
@@ -92,9 +109,9 @@ module DogsWeights =
         }
 
 module Issues =
-    
+
     module PersonsSimple =
-        
+
         let init (conn:IDbConnection) =
             task {
                 do! "drop table PersonsSimple" |> conn.ExecuteCatchIgnore
@@ -109,9 +126,9 @@ module Issues =
                     |> conn.ExecuteIgnore
                 return ()
             }
-    
+
     module PersonsSimpleDescs =
-        
+
         let init (conn:IDbConnection) =
             task {
                 do! "drop table PersonsSimpleDescs" |> conn.ExecuteCatchIgnore
@@ -125,7 +142,7 @@ module Issues =
                     |> conn.ExecuteIgnore
                 return ()
             }
-            
+
     module Group =
         let init (conn:IDbConnection) =
             task {
@@ -140,7 +157,7 @@ module Issues =
                     |> conn.ExecuteIgnore
                 return ()
             }
-    
+
     module SchemedGroup =
         let init (conn:IDbConnection) =
             task {
@@ -155,7 +172,7 @@ module Issues =
                     |> conn.ExecuteIgnore
                 return ()
             }
-            
+
 open Dapper.FSharp.MySQL
 
 let getCrud (conn:IDbConnection) =
@@ -180,4 +197,5 @@ let getInitializer (conn:IDbConnection) =
         member x.InitSchemedGroups () = Issues.SchemedGroup.init conn
         member x.InitDogs () = Dogs.init conn
         member x.InitDogsWeights () = DogsWeights.init conn
-    }            
+        member x.InitVaccinationHistory () = VaccinationHistory.init conn
+    }

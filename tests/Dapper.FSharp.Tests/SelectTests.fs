@@ -7,7 +7,7 @@ open Expecto
 open FSharp.Control.Tasks.V2
 
 let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
-    
+
     testTask "Selects by single where condition" {
         do! init.InitPersons()
         let rs = Persons.View.generate 10
@@ -130,7 +130,7 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
         Expect.hasLength fromDb 2 ""
         Expect.isTrue (fromDb |> Seq.forall (fun (p:Persons.View) -> p.FirstName.StartsWith "First")) ""
     }
-    
+
     testTask "Selects by NOT LIKE where condition return matching rows" {
         do! init.InitPersons()
         let rs = Persons.View.generate 10
@@ -249,7 +249,7 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
         Expect.equal 6 (fromDb |> Seq.head |> (fun (x:Persons.View) -> x.Position)) ""
         Expect.equal 2 (fromDb |> Seq.length) ""
     }
-    
+
     testTask "Selects with skip and take parameters" {
         do! init.InitPersons()
         let rs = Persons.View.generate 10
@@ -324,6 +324,79 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
         Expect.equal 5 (byOwner |> Seq.head |> snd |> Seq.length) ""
     }
 
+    testTask "Selects with one inner join on two columns - 1:1" {
+        do! init.InitPersons()
+        do! init.InitDogs()
+        do! init.InitVaccinationHistory()
+
+        let persons = Persons.View.generate 10
+        let dogs = Dogs.View.generate1to1 persons
+        let vaccinations = DogVaccinationHistory.View.generate1to1 dogs
+
+        let! _ =
+            insert {
+                table "Persons"
+                values persons
+            } |> crud.InsertAsync
+        let! _ =
+            insert {
+                table "Dogs"
+                values dogs
+            } |> crud.InsertAsync
+
+        let! _ =
+            insert {
+                table "VaccinationHistory"
+                values vaccinations
+            } |> crud.InsertAsync
+
+        let! fromDb =
+            select {
+                table "Dogs"
+                innerJoin "VaccinationHistory" ["PetOwnerId", "Dogs.OwnerId"; "DogNickname", "Dogs.Nickname"]
+                orderByMany [OrderBy ("Dogs.Nickname", Asc); OrderBy ("VaccinationDate", Desc)]
+            } |> crud.SelectAsync<Dogs.View>
+
+        Expect.equal 10 (Seq.length fromDb) "Expecting 10 records from db"
+        Expect.equal dogs.Head (Seq.head fromDb) "First record should match."
+    }
+
+    testTask "Selects with one inner join on 2 columns - 1:N" {
+        do! init.InitPersons()
+        do! init.InitDogs()
+        let persons = Persons.View.generate 10
+        let dogs = Dogs.View.generate1toN 5 persons.Head
+        let vaccinations = DogVaccinationHistory.View.generate1toN 20 dogs.Head
+        let! _ =
+            insert {
+                table "Persons"
+                values persons
+            } |> crud.InsertAsync
+        let! _ =
+            insert {
+                table "Dogs"
+                values dogs
+            } |> crud.InsertAsync
+        let! _ =
+            insert {
+                table "VaccinationHistory"
+                values vaccinations
+            } |> crud.InsertAsync
+
+        let! fromDb =
+            select {
+                table "Dogs"
+                innerJoin "VaccinationHistory" ["PetOwnerId", "Dogs.OwnerId"; "DogNickname", "Dogs.Nickname"]
+                orderByMany ["Dogs.Nickname", Asc; "VaccinationHistory.VaccinationDate", Desc]
+            } |> crud.SelectAsync<Dogs.View, DogVaccinationHistory.View>
+
+        let byDog = fromDb |> Seq.groupBy fst
+
+        Expect.equal (Seq.length fromDb) 20 ""
+        Expect.equal (Seq.length byDog) 1 ""
+        Expect.equal (byDog |> Seq.head |> snd |> Seq.length) 20 ""
+        Expect.equal (Seq.head fromDb) (dogs.Head, vaccinations.Head) "First record from db matches generated data"
+    }
     testTask "Selects with one left join" {
         do! init.InitPersons()
         do! init.InitDogs()
@@ -472,5 +545,5 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
         Expect.equal None wn ""
         Expect.equal 16 (Seq.length fromDb) ""
     }
-    
+
 ]
