@@ -1,6 +1,8 @@
 ﻿[<AutoOpen>]
 module Dapper.FSharp.Builders
 
+open System
+
 type InsertBuilder<'a>() =
     member _.Yield _ =
         {
@@ -126,13 +128,18 @@ type SelectBuilder() =
     [<CustomOperation "where">]
     member _.Where (state:SelectQuery, where:Where) = { state with Where = where }
 
-    /// Sets the ORDER BY for multiple columns
+    /// Use OrderBy overload with list parameter instead - this method will be removed in future version.
+    [<Obsolete "Use OrderBy overload with list parameter instead - this method will be removed in future version.">]
     [<CustomOperation "orderByMany">]
     member _.OrderByMany (state:SelectQuery, values) = { state with OrderBy = values }
 
     /// Sets the ORDER BY for single column
     [<CustomOperation "orderBy">]
     member _.OrderBy (state:SelectQuery, colName, direction) = { state with OrderBy = [(colName, direction)] }
+    
+    /// Sets the ORDER BY for multiple columns
+    [<CustomOperation "orderBy">]
+    member _.OrderBy (state:SelectQuery, values) = { state with OrderBy = values }
 
     /// Sets the SKIP value for query
     [<CustomOperation "skip">]
@@ -158,13 +165,18 @@ type SelectBuilder() =
     [<CustomOperation "leftJoin">]
     member _.LeftJoin (state:SelectQuery, tableName, colName, equalsTo) = { state with Joins = state.Joins @ [LeftJoin(tableName, colName, equalsTo)] }
 
-    /// Sets the ORDER BY for multiple columns
+    /// Use GroupBy overload with list parameter instead - this method will be removed in future version.
+    [<Obsolete "Use GroupBy overload with list parameter instead - this method will be removed in future version.">]
     [<CustomOperation "groupByMany">]
     member _.GroupByMany (state:SelectQuery, values) = { state with GroupBy = values }
 
     /// Sets the ORDER BY for single column
     [<CustomOperation "groupBy">]
     member _.GroupBy (state:SelectQuery, colName) = { state with GroupBy = [colName] }
+    
+    /// Sets the ORDER BY for multiple columns
+    [<CustomOperation "groupBy">]
+    member _.GroupBy (state:SelectQuery, values) = { state with GroupBy = values }
 
     /// COUNT aggregate function for COLNAME (or * symbol) and map it to ALIAS
     [<CustomOperation "count">]

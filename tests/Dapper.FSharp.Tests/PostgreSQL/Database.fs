@@ -80,7 +80,7 @@ module VaccinationHistory =
             do! "drop table if exists \"VaccinationHistory\"" |> conn.ExecuteCatchIgnore
             do!
                 """
-                CREATE TABLE VaccinationHistory (
+                create table "VaccinationHistory" (
                     "PetOwnerId" uuid not null,
                     "DogNickname" text not null,
                     "VaccinationDate" timestamp not null

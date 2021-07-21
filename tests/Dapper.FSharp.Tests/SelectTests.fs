@@ -354,7 +354,7 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
             select {
                 table "Dogs"
                 innerJoin "VaccinationHistory" ["PetOwnerId", "Dogs.OwnerId"; "DogNickname", "Dogs.Nickname"]
-                orderByMany [OrderBy ("Dogs.Nickname", Asc); OrderBy ("VaccinationDate", Desc)]
+                orderBy [OrderBy ("Dogs.Nickname", Asc); OrderBy ("VaccinationDate", Desc)]
             } |> crud.SelectAsync<Dogs.View>
 
         Expect.equal 10 (Seq.length fromDb) "Expecting 10 records from db"
@@ -387,7 +387,7 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
             select {
                 table "Dogs"
                 innerJoin "VaccinationHistory" ["PetOwnerId", "Dogs.OwnerId"; "DogNickname", "Dogs.Nickname"]
-                orderByMany ["Dogs.Nickname", Asc; "VaccinationHistory.VaccinationDate", Desc]
+                orderBy ["Dogs.Nickname", Asc; "VaccinationHistory.VaccinationDate", Desc]
             } |> crud.SelectAsync<Dogs.View, DogVaccinationHistory.View>
 
         let byDog = fromDb |> Seq.groupBy fst
@@ -395,7 +395,10 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
         Expect.equal (Seq.length fromDb) 20 ""
         Expect.equal (Seq.length byDog) 1 ""
         Expect.equal (byDog |> Seq.head |> snd |> Seq.length) 20 ""
-        Expect.equal (Seq.head fromDb) (dogs.Head, vaccinations.Head) "First record from db matches generated data"
+        let fromDbDog,(fromDbVaccination:DogVaccinationHistory.View) = Seq.head fromDb
+        Expect.equal fromDbDog dogs.Head "First record from db matches generated data - dogs"
+        Expect.equal fromDbVaccination.DogNickname vaccinations.Head.DogNickname "First record from db matches generated data - vaccinations"
+        Expect.equal fromDbVaccination.PetOwnerId vaccinations.Head.PetOwnerId "First record from db matches generated data - vaccinations"
     }
     testTask "Selects with one left join" {
         do! init.InitPersons()
@@ -416,7 +419,7 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
             select {
                 table "Persons"
                 leftJoin "Dogs" "OwnerId" "Persons.Id"
-                orderByMany ["Persons.Position", Asc; "Dogs.Nickname", Asc]
+                orderBy ["Persons.Position", Asc; "Dogs.Nickname", Asc]
             } |> crud.SelectAsyncOption<Persons.View, Dogs.View>
 
         let byOwner = fromDb |> Seq.groupBy fst
@@ -494,7 +497,7 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
                 table "Persons"
                 innerJoin "Dogs" "OwnerId" "Persons.Id"
                 innerJoin "DogsWeights" "DogNickname" "Dogs.Nickname"
-                orderByMany ["Persons.Position", Asc; "Dogs.Nickname", Asc; "DogsWeights.Year", Asc]
+                orderBy ["Persons.Position", Asc; "Dogs.Nickname", Asc; "DogsWeights.Year", Asc]
             } |> crud.SelectAsync<Persons.View, Dogs.View, DogsWeights.View>
 
         Expect.equal 3 (Seq.length fromDb) ""
@@ -531,7 +534,7 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
                 table "Persons"
                 leftJoin "Dogs" "OwnerId" "Persons.Id"
                 leftJoin "DogsWeights" "DogNickname" "Dogs.Nickname"
-                orderByMany ["Persons.Position", Asc; "Dogs.Nickname", Asc; "DogsWeights.Year", Asc]
+                orderBy ["Persons.Position", Asc; "Dogs.Nickname", Asc; "DogsWeights.Year", Asc]
             } |> crud.SelectAsyncOption<Persons.View, Dogs.View, DogsWeights.View>
 
         let p1,d1,w1 = fromDb |> Seq.head

@@ -71,7 +71,7 @@ module private Evaluators =
         joinList
         |> List.map (fun (colName, eqToCol) -> sprintf "%s.%s=%s" (inQuotes tableName) (inQuotes colName) (inQuotes eqToCol))
         |> List.reduce (fun s1 s2 -> s1 + " AND " + s2 )
-        |> sprintf " INNER JOIN %s ON %s" tableName
+        |> sprintf " INNER JOIN %s ON %s" (inQuotes tableName)
 
     let evalJoins (joins:Join list) =
         let sb = StringBuilder()
