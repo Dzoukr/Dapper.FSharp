@@ -136,7 +136,7 @@ type SelectBuilder() =
     /// Sets the ORDER BY for single column
     [<CustomOperation "orderBy">]
     member _.OrderBy (state:SelectQuery, colName, direction) = { state with OrderBy = [(colName, direction)] }
-    
+
     /// Sets the ORDER BY for multiple columns
     [<CustomOperation "orderBy">]
     member _.OrderBy (state:SelectQuery, values) = { state with OrderBy = values }
@@ -173,7 +173,7 @@ type SelectBuilder() =
     /// Sets the ORDER BY for single column
     [<CustomOperation "groupBy">]
     member _.GroupBy (state:SelectQuery, colName) = { state with GroupBy = [colName] }
-    
+
     /// Sets the ORDER BY for multiple columns
     [<CustomOperation "groupBy">]
     member _.GroupBy (state:SelectQuery, values) = { state with GroupBy = values }
