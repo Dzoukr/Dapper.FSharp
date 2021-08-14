@@ -18,26 +18,26 @@ let mssqlTests connString =
     let crud = MSSQL.Database.getCrud conn
     let init = MSSQL.Database.getInitializer conn
     [
-        DeleteTests.testsBasic crud init
-        DeleteTests.testsOutput crud init
-        InsertTests.testsBasic crud init
-        InsertTests.testsOutput crud init
-        IssuesTests.testsBasic crud init
-        IssuesTests.testsOutput crud init
-        UpdateTests.testsBasic crud init
-        UpdateTests.testsOutput crud init
-        SelectTests.testsBasic crud init
-        MSSQL.AggregatesTests.tests conn
+        //DeleteTests.testsBasic crud init
+        //DeleteTests.testsOutput crud init
+        //InsertTests.testsBasic crud init
+        //InsertTests.testsOutput crud init
+        //IssuesTests.testsBasic crud init
+        //IssuesTests.testsOutput crud init
+        //UpdateTests.testsBasic crud init
+        //UpdateTests.testsOutput crud init
+        //SelectTests.testsBasic crud init
+        //MSSQL.AggregatesTests.tests conn
 
         // LINQ TEST
         LinqSelectTests.unitTests()
-        LinqSelectTests.integrationTests crud init
-        LinqDeleteTests.testsBasic crud init
-        LinqDeleteTests.testsOutput crud init
-        LinqUpdateTests.testsBasic crud init
-        LinqUpdateTests.testsOutput crud init
-        LinqInsertTests.testsBasic crud init
-        LinqInsertTests.testsOutput crud init
+        //LinqSelectTests.integrationTests crud init
+        //LinqDeleteTests.testsBasic crud init
+        //LinqDeleteTests.testsOutput crud init
+        //LinqUpdateTests.testsBasic crud init
+        //LinqUpdateTests.testsOutput crud init
+        //LinqInsertTests.testsBasic crud init
+        //LinqInsertTests.testsOutput crud init
     ]
     |> testList "MSSQL"
     |> testSequenced
@@ -97,8 +97,8 @@ let main argv =
     Dapper.FSharp.OptionTypes.register()
     [
         conf.["mssqlConnectionString"] |> mssqlTests
-        conf.["mysqlConnectionString"] |> mysqlTests
-        conf.["postgresConnectionString"] |> postgresTests
+        //conf.["mysqlConnectionString"] |> mysqlTests
+        //conf.["postgresConnectionString"] |> postgresTests
     ]
     |> testList ""
     |> runTests testConfig

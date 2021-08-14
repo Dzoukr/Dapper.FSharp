@@ -93,10 +93,6 @@ type SelectExpressionBuilder<'T>() =
     member this.Zero _ = 
         QuerySource<'T>(Map.empty)
 
-    // Prevents errors while typing join statement if rest of query is not filled in yet.
-    member this.Zero _ = 
-        QuerySource<'T>(Map.empty)
-
     /// Sets the WHERE condition
     [<CustomOperation("where", MaintainsVariableSpace = true)>]
     member this.Where (state:QuerySource<'T>, [<ProjectionParameter>] whereExpression) = 
@@ -466,3 +462,13 @@ let notLike<'P> (prop: 'P) (pattern: string) = true
 let isNullValue<'P> (prop: 'P) = true
 /// WHERE column IS NOT NULL
 let isNotNullValue<'P> (prop: 'P) = true
+
+module Operators = 
+    /// WHERE column is IN values
+    let (|=|) (prop: 'P) (values: 'P list) = true
+    /// WHERE column is NOT IN values
+    let (|<>|) (prop: 'P) (values: 'P list) = true
+    /// WHERE column like value   
+    let (=%) (prop: 'P) (pattern: string) = true
+    /// WHERE column not like value   
+    let (<>%) (prop: 'P) (pattern: string) = true
