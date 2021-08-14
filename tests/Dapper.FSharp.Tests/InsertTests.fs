@@ -40,6 +40,26 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "INSERT" [
             } |> crud.SelectAsync<Persons.ViewRequired>
         Expect.equal r (Seq.head fromDb) ""
     }
+    
+    testTask "Inserts partial record using 'excludeColumn'" {
+        do! init.InitPersons()
+        let r =
+            Persons.View.generate 1
+            |> List.head
+        let rReq = r |> fun x -> ({ Id = x.Id; FirstName = x.FirstName; LastName = x.LastName; Position = x.Position } : Persons.ViewRequired)
+        let! _ =
+            insert {
+                table "Persons"
+                value r
+                excludeColumn (nameof(r.DateOfBirth))
+            } |> crud.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+                where (eq "Id" r.Id)
+            } |> crud.SelectAsync<Persons.ViewRequired>
+        Expect.equal rReq (Seq.head fromDb) ""
+    }
 
     testTask "Inserts more records" {
         do! init.InitPersons()

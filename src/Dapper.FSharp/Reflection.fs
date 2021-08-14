@@ -21,6 +21,12 @@ let getValues r =
     FSharp.Reflection.FSharpValue.GetRecordFields r
     |> Array.toList
 
+let getValuesForFields fields r = 
+    FSharp.Reflection.FSharpType.GetRecordFields(r.GetType())
+    |> Array.filter (fun p -> fields |> List.contains(p.Name))
+    |> Array.map (fun p -> p.GetValue r)
+    |> Array.toList
+
 let boxify (x : obj) =
     match x with
     | null -> null

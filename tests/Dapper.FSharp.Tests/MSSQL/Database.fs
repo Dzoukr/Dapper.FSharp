@@ -39,7 +39,7 @@ module Persons =
         }
 
 module Articles =
-    
+
     let init (conn:IDbConnection) =
         task {
             do! "DROP TABLE Articles" |> conn.ExecuteCatchIgnore
@@ -57,7 +57,7 @@ module Articles =
         }
 
 module Dogs =
-   
+
     let init (conn:IDbConnection) =
         task {
             do! "DROP TABLE Dogs" |> conn.ExecuteCatchIgnore
@@ -72,6 +72,22 @@ module Dogs =
             return ()
         }
 
+module VaccinationHistory =
+
+    let init (conn:IDbConnection) =
+        task {
+            do! "DROP TABLE [dbo].VaccinationHistory" |> conn.ExecuteCatchIgnore
+            do!
+                """
+                CREATE TABLE [dbo].[VaccinationHistory] (
+                    [PetOwnerId] [uniqueidentifier] NOT NULL,
+                    [DogNickname] [nvarchar](max) NOT NULL,
+                    [VaccinationDate] datetime2 NOT NULL
+                )
+                """
+                |> conn.ExecuteIgnore
+            return ()
+        }
 module DogsWeights =
 
     let init (conn:IDbConnection) =
@@ -90,9 +106,9 @@ module DogsWeights =
         }
 
 module Issues =
-    
+
     module PersonsSimple =
-        
+
         let init (conn:IDbConnection) =
             task {
                 do! "DROP TABLE PersonsSimple" |> conn.ExecuteCatchIgnore
@@ -107,9 +123,9 @@ module Issues =
                     |> conn.ExecuteIgnore
                 return ()
             }
-    
+
     module PersonsSimpleDescs =
-        
+
         let init (conn:IDbConnection) =
             task {
                 do! "DROP TABLE PersonsSimpleDescs" |> conn.ExecuteCatchIgnore
@@ -123,7 +139,7 @@ module Issues =
                     |> conn.ExecuteIgnore
                 return ()
             }
-    
+
     module Group =
         let init (conn:IDbConnection) =
             task {
@@ -138,7 +154,7 @@ module Issues =
                     |> conn.ExecuteIgnore
                 return ()
             }
-            
+
     module SchemedGroup =
         let init (conn:IDbConnection) =
             task {
@@ -181,4 +197,5 @@ let getInitializer (conn:IDbConnection) =
         member x.InitSchemedGroups () = Issues.SchemedGroup.init conn
         member x.InitDogs () = Dogs.init conn
         member x.InitDogsWeights () = DogsWeights.init conn
+        member x.InitVaccinationHistory () = VaccinationHistory.init conn
     }

@@ -32,6 +32,7 @@ type ICrudInitializer =
     abstract member InitSchemedGroups : unit -> Task<unit>
     abstract member InitDogs : unit -> Task<unit>
     abstract member InitDogsWeights : unit -> Task<unit>
+    abstract member InitVaccinationHistory : unit -> Task<unit>
 
 let taskToList (t:Task<seq<'a>>) = t |> Async.AwaitTask |> Async.RunSynchronously |> Seq.toList
 
@@ -64,7 +65,7 @@ module Persons =
                     Position = x
                 }
             )
-    
+
 module Dogs =
 
     type View = {
@@ -88,6 +89,34 @@ module Dogs =
                 {
                     OwnerId = owner.Id
                     Nickname = sprintf "Dog_%i" i
+                }
+            )
+
+module DogVaccinationHistory =
+    type View = {
+        PetOwnerId: Guid
+        DogNickname : string
+        VaccinationDate : DateTime
+    }
+
+    module View =
+        let generate1to1 (dogs: Dogs.View list) =
+            dogs
+            |> List.mapi (fun i x ->
+                {
+                    PetOwnerId = x.OwnerId
+                    DogNickname = x.Nickname
+                    VaccinationDate =  DateTime.Now - TimeSpan.FromDays(i |> float)
+                }
+            )
+
+        let generate1toN count (dog: Dogs.View) =
+            [1..count]
+            |> List.map (fun i ->
+                {
+                    PetOwnerId = dog.OwnerId
+                    DogNickname = dog.Nickname
+                    VaccinationDate =  DateTime.Now - TimeSpan.FromDays(i |> float)
                 }
             )
 
@@ -120,17 +149,17 @@ module DogsWeights =
                 }
 
             )
-            
+
 module Issues =
-    
+
     module PersonsSimple =
-    
+
         type View = {
             Id : int
             Name : string
             Desc : string
         }
-        
+
         module View =
             let generate x =
                 [1..x]
@@ -141,14 +170,14 @@ module Issues =
                         Desc = sprintf "Desc_%i" x
                     }
                 )
-                
+
     module PersonsSimpleDescs =
-    
+
         type View = {
             Id : int
             Desc : string
         }
-        
+
         module View =
             let generate x =
                 [1..x]
@@ -160,14 +189,14 @@ module Issues =
                 )
 
 module Articles =
-    
+
     type View = {
         Id : int option
         Title : string
     }
-    
+
 module Group =
-    
+
     type View = {
         Id : int
         Name : string

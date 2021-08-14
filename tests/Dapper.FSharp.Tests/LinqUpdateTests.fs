@@ -7,6 +7,14 @@ open Dapper.FSharp.LinqBuilders
 open Expecto
 open FSharp.Control.Tasks.V2
 
+type Person = {
+    Id: int
+    FName: string
+    MI: string option
+    LName: string
+    Age: int
+}
+
 let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "LINQ UPDATE" [
     
     let personsView = table'<Persons.View> "Persons"
@@ -78,6 +86,25 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "LINQ UPDATE" [
                 where (p.LastName = "UPDATED")
             } |> crud.SelectAsync<Persons.View>
         Expect.equal 3 (Seq.length fromDb) ""
+    }
+    
+    testTask "Update with 2 included fields" {
+        let person = 
+            { Id = 1
+              FName = "John"
+              MI = None
+              LName = "Doe"
+              Age = 100 }
+    
+        let query =
+            update {
+                for p in table<Person> do
+                set person
+                includeColumn p.FName
+                includeColumn p.LName
+            }
+            
+        Expect.equal query.Fields ["FName"; "LName"] "Expected only 2 fields."
     }
 ]
 

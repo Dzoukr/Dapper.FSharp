@@ -40,7 +40,7 @@ module Persons =
         }
 
 module Articles =
-    
+
     let init (conn:IDbConnection) =
         task {
             do! "drop table if exists \"Articles\"" |> conn.ExecuteCatchIgnore
@@ -58,7 +58,7 @@ module Articles =
         }
 
 module Dogs =
-   
+
     let init (conn:IDbConnection) =
         task {
             do! "drop table if exists \"Dogs\"" |> conn.ExecuteCatchIgnore
@@ -73,6 +73,22 @@ module Dogs =
             return ()
         }
 
+module VaccinationHistory =
+
+    let init (conn:IDbConnection) =
+        task {
+            do! "drop table if exists \"VaccinationHistory\"" |> conn.ExecuteCatchIgnore
+            do!
+                """
+                create table "VaccinationHistory" (
+                    "PetOwnerId" uuid not null,
+                    "DogNickname" text not null,
+                    "VaccinationDate" timestamp not null
+                )
+                """
+                |> conn.ExecuteIgnore
+            return ()
+        }
 module DogsWeights =
 
     let init (conn:IDbConnection) =
@@ -89,11 +105,11 @@ module DogsWeights =
                 |> conn.ExecuteIgnore
             return ()
         }
-        
+
 module Issues =
-    
+
     module PersonsSimple =
-        
+
         let init (conn:IDbConnection) =
             task {
                 do! "drop table if exists \"PersonsSimple\"" |> conn.ExecuteCatchIgnore
@@ -108,9 +124,9 @@ module Issues =
                     |> conn.ExecuteIgnore
                 return ()
             }
-            
+
     module PersonsSimpleDescs =
-        
+
         let init (conn:IDbConnection) =
             task {
                 do! "drop table if exists \"PersonsSimpleDescs\"" |> conn.ExecuteCatchIgnore
@@ -124,7 +140,7 @@ module Issues =
                     |> conn.ExecuteIgnore
                 return ()
             }
-            
+
     module Group =
         let init (conn:IDbConnection) =
             task {
@@ -139,7 +155,7 @@ module Issues =
                     |> conn.ExecuteIgnore
                 return ()
             }
-            
+
     module SchemedGroup =
         let init (conn:IDbConnection) =
             task {
@@ -182,4 +198,5 @@ let getInitializer (conn:IDbConnection) =
         member x.InitSchemedGroups () = Issues.SchemedGroup.init conn
         member x.InitDogs () = Dogs.init conn
         member x.InitDogsWeights () = DogsWeights.init conn
+        member x.InitVaccinationHistory () = VaccinationHistory.init conn
     }

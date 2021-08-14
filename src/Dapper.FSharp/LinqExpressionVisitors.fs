@@ -281,7 +281,8 @@ let visitPropertySelector<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Pro
         | MethodCall m when m.Method.Name = "Invoke" ->
             // Handle tuples
             visit m.Object
-        | Property mi -> mi            
+        | Member m -> m.Member  // Handle simple properties
+        | Property mi -> mi     // Handle options
         | _ -> notImpl()
 
     visit (propertySelector :> Expression)
