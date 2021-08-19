@@ -198,8 +198,8 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
         | MethodCall m when m.Method.Name = "Invoke" ->
             // Handle tuples
             visit m.Object
-        | MethodCall m when m.Method.Name = "isIn" || m.Method.Name = "isNotIn" ->
-            let comparisonType = if m.Method.Name = "isIn" then In else NotIn
+        | MethodCall m when List.contains m.Method.Name [ "isIn"; "isNotIn"; "op_BarEqualsBar"; "op_BarLessGreaterBar" ] ->
+            let comparisonType = m.Method.Name |> function "isIn" | "op_BarEqualsBar" -> In | _ -> NotIn
             match m.Arguments.[0], m.Arguments.[1] with
             | Property p, MethodCall lst ->
                 let lstValues = unwrapListExpr ([], lst)                
@@ -208,13 +208,13 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
                 let lstValues = (value :?> System.Collections.IEnumerable) |> Seq.cast<obj> |> Seq.toList
                 Column (qualifyColumn p, comparisonType lstValues)
             | _ -> notImpl()
-        | MethodCall m when m.Method.Name = "like" || m.Method.Name = "notLike" ->
+        | MethodCall m when List.contains m.Method.Name [ "like"; "notLike"; "op_EqualsPercent"; "op_LessGreaterPercent" ] ->
             match m.Arguments.[0], m.Arguments.[1] with
             | Property p, Value value -> 
                 let pattern = string value
-                if m.Method.Name = "like"
-                then like (qualifyColumn p) pattern
-                else notLike (qualifyColumn p) pattern
+                match m.Method.Name with
+                | "like" | "op_EqualsPercent" -> like (qualifyColumn p) pattern
+                | _ -> notLike (qualifyColumn p) pattern
             | _ -> notImpl()
         | MethodCall m when m.Method.Name = "isNullValue" || m.Method.Name = "isNotNullValue" ->
             match m.Arguments.[0] with

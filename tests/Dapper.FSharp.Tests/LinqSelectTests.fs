@@ -4,6 +4,7 @@ open System.Threading.Tasks
 open Dapper.FSharp
 open Dapper.FSharp.Tests.Database
 open Dapper.FSharp.LinqBuilders
+open Dapper.FSharp.LinqBuilders.Operators
 open Expecto
 open FSharp.Control.Tasks.V2
 
@@ -229,12 +230,33 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
         Expect.equal query.Where (Column ("Person.Age", In [18;21])) "Expected Person.Age IN (18,21)"
     }
 
+    testTask "SqlMethods.isIn |=|" {
+        let query = 
+            select {
+                for p in table<Person> do
+                where (p.Age |=| [18;21])
+            }
+    
+        Expect.equal query.Where (Column ("Person.Age", In [18;21])) "Expected Person.Age IN (18,21)"
+    }
+
     testTask "SqlMethods.isNotIn" {
         let ages = [1..5]
         let query = 
             select {
                 for p in table<Person> do
                 where (isNotIn p.Age ages)
+            }
+    
+        Expect.equal query.Where (Column ("Person.Age", NotIn [1;2;3;4;5])) "Expected Person.Age NOT IN (1,2,3,4,5)"
+    }
+
+    testTask "SqlMethods.isNotIn |<>|" {
+        let ages = [1..5]
+        let query = 
+            select {
+                for p in table<Person> do
+                where (p.Age |<>| ages)
             }
     
         Expect.equal query.Where (Column ("Person.Age", NotIn [1;2;3;4;5])) "Expected Person.Age NOT IN (1,2,3,4,5)"
@@ -248,6 +270,36 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
             }
     
         Expect.equal query.Where (Column ("Person.LName", Like "D%")) "Expected LName Person.LIKE \"D%\""
+    }
+
+    testTask "Like =%" {
+        let query = 
+            select {
+                for p in table<Person> do
+                where (p.LName =% "D%")
+            }
+    
+        Expect.equal query.Where (Column ("Person.LName", Like "D%")) "Expected LName Person.LIKE \"D%\""
+    }
+
+    testTask "Not Like" {
+        let query = 
+            select {
+                for p in table<Person> do
+                where (notLike p.LName "D%")
+            }
+    
+        Expect.equal query.Where (Column ("Person.LName", NotLike "D%")) "Expected LName Person.NotLike \"D%\""
+    }
+
+    testTask "Not Like <>%" {
+        let query = 
+            select {
+                for p in table<Person> do
+                where (p.LName <>% "D%")
+            }
+    
+        Expect.equal query.Where (Column ("Person.LName", NotLike "D%")) "Expected LName Person.NotLike \"D%\""
     }
 
     testTask "Count" {

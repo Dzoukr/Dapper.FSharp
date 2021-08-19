@@ -2,6 +2,7 @@
 
 open System.Threading.Tasks
 open Dapper.FSharp
+open Dapper.FSharp.Builders.Operators
 open Dapper.FSharp.Tests.Database
 open Expecto
 open FSharp.Control.Tasks.V2
@@ -58,6 +59,24 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
         Expect.equal (rs |> List.find (fun x -> x.Position = 6)) (Seq.last fromDb) ""
     }
 
+    testTask "Selects by IN |=| where condition" {
+        do! init.InitPersons()
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> crud.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+                where ("Position" |=| [5;6])
+                orderBy "Position" Asc
+            } |> crud.SelectAsync<Persons.View>
+        Expect.equal (rs |> List.find (fun x -> x.Position = 5)) (Seq.head fromDb) ""
+        Expect.equal (rs |> List.find (fun x -> x.Position = 6)) (Seq.last fromDb) ""
+    }
+
     testTask "Selects by NOT IN where condition" {
         do! init.InitPersons()
         let rs = Persons.View.generate 10
@@ -70,6 +89,25 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
             select {
                 table "Persons"
                 where (isNotIn "Position" [1;2;3])
+                orderBy "Position" Asc
+            } |> crud.SelectAsync<Persons.View>
+        Expect.equal (rs |> List.find (fun x -> x.Position = 4)) (Seq.head fromDb) ""
+        Expect.equal (rs |> List.find (fun x -> x.Position = 10)) (Seq.last fromDb) ""
+        Expect.equal 7 (Seq.length fromDb) ""
+    }
+
+    testTask "Selects by NOT IN |<>| where condition" {
+        do! init.InitPersons()
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> crud.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+                where ("Position" |<>| [1;2;3])
                 orderBy "Position" Asc
             } |> crud.SelectAsync<Persons.View>
         Expect.equal (rs |> List.find (fun x -> x.Position = 4)) (Seq.head fromDb) ""
@@ -131,6 +169,24 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
         Expect.isTrue (fromDb |> Seq.forall (fun (p:Persons.View) -> p.FirstName.StartsWith "First")) ""
     }
 
+    testTask "Selects by LIKE =% where condition return matching rows" {
+        do! init.InitPersons()
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> crud.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+                where ("FirstName" =% "First_1%")
+            } |> crud.SelectAsync<Persons.View>
+        Expect.isNonEmpty fromDb ""
+        Expect.hasLength fromDb 2 ""
+        Expect.isTrue (fromDb |> Seq.forall (fun (p:Persons.View) -> p.FirstName.StartsWith "First")) ""
+    }
+
     testTask "Selects by NOT LIKE where condition return matching rows" {
         do! init.InitPersons()
         let rs = Persons.View.generate 10
@@ -143,6 +199,23 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
             select {
                 table "Persons"
                 where (notLike "FirstName" "First_1%")
+            }
+            |> crud.SelectAsync<Persons.View>
+        Expect.hasLength fromDb 8 ""
+    }
+
+    testTask "Selects by NOT LIKE <>% where condition return matching rows" {
+        do! init.InitPersons()
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                table "Persons"
+                values rs
+            } |> crud.InsertAsync
+        let! fromDb =
+            select {
+                table "Persons"
+                where ("FirstName" <>% "First_1%")
             }
             |> crud.SelectAsync<Persons.View>
         Expect.hasLength fromDb 8 ""
