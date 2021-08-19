@@ -10,13 +10,11 @@
     <PackageIconUrl>https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png</PackageIconUrl>
     <PackageTags>fsharp;dapper;linq;database;mssql;mysql;postgresql</PackageTags>
     <Authors>Roman Provazník;Jordan Marr</Authors>
-    <Version>2.2.0</Version>
-    <PackageReleaseNotes>Multiple join conditions when performing inner join #20 + overloads for *Many methods.</PackageReleaseNotes>
-
+    <Version>2.3.0</Version>
+    <PackageReleaseNotes>Release: New Filter Operators #38 #39</PackageReleaseNotes>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <DebugType>embedded</DebugType>
-
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Reflection.fs" />
@@ -32,6 +30,5 @@
     <Compile Include="LinqBuilders.fs" />
     <Compile Include="OptionTypes.fs" />
   </ItemGroup>
-
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>
