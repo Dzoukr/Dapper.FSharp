@@ -321,6 +321,15 @@ select {
 } |> conn.SelectAsyncOption<Person, Dog, DogsWeight>
 ```
 
+The `innerLoin` and `leftjoin` keywords also support overloading (note that currently that requires flag in fsproj file [Issue#41](https://github.com/Dzoukr/Dapper.FSharp/issues/41#issuecomment-903069230)) when the join condition requires multiple columns. In that case you provide the join condition as a list:
+```f#
+select {
+    table "Dogs"
+    innerJoin "VaccinationHistory" ["PetOwnerId", "Dogs.OwnerId"; "DogNickname", "Dogs.Nickname"]
+    orderBy ["Dogs.Nickname", Asc; "VaccinationHistory.VaccinationDate", Desc]
+} |> crud.SelectAsync<Dogs.View, DogVaccinationHistory.View>
+```
+
 ### Aggregate functions
 
 Aggregate functions include `count`, `avg`, `sum`, `min`, and `max`. To fully support these functions in builder syntax, the `groupBy`, `groupByMany` and `distinct` keywords are supported as well.
