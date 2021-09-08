@@ -165,6 +165,10 @@ type SelectBuilder() =
     [<CustomOperation "leftJoin">]
     member _.LeftJoin (state:SelectQuery, tableName, colName, equalsTo) = { state with Joins = state.Joins @ [LeftJoin(tableName, colName, equalsTo)] }
 
+    /// LEFT JOIN table where COLNAME equals to another COLUMN (including TABLE name)
+    [<CustomOperation "leftJoin">]
+    member _.LeftJoin (state:SelectQuery, tableName, joinList) = { state with Joins = state.Joins @ [LeftJoinOnMany(tableName, joinList)] }
+
     /// Use GroupBy overload with list parameter instead - this method will be removed in future version.
     [<Obsolete "Use GroupBy overload with list parameter instead - this method will be removed in future version.">]
     [<CustomOperation "groupByMany">]
@@ -234,12 +238,12 @@ let isNullValue name = column name IsNull
 /// WHERE column IS NOT NULL
 let isNotNullValue name = column name IsNotNull
 
-module Operators = 
+module Operators =
     /// WHERE column is IN values
     let (|=|) = isIn
     /// WHERE column is NOT IN values
     let (|<>|) = isNotIn
-    /// WHERE column like value   
+    /// WHERE column like value
     let (=%) = like
-    /// WHERE column not like value   
+    /// WHERE column not like value
     let (<>%) = notLike
