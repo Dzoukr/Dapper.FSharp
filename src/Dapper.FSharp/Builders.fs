@@ -233,3 +233,13 @@ let isNotIn name (os:obj list) = column name (NotIn os)
 let isNullValue name = column name IsNull
 /// WHERE column IS NOT NULL
 let isNotNullValue name = column name IsNotNull
+
+module Operators = 
+    /// WHERE column is IN values
+    let (|=|) = isIn
+    /// WHERE column is NOT IN values
+    let (|<>|) = isNotIn
+    /// WHERE column like value   
+    let (=%) = like
+    /// WHERE column not like value   
+    let (<>%) = notLike
