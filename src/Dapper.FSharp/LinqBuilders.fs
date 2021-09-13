@@ -151,8 +151,8 @@ type SelectExpressionBuilder<'T>() =
         QuerySource<'T, SelectQuery>({ query with Pagination = { query.Pagination with Skip = skip; Take = Some take } }, state.TableMappings)
 
     /// INNER JOIN table where COLNAME equals to another COLUMN (including TABLE name)
-    [<CustomOperation("join", MaintainsVariableSpace = true, IsLikeJoin = true, JoinConditionWord = "on")>]
-    member this.Join (outerSource: QuerySource<'TOuter>, 
+    [<CustomOperation("innerJoin", MaintainsVariableSpace = true, IsLikeJoin = true, JoinConditionWord = "on")>]
+    member this.InnerJoin (outerSource: QuerySource<'TOuter>, 
                       innerSource: QuerySource<'TInner>, 
                       outerKeySelector: Expression<Func<'TOuter,'Key>>, 
                       innerKeySelector: Expression<Func<'TInner,'Key>>, 
