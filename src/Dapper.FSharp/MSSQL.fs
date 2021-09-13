@@ -63,18 +63,19 @@ module private Evaluators =
         | { Take = None; Skip = o } -> sprintf "OFFSET %i ROWS" o
         | { Take = Some f; Skip = o } -> sprintf "OFFSET %i ROWS FETCH NEXT %i ROWS ONLY" o f
 
-    let buildInnerJoinOnMany tableName (joinList: List<string * string>) =
+    let buildJoinOnMany joinType tableName (joinList: List<string * string>) =
         joinList
         |> List.map (fun (colName, eqToCol) -> sprintf "%s.%s=%s" (inBrackets tableName) (inBrackets colName) (inBrackets eqToCol))
         |> List.reduce (fun s1 s2 -> s1 + " AND " + s2 )
-        |> sprintf " INNER JOIN %s ON %s" tableName
+        |> sprintf " %s JOIN %s ON %s" joinType tableName
 
     let evalJoins (joins:Join list) =
         let sb = StringBuilder()
         let evalJoin = function
             | InnerJoin(table,colName,equalsTo) -> sprintf " INNER JOIN %s ON %s.%s=%s" (inBrackets table) (inBrackets table) (inBrackets colName) (inBrackets equalsTo)
             | LeftJoin(table,colName,equalsTo) -> sprintf " LEFT JOIN %s ON %s.%s=%s" (inBrackets table) (inBrackets table) (inBrackets colName) (inBrackets equalsTo)
-            | InnerJoinOnMany(table, list) -> buildInnerJoinOnMany table list
+            | InnerJoinOnMany(table, list) -> buildJoinOnMany "INNER" table list
+            | LeftJoinOnMany (table, list) -> buildJoinOnMany "LEFT" table list
         joins |> List.map evalJoin |> List.iter (sb.Append >> ignore)
         sb.ToString()
 
