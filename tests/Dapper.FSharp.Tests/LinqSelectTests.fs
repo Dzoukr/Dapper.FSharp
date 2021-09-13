@@ -170,7 +170,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
         let query = 
             select {
                 for p in table<Person> do
-                join c in table<Contact> on (p.Id = c.PersonId)
+                innerJoin c in table<Contact> on (p.Id = c.PersonId)
                 groupBy (p.FName, p.LName)
                 count "*" "Count"
             }
@@ -327,7 +327,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
         let query = 
             select {
                 for p in table<Person> do
-                join a in table<Address> on (p.Id = a.PersonId) 
+                innerJoin a in table<Address> on (p.Id = a.PersonId) 
                 where (p.Id = 1 && a.PersonId = 2) 
             }
     
@@ -339,8 +339,8 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
         let query = 
             select {
                 for p in table<Person> do
-                join a in table<Address> on (p.Id = a.PersonId) 
-                join c in table<Contact> on (p.Id = c.PersonId)
+                innerJoin a in table<Address> on (p.Id = a.PersonId) 
+                innerJoin c in table<Contact> on (p.Id = c.PersonId)
                 selectAll
             }
     
@@ -386,8 +386,8 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
         let query = 
             select {
                 for p in personTable do
-                join a in addressTable on (p.Id = a.PersonId) 
-                join c in contactTable on (p.Id = c.PersonId)
+                innerJoin a in addressTable on (p.Id = a.PersonId) 
+                innerJoin c in contactTable on (p.Id = c.PersonId)
                 where (p.FName = "John" && a.City = "Chicago" && c.Phone = "919-765-4321")
                 orderByDescending p.Id
                 thenBy a.City
@@ -447,11 +447,11 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
         let addressTable = table'<Address> "Addresses" |> inSchema "dbo"
         let contactTable = table'<Contact> "Contacts" |> inSchema "dbo"
 
-        // This is a nonsensical join, but the point is to test unwrapping MI option type in join "on"
+        // This is a nonsensical innerJoin, but the point is to test unwrapping MI option type in join "on"
         let query = 
             select {
                 for p in personTable do
-                join a in addressTable on (p.MI = Some a.City) 
+                innerJoin a in addressTable on (p.MI = Some a.City) 
                 selectAll
             }
 
@@ -817,7 +817,7 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let! fromDb =
             select {
                 for p in personsView do
-                join d in dogsView on (p.Id = d.OwnerId)
+                innerJoin d in dogsView on (p.Id = d.OwnerId)
                 selectAll
             } |> crud.SelectAsync<Persons.View, Dogs.View>
 
@@ -843,7 +843,7 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let! fromDb =
             select {
                 for p in personsView do
-                join d in dogsView on (p.Id = d.OwnerId)
+                innerJoin d in dogsView on (p.Id = d.OwnerId)
                 selectAll
             } |> crud.SelectAsync<Persons.View, Dogs.View>
 
@@ -914,8 +914,8 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let! fromDb =
             select {
                 for p in personsView do
-                join d in dogsView on (p.Id = d.OwnerId)
-                join dw in dogsWeightsView on (d.Nickname = dw.DogNickname)
+                innerJoin d in dogsView on (p.Id = d.OwnerId)
+                innerJoin dw in dogsWeightsView on (d.Nickname = dw.DogNickname)
                 orderBy p.Position
             }
             |> crud.SelectAsync<Persons.View, Dogs.View, DogsWeights.View>
@@ -952,8 +952,8 @@ let integrationTests (crud:ICrud) (init:ICrudInitializer) = testList "LINQ SELEC
         let! fromDb =
             select {
                 for p in personsView do
-                join d in dogsView on (p.Id = d.OwnerId)
-                join dw in dogsWeightsView on (d.Nickname = dw.DogNickname)
+                innerJoin d in dogsView on (p.Id = d.OwnerId)
+                innerJoin dw in dogsWeightsView on (d.Nickname = dw.DogNickname)
                 orderBy p.Position
                 thenBy d.Nickname
                 thenBy dw.Year
