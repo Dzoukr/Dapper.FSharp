@@ -240,6 +240,16 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
         Expect.equal query.Where (Column ("Person.Age", In [18;21])) "Expected Person.Age IN (18,21)"
     }
 
+    testTask "SqlMethods.isIn with Optional List Values" {
+        let query = 
+            select {
+                for p in table<Person> do
+                where (p.MI.Value |=| [ "N"; "M" ])
+            }
+    
+        Expect.equal query.Where (Column ("Person.MI", In [ "N"; "M" ])) "Expected Person.MI IN ('N', 'M')"
+    }
+
     testTask "SqlMethods.isNotIn" {
         let ages = [1..5]
         let query = 
