@@ -54,7 +54,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
             }
 
         Expect.equal query.Table "Person" "Expected table = 'Person'"
-        Expect.equal query.Where (eq "Person.FName" "John") "Expected WHERE Person.FName = 'John'"
+        Expect.equal query.Where (Legacy.eq "Person.FName" "John") "Expected WHERE Person.FName = 'John'"
         Expect.equal query.OrderBy [("Person.LName", Asc)] "Expected ORDER BY Person.LName"
     }
 
@@ -102,7 +102,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
                 where (p.Age < personInstance.Age)
             }
         
-        Expect.equal query.Where (lt "Person.Age" 100) "Expected WHERE Age constant value of 100 to be unwrapped from property"
+        Expect.equal query.Where (Legacy.lt "Person.Age" 100) "Expected WHERE Age constant value of 100 to be unwrapped from property"
     }
 
     testTask "isNullValue Where" {
@@ -113,7 +113,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
             }
     
         Expect.equal query.Where (
-            Builders.isNullValue "Person.Age" * Builders.isNullValue "Person.MI" * Builders.isNullValue "Person.FName"
+            Legacy.isNullValue "Person.Age" * Legacy.isNullValue "Person.MI" * Legacy.isNullValue "Person.FName"
         ) "Expected all three fields to check for NULL"
     }
 
@@ -125,7 +125,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
             }
     
         Expect.equal query.Where (
-            Builders.isNotNullValue "Person.Age" * Builders.isNotNullValue "Person.MI" * Builders.isNotNullValue "Person.FName"
+            Legacy.isNotNullValue "Person.Age" * Legacy.isNotNullValue "Person.MI" * Legacy.isNotNullValue "Person.FName"
         ) "Expected all three fields to check for NOT NULL"
     }
 
@@ -139,7 +139,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
             }
     
         Expect.equal query.Table "Person" "Expected table = 'Person'"
-        Expect.equal query.Where (eq "Person.FName" "John" + eq "Person.LName" "Doe") "Expected WHERE Person.FName = 'John' && Person.LName = 'Doe'"
+        Expect.equal query.Where (Legacy.eq "Person.FName" "John" + Legacy.eq "Person.LName" "Doe") "Expected WHERE Person.FName = 'John' && Person.LName = 'Doe'"
         Expect.equal query.OrderBy [("Person.LName", Desc); ("Person.Age", Desc)] "Expected ORDER BY 'Person.LName DESC, Person.Age DESC'"
     }
 
@@ -150,7 +150,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
                 where (not (p.FName = "John"))
             }
     
-        Expect.equal query.Where (!!(eq "Person.FName" "John")) "Expected NOT (Person.FName = 'John')"
+        Expect.equal query.Where (!!(Legacy.eq "Person.FName" "John")) "Expected NOT (Person.FName = 'John')"
     }
 
     testTask "Group By" {
@@ -197,7 +197,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
                 where (p.MI = None)
             }
     
-        Expect.equal query.Where (Builders.isNullValue "Person.MI") "Expected Person.MI IS NULL"
+        Expect.equal query.Where (Legacy.isNullValue "Person.MI") "Expected Person.MI IS NULL"
     }
 
     testTask "Optional Column is not None" {
@@ -207,7 +207,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
                 where (p.MI <> None)
             }
     
-        Expect.equal query.Where (Builders.isNotNullValue "Person.MI") "Expected MI IS NOT NULL"
+        Expect.equal query.Where (Legacy.isNotNullValue "Person.MI") "Expected MI IS NOT NULL"
     }
 
     testTask "Optional Column = Some value" {
@@ -217,7 +217,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
                 where (p.MI = Some "N")
             }
     
-        Expect.equal query.Where (eq "Person.MI" "N") "Expected Person.MI = 'N'"
+        Expect.equal query.Where (Legacy.eq "Person.MI" "N") "Expected Person.MI = 'N'"
     }
 
     testTask "SqlMethods.isIn" {
@@ -342,7 +342,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
             }
     
         Expect.equal query.Joins [InnerJoin ("Address", "PersonId", "Person.Id")] "Expected INNER JOIN Address ON Person.Id = Address.PersonId"
-        Expect.equal query.Where (eq "Person.Id" 1 + eq "Address.PersonId" 2) "Expected both types in where clause"
+        Expect.equal query.Where (Legacy.eq "Person.Id" 1 + Legacy.eq "Address.PersonId" 2) "Expected both types in where clause"
     }
     
     testTask "Join2" {
@@ -369,7 +369,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
             }
     
         Expect.equal query.Joins [LeftJoin ("Address", "PersonId", "Person.Id")] "Expected LEFT JOIN Address ON Person.Id = Address.PersonId"
-        Expect.equal query.Where (eq "Person.Id" 1 + eq "Address.PersonId" 2) "Expected both types in where clause"
+        Expect.equal query.Where (Legacy.eq "Person.Id" 1 + Legacy.eq "Address.PersonId" 2) "Expected both types in where clause"
     }
 
     testTask "LeftJoin2" {        
@@ -385,7 +385,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
             LeftJoin ("Address", "PersonId", "Person.Id")
             LeftJoin ("Contact", "PersonId", "Person.Id")
         ] "Expected LEFT JOIN Address ON Person.Id = Address.PersonId"
-        Expect.equal query.Where (eq "Person.Id" 1 + eq "Address.PersonId" 2 + eq "Contact.Phone" "919-765-4321") "Expected all types in where clause"
+        Expect.equal query.Where (Legacy.eq "Person.Id" 1 + Legacy.eq "Address.PersonId" 2 + Legacy.eq "Contact.Phone" "919-765-4321") "Expected all types in where clause"
     }
 
     testTask "Join2 with Custom Schema and Table Names" {
@@ -411,7 +411,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
             InnerJoin ("dbo.Contacts", "PersonId", "dbo.People.Id")
         ] "Expected tables and columns to be fully qualified with schema and overriden table names"
         Expect.equal query.Where 
-            (eq "dbo.People.FName" "John" + eq "dbo.Addresses.City" "Chicago" + eq "dbo.Contacts.Phone" "919-765-4321") 
+            (Legacy.eq "dbo.People.FName" "John" + Legacy.eq "dbo.Addresses.City" "Chicago" + Legacy.eq "dbo.Contacts.Phone" "919-765-4321") 
             "Expected tables and columns to be fully qualified with schema and overriden table names"
         Expect.equal query.OrderBy [
             OrderBy ("dbo.People.Id", Desc)
@@ -443,7 +443,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
             LeftJoin ("dbo.Contacts", "PersonId", "dbo.People.Id")
         ] "Expected tables and columns to be fully qualified with schema and overriden table names"
         Expect.equal query.Where 
-            (eq "dbo.People.FName" "John" + eq "dbo.Addresses.City" "Chicago" + eq "dbo.Contacts.Phone" "919-765-4321") 
+            (Legacy.eq "dbo.People.FName" "John" + Legacy.eq "dbo.Addresses.City" "Chicago" + Legacy.eq "dbo.Contacts.Phone" "919-765-4321") 
             "Expected tables and columns to be fully qualified with schema and overriden table names"
         Expect.equal query.OrderBy [
             OrderBy ("dbo.People.Id", Asc)
@@ -537,7 +537,7 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
                 where (v.Id = System.Guid("c586871d-3329-4fca-a231-fd11203a937d"))
             }
 
-        Expect.equal query.Where (eq "Vehicle.Id" (System.Guid("c586871d-3329-4fca-a231-fd11203a937d"))) "Expected WHERE to contain a guid"
+        Expect.equal query.Where (Legacy.eq "Vehicle.Id" (System.Guid("c586871d-3329-4fca-a231-fd11203a937d"))) "Expected WHERE to contain a guid"
     }
 ]
 

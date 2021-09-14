@@ -12,6 +12,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Legacy.fs" />
     <Compile Include="Extensions.fs" />
     <Compile Include="Database.fs" />
     <Compile Include="MSSQL\Database.fs" />
@@ -20,11 +21,6 @@
     <Compile Include="MySQL\AggregatesTests.fs" />
     <Compile Include="PostgreSQL\Database.fs" />
     <Compile Include="PostgreSQL\AggregatesTests.fs" />
-    <Compile Include="DeleteTests.fs" />
-    <Compile Include="InsertTests.fs" />
-    <Compile Include="IssuesTests.fs" />
-    <Compile Include="UpdateTests.fs" />
-    <Compile Include="SelectTests.fs" />
     <Compile Include="LinqDeleteTests.fs" />
     <Compile Include="LinqInsertTests.fs" />
     <Compile Include="LinqUpdateTests.fs" />

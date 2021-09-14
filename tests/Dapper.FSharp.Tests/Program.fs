@@ -18,16 +18,16 @@ let mssqlTests connString =
     let crud = MSSQL.Database.getCrud conn
     let init = MSSQL.Database.getInitializer conn
     [
-        DeleteTests.testsBasic crud init
-        DeleteTests.testsOutput crud init
-        InsertTests.testsBasic crud init
-        InsertTests.testsOutput crud init
-        IssuesTests.testsBasic crud init
-        IssuesTests.testsOutput crud init
-        UpdateTests.testsBasic crud init
-        UpdateTests.testsOutput crud init
-        SelectTests.testsBasic crud init
-        MSSQL.AggregatesTests.tests conn
+        //DeleteTests.testsBasic crud init
+        //DeleteTests.testsOutput crud init
+        //InsertTests.testsBasic crud init
+        //InsertTests.testsOutput crud init
+        //IssuesTests.testsBasic crud init
+        //IssuesTests.testsOutput crud init
+        //UpdateTests.testsBasic crud init
+        //UpdateTests.testsOutput crud init
+        //SelectTests.testsBasic crud init
+        //MSSQL.AggregatesTests.tests conn
 
         // LINQ TEST
         LinqSelectTests.unitTests()
@@ -48,12 +48,12 @@ let mysqlTests connString =
     let crud = MySQL.Database.getCrud conn
     let init = MySQL.Database.getInitializer conn
     [
-        DeleteTests.testsBasic crud init
-        InsertTests.testsBasic crud init
-        IssuesTests.testsBasic crud init
-        UpdateTests.testsBasic crud init
-        SelectTests.testsBasic crud init
-        MySQL.AggregatesTests.tests conn
+        //DeleteTests.testsBasic crud init
+        //InsertTests.testsBasic crud init
+        //IssuesTests.testsBasic crud init
+        //UpdateTests.testsBasic crud init
+        //SelectTests.testsBasic crud init
+        //MySQL.AggregatesTests.tests conn
 
         // LINQ TEST
         LinqSelectTests.unitTests()
@@ -70,16 +70,16 @@ let postgresTests connString =
     let crud = PostgreSQL.Database.getCrud conn
     let init = PostgreSQL.Database.getInitializer conn
     [
-        DeleteTests.testsBasic crud init
-        DeleteTests.testsOutput crud init
-        InsertTests.testsBasic crud init
-        InsertTests.testsOutput crud init
-        IssuesTests.testsBasic crud init
-        IssuesTests.testsOutput crud init
-        UpdateTests.testsBasic crud init
-        UpdateTests.testsOutput crud init
-        SelectTests.testsBasic crud init
-        PostgreSQL.AggregatesTests.tests conn
+        //DeleteTests.testsBasic crud init
+        //DeleteTests.testsOutput crud init
+        //InsertTests.testsBasic crud init
+        //InsertTests.testsOutput crud init
+        //IssuesTests.testsBasic crud init
+        //IssuesTests.testsOutput crud init
+        //UpdateTests.testsBasic crud init
+        //UpdateTests.testsOutput crud init
+        //SelectTests.testsBasic crud init
+        //PostgreSQL.AggregatesTests.tests conn
 
         // LINQ TEST
         LinqSelectTests.unitTests()
