@@ -196,6 +196,10 @@ let rec unwrapListExpr (lstValues: obj list, lstExp: MethodCallExpression) =
     else 
         lstValues
 
+let private column name whereComp = Where.Column(name, whereComp)
+let private like name (str:string) = column name (Like str)
+let private notLike name (str:string) = column name (NotLike str)
+
 let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberInfo -> string) =
     let rec visit (exp: Expression) : Where =
         match exp with

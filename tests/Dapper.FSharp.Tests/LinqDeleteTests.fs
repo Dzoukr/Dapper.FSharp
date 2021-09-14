@@ -1,7 +1,7 @@
 ﻿module Dapper.FSharp.Tests.LinqDeleteTests
 
 open Dapper.FSharp
-open Dapper.FSharp.LinqBuilders
+open Dapper.FSharp.Builders
 open Dapper.FSharp.Tests.Database
 open Expecto
 
