@@ -285,7 +285,25 @@ let visitGroupBy<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) (qua
 
     visit (propertySelector :> Expression)
 
-/// Returns a fully qualified column name: "{schema}.{table}.{column}"
+/// Returns one or more column members
+let visitJoin<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) =
+    let rec visit (exp: Expression) : MemberInfo list =
+        match exp with
+        | Lambda x -> visit x.Body
+        | MethodCall m when m.Method.Name = "Invoke" ->
+            // Handle tuples
+            visit m.Object
+        | New n -> 
+            // Handle groupBy that returns a tuple of multiple columns
+            n.Arguments |> Seq.map visit |> Seq.toList |> List.collect id
+        | Member m -> [ m.Member ] // Handle simple properties
+        | Property mi -> [ mi ]     // Handle options
+        | _ -> notImpl()
+
+    visit (propertySelector :> Expression)
+
+
+/// Returns a column member
 let visitPropertySelector<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) =
     let rec visit (exp: Expression) : MemberInfo =
         match exp with

@@ -33,6 +33,18 @@ type Vehicle = {
     Model: string
 }
 
+type MultiJoinLeft = {
+    Key1: int
+    Key2: int64
+    LeftName: string
+}
+
+type MultiJoinRight = {
+    Key1: int
+    Key2: int64
+    RightName: string
+}
+
 let unitTests() = testList "LINQ SELECT UNIT TESTS" [
     
     testTask "Most Simple Query" {
@@ -358,6 +370,32 @@ let unitTests() = testList "LINQ SELECT UNIT TESTS" [
             InnerJoin ("Address", "PersonId", "Person.Id")
             InnerJoin ("Contact", "PersonId", "Person.Id")
         ] "Expected INNER JOIN Address ON Person.Id = Address.PersonId"
+    }
+
+    testTask "Inner Join Multi-Column" {
+        let query = 
+            select {
+                for l in table<MultiJoinLeft> do
+                innerJoin r in table<MultiJoinRight> on ((l.Key1, l.Key2) = (r.Key1, r.Key2)) 
+                selectAll
+            }
+
+        Expect.equal query.Joins [
+            InnerJoinOnMany ("MultiJoinRight", ["Key1", "MultiJoinLeft.Key1"; "Key2", "MultiJoinLeft.Key2"])
+        ] ""
+    }
+
+    testTask "Left Join Multi-Column" {
+        let query = 
+            select {
+                for l in table<MultiJoinLeft> do
+                leftJoin r in table<MultiJoinRight> on ((l.Key1, l.Key2) = (r.Key1, r.Key2)) 
+                selectAll
+            }
+
+        Expect.equal query.Joins [
+            LeftJoinOnMany ("MultiJoinRight", ["Key1", "MultiJoinLeft.Key1"; "Key2", "MultiJoinLeft.Key2"])
+        ] ""
     }
 
     testTask "LeftJoin" {
