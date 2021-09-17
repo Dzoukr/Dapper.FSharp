@@ -216,7 +216,7 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT - AGGREGATES" [
                 for p in persons do
                 leftJoin d in dogs on (p.Id = d.OwnerId)
                 count "Persons.Position" "Count"
-                groupBy [p.Id, p.Position, d.OwnerId]
+                groupBy (p.Id, p.Position, d.OwnerId)
                 orderBy p.Position
             }
             |> conn.SelectAsync<{| Id: System.Guid; Position:int; Count:int |}, {| OwnerId : System.Guid |}>
