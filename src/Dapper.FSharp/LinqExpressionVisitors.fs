@@ -196,10 +196,6 @@ let rec unwrapListExpr (lstValues: obj list, lstExp: MethodCallExpression) =
     else 
         lstValues
 
-let private column name whereComp = Where.Column(name, whereComp)
-let private like name (str:string) = column name (Like str)
-let private notLike name (str:string) = column name (NotLike str)
-
 let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberInfo -> string) =
     let rec visit (exp: Expression) : Where =
         match exp with
@@ -225,8 +221,8 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
             | Property p, Value value -> 
                 let pattern = string value
                 match m.Method.Name with
-                | "like" | "op_EqualsPercent" -> like (qualifyColumn p) pattern
-                | _ -> notLike (qualifyColumn p) pattern
+                | "like" | "op_EqualsPercent" -> Column ((qualifyColumn p), (Like pattern))
+                | _ -> Column ((qualifyColumn p), (NotLike pattern))
             | _ -> notImpl()
         | MethodCall m when m.Method.Name = "isNullValue" || m.Method.Name = "isNotNullValue" ->
             match m.Arguments.[0] with

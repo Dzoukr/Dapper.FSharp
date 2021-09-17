@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <LangVersion>preview</LangVersion>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <None Include="local.settings.json" Condition="Exists('local.settings.json')">
@@ -20,15 +20,12 @@
     <Compile Include="MySQL\AggregatesTests.fs" />
     <Compile Include="PostgreSQL\Database.fs" />
     <Compile Include="PostgreSQL\AggregatesTests.fs" />
+    <Compile Include="IssuesTests.fs" />
+    <Compile Include="SelectQueryBuilderTests.fs" />
     <Compile Include="DeleteTests.fs" />
     <Compile Include="InsertTests.fs" />
-    <Compile Include="IssuesTests.fs" />
     <Compile Include="UpdateTests.fs" />
     <Compile Include="SelectTests.fs" />
-    <Compile Include="LinqDeleteTests.fs" />
-    <Compile Include="LinqInsertTests.fs" />
-    <Compile Include="LinqUpdateTests.fs" />
-    <Compile Include="LinqSelectTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
