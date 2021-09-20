@@ -12,3 +12,10 @@ services:
       - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: dapperfsharp
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    ports:
+      - "1433:1433"
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: yourStrong(!)Password
