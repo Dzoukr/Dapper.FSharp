@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>Dapper.FSharp</PackageId>
     <Description>Lightweight F# extension for StackOverflow Dapper with support for MSSQL, MySQL and PostgreSQL</Description>
@@ -10,7 +10,7 @@
     <PackageIconUrl>https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png</PackageIconUrl>
     <PackageTags>fsharp;dapper;linq;database;mssql;mysql;postgresql</PackageTags>
     <Authors>Roman Provazník;Jordan Marr</Authors>
-    <Version>2.4.1</Version>
+    <Version>3.0.0-beta1</Version>
     <PackageReleaseNotes>Supported optional column.Value syntax for left side properties. #47</PackageReleaseNotes>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>

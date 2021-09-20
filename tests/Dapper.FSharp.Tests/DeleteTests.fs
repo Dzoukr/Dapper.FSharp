@@ -1,28 +1,31 @@
 ﻿module Dapper.FSharp.Tests.DeleteTests
 
 open Dapper.FSharp
+open Dapper.FSharp.Builders
 open Dapper.FSharp.Tests.Database
 open Expecto
 
 let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "DELETE" [
+
+    let personsView = table'<Persons.View> "Persons"
     
     testTask "Deletes single records" {
         do! init.InitPersons()
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                into personsView
                 values rs
             } |> crud.InsertAsync
         let! _ =
             delete {
-                table "Persons"
-                where (eq "Position" 10)
+                for p in personsView do
+                where (p.Position = 10)
             } |> crud.DeleteAsync
         let! fromDb =
             select {
-                table "Persons"
-                orderBy "Position" Desc
+                for p in personsView do
+                orderByDescending p.Position
             } |> crud.SelectAsync<Persons.View>
         Expect.equal 9 (Seq.length fromDb) ""
         Expect.equal 9 (fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position) ""
@@ -33,18 +36,19 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "DELETE" [
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                into personsView
                 values rs
             } |> crud.InsertAsync
         let! _ =
             delete {
-                table "Persons"
-                where (ge "Position" 7)
+                for p in personsView do
+                where (p.Position >= 7)
             } |> crud.DeleteAsync
 
         let! fromDb =
             select {
-                table "Persons"
+                for p in personsView do
+                selectAll
             } |> crud.SelectAsync<Persons.View>
         Expect.equal 6 (Seq.length fromDb) ""
     }
@@ -52,18 +56,21 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "DELETE" [
 
 let testsOutput (crud:ICrudOutput) (init:ICrudInitializer) = testList "DELETE OUTPUT" [
     
+    let personsView = table'<Persons.View> "Persons"
+
+
     testTask "Deletes and outputs single record" {
         do! init.InitPersons()
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                into personsView
                 values rs
             } |> crud.InsertAsync
         let! fromDb =
             delete {
-                table "Persons"
-                where (eq "Position" 10)
+                for p in personsView do
+                where (p.Position = 10)
             } |> crud.DeleteOutputAsync<Persons.View>
         Expect.equal 1 (Seq.length fromDb) ""
         Expect.equal 10 (fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position) ""
@@ -74,16 +81,15 @@ let testsOutput (crud:ICrudOutput) (init:ICrudInitializer) = testList "DELETE OU
         let rs = Persons.View.generate 10
         let! insertedPersonIds =
             insert {
-                table "Persons"
+                into personsView
                 values rs
             } |> crud.InsertOutputAsync
         let personIds = insertedPersonIds |> Seq.map (fun (p:{| Id:System.Guid |}) -> p.Id) |> Seq.toList
-        let boxedPersonIds = personIds |> List.map box |> Seq.toList
 
         let! deleted =
             delete {
-                table "Persons"
-                where (isIn "Id" boxedPersonIds)
+                for p in personsView do
+                where (isIn p.Id personIds)
             } |> crud.DeleteOutputAsync<Persons.View>
         Expect.hasLength deleted 10 ""
         deleted |> Seq.iter (fun (p:Persons.View) ->
