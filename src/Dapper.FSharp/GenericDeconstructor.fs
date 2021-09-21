@@ -67,7 +67,7 @@ let private _update evalUpdateQuery (q:UpdateQuery<_>) fields (outputFields:stri
     let values = 
         match q.Value with
         | Some value -> Reflection.getValuesForFields fields value |> List.map Reflection.boxify
-        | None -> q.SetColumns |> List.map snd
+        | None -> q.SetColumns |> List.map (snd >> Reflection.boxify)
     // extract metadata
     let meta = WhereAnalyzer.getWhereMetadata [] q.Where
     let pars = (WhereAnalyzer.extractWhereParams meta) @ (List.zip fields values) |> Map.ofList

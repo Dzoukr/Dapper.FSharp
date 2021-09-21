@@ -112,7 +112,7 @@ let testsOutput (crud:ICrudOutput) (init:ICrudInitializer) = testList "LINQ UPDA
     
     let personsView = table'<Persons.View> "Persons"
 
-    ftestTask "Updates option field to Some" {
+    testTask "Updates option field to Some" {
         do! init.InitPersons()
         let rs = Persons.View.generate 10 |> List.map (fun p -> { p with DateOfBirth = None })
         let! _ =
@@ -130,7 +130,7 @@ let testsOutput (crud:ICrudOutput) (init:ICrudInitializer) = testList "LINQ UPDA
         Expect.equal 2 (fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position) ""
     }
     
-    ftestTask "Updates and outputs single record" {
+    testTask "Updates and outputs single record" {
         do! init.InitPersons()
         let rs = Persons.View.generate 10
         let! _ =
