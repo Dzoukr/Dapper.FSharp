@@ -435,12 +435,13 @@ type UpdateExpressionBuilder<'T>() =
     member this.Yield _ =
         QuerySource<'T>(Map.empty)
 
-    /// Sets the SET of value ('T) to UPDATE
+    /// Sets a record to UPDATE
     [<CustomOperation("set", MaintainsVariableSpace = true)>]
     member this.Set (state: QuerySource<'T>, value: 'T) = 
         let query = state |> getQueryOrDefault
         QuerySource<'T, UpdateQuery<'T>>({ query with Value = Some value }, state.TableMappings)
 
+    /// Sets an individual column to UPDATE
     [<CustomOperation("setColumn", MaintainsVariableSpace = true)>]
     member this.SetColumn (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector: Expression<Func<'T, 'Prop>>, value: 'Prop) = 
         let query = state |> getQueryOrDefault
