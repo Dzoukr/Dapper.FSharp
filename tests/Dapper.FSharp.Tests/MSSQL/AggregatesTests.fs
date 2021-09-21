@@ -144,9 +144,9 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT - AGGREGATES" [
         Expect.equal 10 fromDb.Head.Value ""
     }
     
-//    testTask "Select distinct" {
-//        do! Persons.init conn
-//        do! Dogs.init conn
+    testTask "Select distinct" {
+        do! Persons.init conn
+        do! Dogs.init conn
 
         let ps = Persons.View.generate 10
         let ds = Dogs.View.generate1toN 5 ps.Head
@@ -170,8 +170,8 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT - AGGREGATES" [
             |> conn.SelectAsync<{| FirstName:string |}>
             |> taskToList
 
-//        Expect.equal 10 fromDb.Length ""
-//    }
+        Expect.equal 10 fromDb.Length ""
+    }
     
     testTask "Selects with multiple aggregate functions" {
         do! Persons.init conn
@@ -190,13 +190,13 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT - AGGREGATES" [
             |> conn.SelectAsync<{| MaxValue : int; MinValue : int |}>
             |> taskToList
 
-//        Expect.equal 10 fromDb.Head.MaxValue ""
-//        Expect.equal 1 fromDb.Head.MinValue ""
-//    }
+        Expect.equal 10 fromDb.Head.MaxValue ""
+        Expect.equal 1 fromDb.Head.MinValue ""
+    }
     
-//    testTask "Select group by aggregate" {
-//        do! Persons.init conn
-//        do! Dogs.init conn
+    testTask "Select group by aggregate" {
+        do! Persons.init conn
+        do! Dogs.init conn
 
         let px = Persons.View.generate 10
         let ds = Dogs.View.generate1toN 5 px.Head
@@ -223,8 +223,8 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT - AGGREGATES" [
             |> taskToList
             |> List.head
             
-//        Expect.equal 5 one.Count ""
-//        Expect.equal 1 one.Position ""
-//        Expect.equal one.Id two.OwnerId ""
-//    } 
-//]
+        Expect.equal 5 one.Count ""
+        Expect.equal 1 one.Position ""
+        Expect.equal one.Id two.OwnerId ""
+    } 
+]
