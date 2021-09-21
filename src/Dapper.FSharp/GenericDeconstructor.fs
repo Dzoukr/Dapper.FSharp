@@ -64,7 +64,10 @@ let insertOutput<'Input, 'Output> evalInsertQuery (q:InsertQuery<'Input>) =
     _insert evalInsertQuery q fields outputFields
 
 let private _update evalUpdateQuery (q:UpdateQuery<_>) fields (outputFields:string list) =
-    let values = Reflection.getValuesForFields fields q.Value |> List.map Reflection.boxify
+    let values = 
+        match q.Value with
+        | Some value -> Reflection.getValuesForFields fields q.Value |> List.map Reflection.boxify
+        | None -> q.SetColumns |> List.map snd
     // extract metadata
     let meta = WhereAnalyzer.getWhereMetadata [] q.Where
     let pars = (WhereAnalyzer.extractWhereParams meta) @ (List.zip fields values) |> Map.ofList
@@ -72,17 +75,19 @@ let private _update evalUpdateQuery (q:UpdateQuery<_>) fields (outputFields:stri
     query, pars
     
 let update<'a> evalUpdateQuery (q:UpdateQuery<'a>) =
-    let fields = 
-        match q.Fields with
-        | [] -> typeof<'a> |> Reflection.getFields
-        | fields -> fields
+    let fields =
+        match q.Value, q.Fields, q.SetColumns with
+        | Some _, [], _ -> typeof<'a> |> Reflection.getFields
+        | Some _, fields, _ -> fields
+        | None, _, setCols -> setCols |> List.map fst
     _update evalUpdateQuery q fields [] 
     
 let updateOutput<'Input, 'Output> evalUpdateQuery (q:UpdateQuery<'Input>) =
     let fields = 
-        match q.Fields with
-        | [] -> typeof<'Input> |> Reflection.getFields
-        | fields -> fields
+        match q.Value, q.Fields, q.SetColumns with
+        | Some _, [], _ -> typeof<'Input> |> Reflection.getFields
+        | Some _, fields, _ -> fields
+        | None, _, setCols -> setCols |> List.map fst
     let outputFields = typeof<'Output> |> Reflection.getFields
     _update evalUpdateQuery q fields outputFields 
 
