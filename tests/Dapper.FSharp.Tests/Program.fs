@@ -71,7 +71,7 @@ let postgresTests connString =
 [<EntryPoint>]
 let main argv =
 
-    let conf = (ConfigurationBuilder()).AddJsonFile("local.settings.json").Build()
+    let conf = (ConfigurationBuilder()).AddJsonFile("settings.json").Build()
     Dapper.FSharp.OptionTypes.register()
     [
         conf.["mssqlConnectionString"] |> mssqlTests
