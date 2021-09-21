@@ -66,7 +66,7 @@ let insertOutput<'Input, 'Output> evalInsertQuery (q:InsertQuery<'Input>) =
 let private _update evalUpdateQuery (q:UpdateQuery<_>) fields (outputFields:string list) =
     let values = 
         match q.Value with
-        | Some value -> Reflection.getValuesForFields fields q.Value |> List.map Reflection.boxify
+        | Some value -> Reflection.getValuesForFields fields value |> List.map Reflection.boxify
         | None -> q.SetColumns |> List.map snd
     // extract metadata
     let meta = WhereAnalyzer.getWhereMetadata [] q.Where
