@@ -508,6 +508,23 @@ let tests = testList "SELECT QUERY BUILDER" [
             InnerJoin ("dbo.Addresses", "City", "dbo.People.MI")
         ] "Expected that option column (MI) should be unwrapped."
     }
+    
+    testTask "Join On Value Bug Fix Test" {
+        let personTable = table'<Person> "People" |> inSchema "dbo"
+        let addressTable = table'<Address> "Addresses" |> inSchema "dbo"
+    
+        // This is a nonsensical join, but the point is to test joining on an optional property `.Value` (p.MI.Value)
+        let query = 
+            select {
+                for p in personTable do
+                innerJoin a in addressTable on (p.MI.Value = a.City) 
+                selectAll
+            }
+    
+        Expect.equal query.Joins [
+            InnerJoin ("dbo.Addresses", "City", "dbo.People.MI")
+        ] "Expected that option column (MI) should be unwrapped."
+    }
 
     testTask "Inner Join Multi-Column" {
         let query = 
