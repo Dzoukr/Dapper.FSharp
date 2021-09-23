@@ -30,7 +30,7 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "UPDATE" [
         let! _ =
             update {
                 for p in personsView do
-                set {| LastName = "UPDATED" |}
+                setColumn p.LastName "UPDATED"
                 where (p.Position = 2)
             } |> crud.UpdateAsync
         let! fromDb =
@@ -53,7 +53,7 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "UPDATE" [
         let! _ =
             update {
                 for p in personsView do
-                set {| DateOfBirth = None |}
+                setColumn p.DateOfBirth None
                 where (p.Position = 2)
             } |> crud.UpdateAsync
         let! fromDb =
@@ -76,7 +76,7 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "UPDATE" [
         let! _ =
             update {
                 for p in personsView do
-                set {| LastName = "UPDATED" |}
+                setColumn p.LastName "UPDATED"
                 where (p.Position > 7)
             } |> crud.UpdateAsync
 
@@ -123,7 +123,7 @@ let testsOutput (crud:ICrudOutput) (init:ICrudInitializer) = testList "LINQ UPDA
         let! fromDb =
             update {
                 for p in personsView do
-                set {| DateOfBirth = Some System.DateTime.UtcNow |}
+                setColumn p.DateOfBirth (Some System.DateTime.UtcNow)
                 where (p.Position = 2)
             } |> crud.UpdateOutputAsync
         Expect.isSome (fromDb |> Seq.head |> fun (x:Persons.View) -> x.DateOfBirth) ""
@@ -141,9 +141,10 @@ let testsOutput (crud:ICrudOutput) (init:ICrudInitializer) = testList "LINQ UPDA
         let! fromDb =
             update {
                 for p in personsView do
-                set {| LastName = "UPDATED" |}
+                setColumn p.LastName "UPDATED"
                 where (p.Position = 2)
-            } |> crud.UpdateOutputAsync<{| LastName:string |}, Persons.View> // Example how to explicitly declare types
+            //} |> crud.UpdateOutputAsync<{| LastName:string |}, Persons.View> // Example how to explicitly declare types
+            } |> crud.UpdateOutputAsync
         Expect.equal "UPDATED" (fromDb |> Seq.head |> fun (x:Persons.View) -> x.LastName) ""
         Expect.equal 2 (fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position) ""
     }
@@ -160,7 +161,7 @@ let testsOutput (crud:ICrudOutput) (init:ICrudInitializer) = testList "LINQ UPDA
         let! updated =
             update {
                 for p in personsView do
-                set {| LastName = "UPDATED" |}
+                setColumn p.LastName "UPDATED"
                 where (isIn p.Id personIds)
             } |> crud.UpdateOutputAsync // If we specify the output type after, we dont need to specify it here
         Expect.hasLength updated 10 ""
@@ -180,7 +181,7 @@ let testsOutput (crud:ICrudOutput) (init:ICrudInitializer) = testList "LINQ UPDA
         let! fromDb =
             update {
                 for p in personsView do
-                set {| LastName = "UPDATED" |}
+                setColumn p.LastName "UPDATED"
                 where (p.Position = 2)
             } |> crud.UpdateOutputAsync
         let pos2Id = rs |> List.pick (fun p -> if p.Position = 2 then Some p.Id else None)
@@ -198,7 +199,7 @@ let testsOutput (crud:ICrudOutput) (init:ICrudInitializer) = testList "LINQ UPDA
         let! fromDb =
             update {
                 for p in personsView do
-                set {| DateOfBirth = None |}
+                setColumn p.DateOfBirth None
                 where (p.Position = 2)
             } |> crud.UpdateOutputAsync
         Expect.isNone (fromDb |> Seq.head |> fun (x:Persons.View) -> x.DateOfBirth) ""
@@ -216,7 +217,7 @@ let testsOutput (crud:ICrudOutput) (init:ICrudInitializer) = testList "LINQ UPDA
         let! fromDb =
             update {
                 for p in personsView do
-                set {| DateOfBirth = Some System.DateTime.UtcNow |}
+                setColumn p.DateOfBirth (Some System.DateTime.UtcNow)
                 where (p.Position = 2)
             } |> crud.UpdateOutputAsync
         Expect.isSome (fromDb |> Seq.head |> fun (x:Persons.View) -> x.DateOfBirth) ""

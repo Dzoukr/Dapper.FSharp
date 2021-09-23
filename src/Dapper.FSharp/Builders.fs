@@ -159,19 +159,33 @@ type SelectExpressionBuilder<'T>() =
                       resultSelector: Expression<Func<'TOuter,'TInner,'Result>> ) = 
 
         let mergedTables = mergeTableMappings (outerSource.TableMappings, innerSource.TableMappings)
-        let outerPropertyName = LinqExpressionVisitors.visitPropertySelector<'TOuter, 'Key> outerKeySelector |> fullyQualifyColumn mergedTables
-        
-        // Do not fully qualify inner column name because Dapper.FSharp later appends "{innerTableName}.{innerPropertyName}"
-        let innerProperty = LinqExpressionVisitors.visitPropertySelector<'TInner, 'Key> innerKeySelector
-        let innerTableName = 
-            let tbl = mergedTables.[fqName innerProperty.DeclaringType]
-            match tbl.Schema with
-            | Some schema -> sprintf "%s.%s" schema tbl.Name
-            | None -> tbl.Name
+        let innerProperties = LinqExpressionVisitors.visitJoin<'TInner, 'Key> innerKeySelector
+        let outerProperties = LinqExpressionVisitors.visitJoin<'TOuter, 'Key> outerKeySelector
 
-        let join = InnerJoin (innerTableName, innerProperty.Name, outerPropertyName)
-        let outerQuery = outerSource |> getQueryOrDefault
-        QuerySource<'Result, SelectQuery>({ outerQuery with Joins = outerQuery.Joins @ [join] }, mergedTables)
+        let innerTableName = 
+            innerProperties 
+            |> List.map (fun p -> mergedTables.[fqName p.DeclaringType])
+            |> List.map (fun tbl -> 
+                match tbl.Schema with
+                | Some schema -> sprintf "%s.%s" schema tbl.Name
+                | None -> tbl.Name
+            )
+            |> List.head
+
+        match innerProperties, outerProperties with
+        | [innerProperty], [outerProperty] -> 
+            // Only only fully qualify outer column (because Dapper.FSharp later appends "{innerTableName}.{innerPropertyName}")
+            let join = InnerJoin (innerTableName, innerProperty.Name, outerProperty |> fullyQualifyColumn mergedTables)
+            let outerQuery = outerSource |> getQueryOrDefault
+            QuerySource<'Result, SelectQuery>({ outerQuery with Joins = outerQuery.Joins @ [join] }, mergedTables)
+        | _ -> 
+            // Only only fully qualify outer column (because Dapper.FSharp later appends "{innerTableName}.{innerPropertyName}")
+            let joinPairs = 
+                List.zip innerProperties outerProperties 
+                |> List.map (fun (innerProp, outerProp) -> innerProp.Name, outerProp |> fullyQualifyColumn mergedTables)
+            let join = InnerJoinOnMany (innerTableName, joinPairs)
+            let outerQuery = outerSource |> getQueryOrDefault
+            QuerySource<'Result, SelectQuery>({ outerQuery with Joins = outerQuery.Joins @ [join] }, mergedTables)
 
     /// LEFT JOIN table where COLNAME equals to another COLUMN (including TABLE name)
     [<CustomOperation("leftJoin", MaintainsVariableSpace = true, IsLikeJoin = true, JoinConditionWord = "on")>]
@@ -182,19 +196,33 @@ type SelectExpressionBuilder<'T>() =
                           resultSelector: Expression<Func<'TOuter,'TInner,'Result>> ) = 
 
         let mergedTables = mergeTableMappings (outerSource.TableMappings, innerSource.TableMappings)
-        let outerPropertyName = LinqExpressionVisitors.visitPropertySelector<'TOuter, 'Key> outerKeySelector |> fullyQualifyColumn mergedTables
-        
-        // Do not fully qualify inner column name because Dapper.FSharp later appends "{innerTableName}.{innerPropertyName}"
-        let innerProperty = LinqExpressionVisitors.visitPropertySelector<'TInner, 'Key> innerKeySelector
-        let innerTableName = 
-            let tbl = mergedTables.[fqName innerProperty.DeclaringType]
-            match tbl.Schema with
-            | Some schema -> sprintf "%s.%s" schema tbl.Name
-            | None -> tbl.Name
+        let innerProperties = LinqExpressionVisitors.visitJoin<'TInner, 'Key> innerKeySelector
+        let outerProperties = LinqExpressionVisitors.visitJoin<'TOuter, 'Key> outerKeySelector
 
-        let join = LeftJoin (innerTableName, innerProperty.Name, outerPropertyName)
-        let outerQuery = outerSource |> getQueryOrDefault
-        QuerySource<'Result, SelectQuery>({ outerQuery with Joins = outerQuery.Joins @ [join] }, mergedTables)
+        let innerTableName = 
+            innerProperties 
+            |> List.map (fun p -> mergedTables.[fqName p.DeclaringType])
+            |> List.map (fun tbl -> 
+                match tbl.Schema with
+                | Some schema -> sprintf "%s.%s" schema tbl.Name
+                | None -> tbl.Name
+            )
+            |> List.head
+
+        match innerProperties, outerProperties with
+        | [innerProperty], [outerProperty] -> 
+            // Only only fully qualify outer column (because Dapper.FSharp later appends "{innerTableName}.{innerPropertyName}")
+            let join = LeftJoin (innerTableName, innerProperty.Name, outerProperty |> fullyQualifyColumn mergedTables)
+            let outerQuery = outerSource |> getQueryOrDefault
+            QuerySource<'Result, SelectQuery>({ outerQuery with Joins = outerQuery.Joins @ [join] }, mergedTables)
+        | _ -> 
+            // Only only fully qualify outer column (because Dapper.FSharp later appends "{innerTableName}.{innerPropertyName}")
+            let joinPairs = 
+                List.zip innerProperties outerProperties 
+                |> List.map (fun (innerProp, outerProp) -> innerProp.Name, outerProp |> fullyQualifyColumn mergedTables)
+            let join = LeftJoinOnMany (innerTableName, joinPairs)
+            let outerQuery = outerSource |> getQueryOrDefault
+            QuerySource<'Result, SelectQuery>({ outerQuery with Joins = outerQuery.Joins @ [join] }, mergedTables)
 
     /// Sets the GROUP BY for one or more columns.
     [<CustomOperation("groupBy", MaintainsVariableSpace = true)>]
@@ -386,45 +414,53 @@ type InsertExpressionBuilder<'T>() =
     member this.Run (state: QuerySource<'T>) =
         state |> getQueryOrDefault
 
-type UpdateExpressionBuilder<'T, 'U>() =
+type UpdateExpressionBuilder<'T>() =
     
     let getQueryOrDefault (state: QuerySource<'Result>) =
         match state with
-        | :? QuerySource<'Result, UpdateQuery<'U>> as qs -> qs.Query
+        | :? QuerySource<'Result, UpdateQuery<'T>> as qs -> qs.Query
         | _ -> 
             { Schema = None
               Table = ""
-              Value = Unchecked.defaultof<'U>
+              Value = None
+              SetColumns = []
               Fields = []
-              Where = Where.Empty } : UpdateQuery<'U>
+              Where = Where.Empty } : UpdateQuery<'T>
 
     member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
         let tbl = state.GetOuterTableMapping()
         let query = state |> getQueryOrDefault
-        QuerySource<'T, UpdateQuery<'U>>({ query with Table = tbl.Name; Schema = tbl.Schema }, state.TableMappings)
+        QuerySource<'T, UpdateQuery<'T>>({ query with Table = tbl.Name; Schema = tbl.Schema }, state.TableMappings)
 
     member this.Yield _ =
         QuerySource<'T>(Map.empty)
 
-    /// Sets the SET of value ('U) to UPDATE
+    /// Sets a record to UPDATE
     [<CustomOperation("set", MaintainsVariableSpace = true)>]
-    member this.Set (state: QuerySource<'T>, value: 'U) = 
+    member this.Set (state: QuerySource<'T>, value: 'T) = 
         let query = state |> getQueryOrDefault
-        QuerySource<'T, UpdateQuery<'U>>({ query with Value = value }, state.TableMappings)
+        QuerySource<'T, UpdateQuery<'T>>({ query with Value = Some value }, state.TableMappings)
+
+    /// Sets an individual column to UPDATE
+    [<CustomOperation("setColumn", MaintainsVariableSpace = true)>]
+    member this.SetColumn (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector: Expression<Func<'T, 'Prop>>, value: 'Prop) = 
+        let query = state |> getQueryOrDefault
+        let prop = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector :?> Reflection.PropertyInfo
+        QuerySource<'T, UpdateQuery<'T>>({ query with SetColumns = query.SetColumns @ [ prop.Name, box value ] }, state.TableMappings)
 
     /// Includes a column in the update query.
     [<CustomOperation("includeColumn", MaintainsVariableSpace = true)>]
     member this.IncludeColumn (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let query = state |> getQueryOrDefault
-        let prop = LinqExpressionVisitors.visitPropertySelector<'U, 'Prop> propertySelector
+        let prop = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector
         let newQuery = { query with Fields = (query.Fields @ [prop.Name]) }
-        QuerySource<'T, UpdateQuery<'U>>(newQuery, state.TableMappings)
+        QuerySource<'T, UpdateQuery<'T>>(newQuery, state.TableMappings)
 
     /// Excludes a column from the update query.
     [<CustomOperation("excludeColumn", MaintainsVariableSpace = true)>]
     member this.ExcludeColumn (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let query = state |> getQueryOrDefault
-        let prop = LinqExpressionVisitors.visitPropertySelector<'U, 'Prop> propertySelector
+        let prop = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector
         let newQuery = 
             query.Fields
             |> function
@@ -432,14 +468,14 @@ type UpdateExpressionBuilder<'T, 'U>() =
                 | fields -> fields
             |> List.filter (fun f -> f <> prop.Name)
             |> (fun x -> { query with Fields = x })
-        QuerySource<'T, UpdateQuery<'U>>(newQuery, state.TableMappings)
+        QuerySource<'T, UpdateQuery<'T>>(newQuery, state.TableMappings)
 
     /// Sets the WHERE condition
     [<CustomOperation("where", MaintainsVariableSpace = true)>]
     member this.Where (state: QuerySource<'T>, [<ProjectionParameter>] whereExpression) = 
         let query = state |> getQueryOrDefault
         let where = LinqExpressionVisitors.visitWhere<'T> whereExpression (fullyQualifyColumn state.TableMappings)
-        QuerySource<'T, UpdateQuery<'U>>({ query with Where = where }, state.TableMappings)
+        QuerySource<'T, UpdateQuery<'T>>({ query with Where = where }, state.TableMappings)
 
     /// Unwraps the query
     member this.Run (state: QuerySource<'T>) =
@@ -448,7 +484,7 @@ type UpdateExpressionBuilder<'T, 'U>() =
 let select<'T> = SelectExpressionBuilder<'T>()
 let delete<'T> = DeleteExpressionBuilder<'T>()
 let insert<'T> = InsertExpressionBuilder<'T>()
-let update<'T, 'U> = UpdateExpressionBuilder<'T, 'U>()
+let update<'T> = UpdateExpressionBuilder<'T>()
 
 /// WHERE column is IN values
 let isIn<'P> (prop: 'P) (values: 'P list) = true
