@@ -1,4 +1,4 @@
-﻿# Dapper.FSharp [![NuGet](https://img.shields.io/nuget/v/Dapper.FSharp.svg?style=flat)](https://www.nuget.org/packages/Dapper.FSharp/)
+﻿# Dapper.FSharp (pre-v3 release docs) [![NuGet](https://img.shields.io/nuget/v/Dapper.FSharp.svg?style=flat)](https://www.nuget.org/packages/Dapper.FSharp/)
 
 <p align="center">
 <img src="https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png" width="150px"/>
