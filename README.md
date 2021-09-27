@@ -30,6 +30,7 @@ or using [Paket](http://fsprojects.github.io/Paket/getting-started.html)
 ## What's new in v3?
 3rd version is rather an evolution, than revolution. The major concern was to keep the library maintainable with low possible effort while providing the best type safety. Hence version 3 contains two major (breaking) changes:
 - Old API has been dropped in favor of LINQ (watch out for namespace change - `Dapper.FSharp.LinqBuilders` are no more)
+- `join` has been renamed to `innerJoin`
 - Minimal supported version is `NET 5.0`
 
 If you still need/want to use `v2.0`, follow the [Version 2 docs](README_v2.md).
