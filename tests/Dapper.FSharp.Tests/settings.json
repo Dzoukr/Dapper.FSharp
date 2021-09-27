@@ -1,5 +1,5 @@
 {
-	"mssqlConnectionString": "data source=localhost,1433;User Id=sa;Password=yourStrong(!)Password;",
-	"mysqlConnectionString": "server=localhost;Port=3306;Uid=root;Pwd=dapperfsharp;",
-	"postgresConnectionString": "Server=localhost;Port=5432;User Id=postgres;Password=dapperfsharp;"
+  "mssqlConnectionString": "User Id=SA;Password=yourStrong(!)Password;data source=localhost",
+  "mysqlConnectionString": "User Id=root;Password=dapperfsharp;Host=localhost",
+  "postgresConnectionString": "User Id=postgres;Password=dapperfsharp;Host=localhost"
 }

@@ -10,8 +10,8 @@
     <PackageIconUrl>https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png</PackageIconUrl>
     <PackageTags>fsharp;dapper;linq;database;mssql;mysql;postgresql</PackageTags>
     <Authors>Roman Provazník;Jordan Marr</Authors>
-    <Version>3.0.0-beta1</Version>
-    <PackageReleaseNotes>Supported optional column.Value syntax for left side properties. #47</PackageReleaseNotes>
+    <Version>3.0.0</Version>
+    <PackageReleaseNotes>Releasing version 3.0</PackageReleaseNotes>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <DebugType>embedded</DebugType>
