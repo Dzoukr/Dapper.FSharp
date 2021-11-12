@@ -264,13 +264,29 @@ select {
 } |> conn.SelectAsync<Person>
 ```
 
-NOTE: The forward pipe `|>` operator in your query expressions because it's not implemented, so don't do it (unless you like exceptions)!
+NOTE: Do not use the forward pipe `|>` operator in your query expressions because it's not implemented, so don't do it (unless you like exceptions)!
 
 To use LIKE operator in `where` condition, use `like`:
 ```F#
 select {
     for p in personTable do
     where (like p.FirstName "%partofname%")
+} |> conn.SelectAsync<Person>
+```
+
+To use IN operator in `where` condition, use `isIn`:
+```F#
+select {
+    for p in personTable do
+    where (isIn p.FirstName ["Elizabeth"; "Philipp"])
+} |> conn.SelectAsync<Person>
+```
+
+You can also negate the IN operator in `where` condition, with `isNotIn`:
+```F#
+select {
+    for p in personTable do
+    where (isNotIn p.FirstName ["Charles"; "Camilla"])
 } |> conn.SelectAsync<Person>
 ```
 
