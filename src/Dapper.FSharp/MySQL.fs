@@ -171,11 +171,12 @@ type Deconstructor =
     static member delete (q:DeleteQuery) = q |> GenericDeconstructor.delete Evaluators.evalDeleteQuery
 
 open System.Data
+open System.Threading
 
 type IDbConnection with
 
-    member this.SelectAsync<'a> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
-        q |> Deconstructor.select<'a> |> IDbConnection.query1<'a> this trans timeout logFunction
+    member this.SelectAsync<'a> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction, ?cancellationToken : CancellationToken) =
+        q |> Deconstructor.select<'a> |> IDbConnection.query1<'a> this trans timeout cancellationToken logFunction
 
     member this.SelectAsync<'a,'b> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.select<'a,'b> |> IDbConnection.query2<'a,'b> this trans timeout logFunction
@@ -189,11 +190,11 @@ type IDbConnection with
     member this.SelectAsyncOption<'a,'b,'c> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.select<'a,'b,'c> |> IDbConnection.query3Option<'a,'b,'c> this trans timeout logFunction
 
-    member this.InsertAsync<'a> (q:InsertQuery<'a>, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
-        q |> Deconstructor.insert<'a> |> IDbConnection.execute this trans timeout logFunction
+    member this.InsertAsync<'a> (q:InsertQuery<'a>, ?trans:IDbTransaction, ?timeout:int, ?logFunction, ?cancellationToken : CancellationToken) =
+        q |> Deconstructor.insert<'a> |> IDbConnection.execute this trans timeout cancellationToken logFunction
 
-    member this.UpdateAsync<'a> (q:UpdateQuery<'a>, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
-        q |> Deconstructor.update<'a> |> IDbConnection.execute this trans timeout logFunction
+    member this.UpdateAsync<'a> (q:UpdateQuery<'a>, ?trans:IDbTransaction, ?timeout:int, ?logFunction, ?cancellationToken : CancellationToken) =
+        q |> Deconstructor.update<'a> |> IDbConnection.execute this trans timeout cancellationToken logFunction
 
-    member this.DeleteAsync (q:DeleteQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
-        q |> Deconstructor.delete |> IDbConnection.execute this trans timeout logFunction
+    member this.DeleteAsync (q:DeleteQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction, ?cancellationToken : CancellationToken) =
+        q |> Deconstructor.delete |> IDbConnection.execute this trans timeout cancellationToken logFunction
