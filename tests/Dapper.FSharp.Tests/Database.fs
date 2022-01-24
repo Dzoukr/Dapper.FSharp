@@ -3,19 +3,20 @@
 open System
 open System.Threading.Tasks
 open Dapper.FSharp
+open System.Threading
 
 let [<Literal>] DbName = "DapperFSharpTests"
 let [<Literal>] TestSchema = "tests"
 
 type ICrud =
-    abstract member SelectAsync<'a> : SelectQuery -> Task<'a seq>
+    abstract member SelectAsync<'a> : SelectQuery * ?cancellationToken:CancellationToken -> Task<'a seq>
     abstract member SelectAsync<'a, 'b> : SelectQuery -> Task<('a * 'b) seq>
     abstract member SelectAsync<'a, 'b, 'c> : SelectQuery -> Task<('a * 'b * 'c) seq>
     abstract member SelectAsyncOption<'a,'b> : SelectQuery -> Task<('a * 'b option) seq>
     abstract member SelectAsyncOption<'a,'b,'c> : SelectQuery -> Task<('a * 'b option * 'c option) seq>
-    abstract member InsertAsync<'a> : InsertQuery<'a> -> Task<int>
-    abstract member DeleteAsync : DeleteQuery -> Task<int>
-    abstract member UpdateAsync<'a> : UpdateQuery<'a> -> Task<int>
+    abstract member InsertAsync<'a> : InsertQuery<'a> * ?cancellationToken:CancellationToken -> Task<int>
+    abstract member DeleteAsync : DeleteQuery * ?cancellationToken:CancellationToken  -> Task<int>
+    abstract member UpdateAsync<'a> : UpdateQuery<'a> * ?cancellationToken:CancellationToken -> Task<int>
 
 type ICrudOutput =
     inherit ICrud

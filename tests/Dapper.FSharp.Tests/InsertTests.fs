@@ -4,6 +4,9 @@ open Dapper.FSharp
 open Dapper.FSharp.Builders
 open Dapper.FSharp.Tests.Database
 open Expecto
+open System.Threading
+open System.Threading.Tasks
+open Dapper.FSharp.Tests.Extensions
 
 type Person = {
     Id: int
@@ -31,6 +34,22 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "INSERT" [
                 where (p.Id = r.Id)
             } |> crud.SelectAsync<Persons.View>
         Expect.equal r (Seq.head fromDb) ""
+    }
+
+    testTask "Cancellation" {
+        do! init.InitPersons()
+        let r = Persons.View.generate 1 |> List.head
+
+        use cts = new CancellationTokenSource()
+        cts.Cancel()
+        let insertCrud query =
+            crud.InsertAsync(query, cancellationToken = cts.Token) :> Task
+        let action () = 
+            insert {
+                into personsView
+                value r
+            } |> insertCrud 
+        do! Expect.throwsTaskCanceledException action "Should be canceled action"
     }
 
     testTask "Inserts partial record" {        
