@@ -4,6 +4,9 @@ open Dapper.FSharp
 open Dapper.FSharp.Builders
 open Dapper.FSharp.Tests.Database
 open Expecto
+open System.Threading
+open Dapper.FSharp.Tests.Extensions
+open System.Threading.Tasks
 
 let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "DELETE" [
 
@@ -29,6 +32,26 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "DELETE" [
             } |> crud.SelectAsync<Persons.View>
         Expect.equal 9 (Seq.length fromDb) ""
         Expect.equal 9 (fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position) ""
+    }
+
+    testTask "Cancellation" {
+        do! init.InitPersons()
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                into personsView
+                values rs
+            } |> crud.InsertAsync
+        use cts = new CancellationTokenSource()
+        cts.Cancel()
+        let deleteCrud query =
+            crud.DeleteAsync(query, cancellationToken = cts.Token) :> Task
+        let action () = 
+            delete {
+                for p in personsView do
+                where (p.Position = 10)
+            } |> deleteCrud 
+        do! Expect.throwsTaskCanceledException action "Should be canceled action"
     }
 
     testTask "Deletes more records" {

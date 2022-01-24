@@ -6,6 +6,8 @@ open Dapper.FSharp.Tests.Database
 open Dapper.FSharp.Builders
 open Expecto
 open FSharp.Control.Tasks.V2
+open System.Threading
+open Dapper.FSharp.Tests.Extensions
 
 type Person = {
     Id: int
@@ -40,6 +42,28 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "UPDATE" [
             } |> crud.SelectAsync<Persons.View>
         Expect.equal 1 (Seq.length fromDb) ""
         Expect.equal 2 (fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position) ""
+    }
+
+    testTask "Cancellation" {
+        do! init.InitPersons()
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                into personsView
+                values rs
+            } |> crud.InsertAsync
+
+        use cts = new CancellationTokenSource()
+        cts.Cancel()
+        let updateCrud query =
+            crud.UpdateAsync(query, cancellationToken = cts.Token) :> Task
+        let action () = 
+            update {
+                for p in personsView do
+                setColumn p.LastName "UPDATED"
+                where (p.Position = 2)
+            } |> updateCrud
+        do! Expect.throwsTaskCanceledException action "Should be canceled action"
     }
 
     testTask "Updates option field to None" {

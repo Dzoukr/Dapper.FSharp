@@ -7,6 +7,8 @@ open Dapper.FSharp.Builders
 open Dapper.FSharp.Builders.Operators
 open Expecto
 open FSharp.Control.Tasks.V2
+open System.Threading
+open Dapper.FSharp.Tests.Extensions
 
 let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
 
@@ -29,6 +31,28 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "SELECT" [
             } |> crud.SelectAsync<Persons.View>
         Expect.equal (rs |> List.find (fun x -> x.Position = 5)) (Seq.head fromDb) ""
     }
+
+    testTask "Cancellation" {
+        do! init.InitPersons()
+        let rs = Persons.View.generate 10
+        let! _ =
+            insert {
+                into personsView
+                values rs
+            } |> crud.InsertAsync
+
+        use cts = new CancellationTokenSource()
+        cts.Cancel()
+        let selectCrud query =
+            crud.SelectAsync<Persons.View>(query, cancellationToken = cts.Token) :> Task
+        let action () = 
+            select {
+                for p in personsView do
+                where (p.Position = 5)
+            } |> selectCrud
+        do! Expect.throwsTaskCanceledException action "Should be canceled action"
+    }
+
 
     testTask "Selects by single where condition with table name used" {
         do! init.InitPersons()
