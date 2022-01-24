@@ -10,8 +10,8 @@
     <PackageIconUrl>https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png</PackageIconUrl>
     <PackageTags>fsharp;dapper;linq;database;mssql;mysql;postgresql</PackageTags>
     <Authors>Roman Provazník;Jordan Marr</Authors>
-    <Version>3.1.0</Version>
-    <PackageReleaseNotes>Adding support for unsigned int option types #53</PackageReleaseNotes>
+    <Version>3.2.0</Version>
+    <PackageReleaseNotes>Adding CancellationToken support #55</PackageReleaseNotes>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <DebugType>embedded</DebugType>
