@@ -177,14 +177,14 @@ open Dapper.FSharp.MySQL
 
 let getCrud (conn:IDbConnection) =
     { new ICrud with
-        member x.SelectAsync<'a> q = conn.SelectAsync<'a>(q)
+        member x.SelectAsync<'a> (q, cancellationToken) = conn.SelectAsync<'a>(q, ?cancellationToken = cancellationToken)
         member x.SelectAsync<'a,'b> q = conn.SelectAsync<'a,'b>(q)
         member x.SelectAsync<'a,'b,'c> q = conn.SelectAsync<'a,'b,'c>(q)
         member x.SelectAsyncOption<'a,'b> q = conn.SelectAsyncOption<'a,'b>(q)
         member x.SelectAsyncOption<'a,'b,'c> q = conn.SelectAsyncOption<'a,'b,'c>(q)
-        member x.InsertAsync<'a> q = conn.InsertAsync<'a>(q)
-        member x.DeleteAsync q = conn.DeleteAsync(q)
-        member x.UpdateAsync q = conn.UpdateAsync(q)
+        member x.InsertAsync<'a> (q, cancellationToken) = conn.InsertAsync<'a>(q, ?cancellationToken = cancellationToken)
+        member x.DeleteAsync (q, cancellationToken) = conn.DeleteAsync(q, ?cancellationToken = cancellationToken)
+        member x.UpdateAsync (q, cancellationToken) = conn.UpdateAsync(q, ?cancellationToken = cancellationToken)
     }
 
 let getInitializer (conn:IDbConnection) =

@@ -1,249 +1,510 @@
 ﻿[<AutoOpen>]
 module Dapper.FSharp.Builders
 
+open System.Linq.Expressions
 open System
+open System.Collections.Generic
 
-type InsertBuilder<'a>() =
-    member _.Yield _ =
-        {
-            Schema = None
-            Table = ""
-            Fields = []
-            Values = []
-        } : InsertQuery<'a>
+[<AutoOpen>]
+module FQ = 
+    /// Fully qualified entity type name
+    type [<Struct>] FQName = private FQName of string
+    let fqName (t: Type) = FQName t.FullName
 
-    /// Sets the SCHEMA
-    [<CustomOperation "schema">]
-    member _.Schema (state:InsertQuery<_>, name) = { state with Schema = Some name }
+type TableMapping = { Name: string; Schema: string option }
 
-    /// Sets the TABLE name for query
-    [<CustomOperation "table">]
-    member _.Table (state:InsertQuery<_>, name) = { state with Table = name }
+/// Fully qualifies a column with: {?schema}.{table}.{column}
+let private fullyQualifyColumn (tables: Map<FQName, TableMapping>) (property: Reflection.MemberInfo) =
+    let tbl = tables.[fqName property.DeclaringType]
+    match tbl.Schema with
+    | Some schema -> sprintf "%s.%s.%s" schema tbl.Name property.Name
+    | None -> sprintf "%s.%s" tbl.Name property.Name
 
-    /// Sets the list of values for INSERT
-    [<CustomOperation "values">]
-    member _.Values (state:InsertQuery<'a>, values:'a list) = { state with Values = values }
+type QuerySource<'T>(tableMappings) =
+    interface IEnumerable<'T> with
+        member this.GetEnumerator() = Seq.empty<'T>.GetEnumerator() :> Collections.IEnumerator
+        member this.GetEnumerator() = Seq.empty<'T>.GetEnumerator()
+    
+    member this.TableMappings : Map<FQName, TableMapping> = tableMappings
+    
+    member this.GetOuterTableMapping() = 
+        let outerEntity = typeof<'T>
+        let fqn = 
+            if outerEntity.Name.StartsWith "Tuple" // True for joined tables
+            then outerEntity.GetGenericArguments() |> Array.head |> fqName
+            else outerEntity |> fqName
+        this.TableMappings.[fqn]
 
-    /// Sets the single value for INSERT
-    [<CustomOperation "value">]
-    member _.Value (state:InsertQuery<'a>, value:'a) = { state with Values = [value] }
+type QuerySource<'T, 'Query>(query, tableMappings) = 
+    inherit QuerySource<'T>(tableMappings)
+    member this.Query : 'Query = query
 
-    /// Includes a column in the insert query.
-    [<CustomOperation("includeColumn")>]
-    member _.IncludeColumn (state: InsertQuery<'T>, name:string) = { state with Fields = state.Fields @ [name]  }
+[<AutoOpen>]
+module Table = 
 
-    /// Excludes a column from the insert query.
-    [<CustomOperation("excludeColumn")>]
-    member _.ExcludeColumn (state: InsertQuery<'T>, name:string) =
-        state.Fields
-        |> function
-            | [] -> Reflection.getFields typeof<'T>
-            | fields -> fields
-        |> List.filter (fun f -> f <> name)
-        |> (fun x -> { state with Fields = x })
+    /// Maps the entity 'T to a table of the exact same name.
+    let table<'T> = 
+        let ent = typeof<'T>
+        let tables = Map [fqName ent, { Name = ent.Name; Schema = None }]
+        QuerySource<'T>(tables)
 
-type DeleteBuilder() =
-    member _.Yield _ =
-        {
-            Schema = None
-            Table = ""
-            Where = Where.Empty
-        } : DeleteQuery
+    /// Maps the entity 'T to a table of the given name.
+    let table'<'T> (tableName: string) = 
+        let ent = typeof<'T>
+        let tables = Map [fqName ent, { Name = tableName; Schema = None }]
+        QuerySource<'T>(tables)
 
-    /// Sets the SCHEMA
-    [<CustomOperation "schema">]
-    member _.Schema (state:DeleteQuery, name) = { state with Schema = Some name }
+    /// Maps the entity 'T to a schema of the given name.
+    let inSchema<'T> (schemaName: string) (qs: QuerySource<'T>) =
+        let ent = typeof<'T>
+        let fqn = fqName ent
+        let tbl = qs.TableMappings.[fqn]
+        let tables = qs.TableMappings.Add(fqn, { tbl with Schema = Some schemaName })
+        QuerySource<'T>(tables)
 
-    /// Sets the TABLE name for query
-    [<CustomOperation "table">]
-    member _.Table (state:DeleteQuery, name) = { state with Table = name }
+type SelectExpressionBuilder<'T>() =
 
-    /// Sets the WHERE condition
-    [<CustomOperation "where">]
-    member _.Where (state:DeleteQuery, where:Where) = { state with Where = where }
+    let getQueryOrDefault (state: QuerySource<'Result>) = // 'Result allows 'T to vary as the result of joins
+        match state with
+        | :? QuerySource<'Result, SelectQuery> as qs -> qs.Query
+        | _ -> 
+            { Schema = None
+              Table = ""
+              Where = Where.Empty
+              OrderBy = []
+              Pagination = { Skip = 0; Take = None }
+              Joins = []
+              Aggregates = []
+              GroupBy = []
+              Distinct = false } : SelectQuery    
 
-type UpdateBuilder<'a>() =
-    member _.Yield _ =
-        {
-            Schema = None
-            Table = ""
-            Value = Unchecked.defaultof<'a>
-            Fields = []
-            Where = Where.Empty
-        } : UpdateQuery<'a>
+    let mergeTableMappings (a: Map<FQName, TableMapping>, b: Map<FQName, TableMapping>) =
+        Map (Seq.concat [ (Map.toSeq a); (Map.toSeq b) ])
 
-    /// Sets the SCHEMA
-    [<CustomOperation "schema">]
-    member _.Schema (state:UpdateQuery<_>, name) = { state with Schema = Some name }
+    member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
+        let tbl = state.GetOuterTableMapping()
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, SelectQuery>({ query with Table = tbl.Name; Schema = tbl.Schema }, state.TableMappings)
 
-    /// Sets the TABLE name for query
-    [<CustomOperation "table">]
-    member _.Table (state:UpdateQuery<_>, name) = { state with Table = name }
+    member this.Yield _ =
+        QuerySource<'T>(Map.empty)
 
-    /// Sets the SET of value to UPDATE
-    [<CustomOperation "set">]
-    member _.Set (state:UpdateQuery<'a>, value:'a) = { state with Value = value }
-
-    /// Sets the WHERE condition
-    [<CustomOperation "where">]
-    member _.Where (state:UpdateQuery<_>, where:Where) = { state with Where = where }
-
-    /// Includes a column in the update query.
-    [<CustomOperation("includeColumn")>]
-    member _.IncludeColumn (state: UpdateQuery<'T>, name:string) = { state with Fields = state.Fields @ [name]  }
-
-    /// Excludes a column from the update query.
-    [<CustomOperation("excludeColumn")>]
-    member _.ExcludeColumn (state: UpdateQuery<'T>, name:string) =
-        state.Fields
-        |> function
-            | [] -> Reflection.getFields typeof<'T>
-            | fields -> fields
-        |> List.filter (fun f -> f <> name)
-        |> (fun x -> { state with Fields = x })
-
-type SelectBuilder() =
-    member _.Yield _ =
-        {
-            Schema = None
-            Table = ""
-            Where = Where.Empty
-            OrderBy = []
-            Pagination = { Skip = 0; Take = None }
-            Joins = []
-            Aggregates = []
-            GroupBy = []
-            Distinct = false
-        } : SelectQuery
-
-    /// Sets the TABLE name for query
-    [<CustomOperation "schema">]
-    member _.Schema (state:SelectQuery, name) = { state with Schema = Some name }
-
-    /// Sets the TABLE name for query
-    [<CustomOperation "table">]
-    member _.Table (state:SelectQuery, name) = { state with Table = name }
+    // Prevents errors while typing join statement if rest of query is not filled in yet.
+    member this.Zero _ = 
+        QuerySource<'T>(Map.empty)
 
     /// Sets the WHERE condition
-    [<CustomOperation "where">]
-    member _.Where (state:SelectQuery, where:Where) = { state with Where = where }
-
-    /// Use OrderBy overload with list parameter instead - this method will be removed in future version.
-    [<Obsolete "Use OrderBy overload with list parameter instead - this method will be removed in future version.">]
-    [<CustomOperation "orderByMany">]
-    member _.OrderByMany (state:SelectQuery, values) = { state with OrderBy = values }
+    [<CustomOperation("where", MaintainsVariableSpace = true)>]
+    member this.Where (state:QuerySource<'T>, [<ProjectionParameter>] whereExpression) = 
+        let query = state |> getQueryOrDefault
+        let where = LinqExpressionVisitors.visitWhere<'T> whereExpression (fullyQualifyColumn state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with Where = where }, state.TableMappings)
 
     /// Sets the ORDER BY for single column
-    [<CustomOperation "orderBy">]
-    member _.OrderBy (state:SelectQuery, colName, direction) = { state with OrderBy = [(colName, direction)] }
+    [<CustomOperation("orderBy", MaintainsVariableSpace = true)>]
+    member this.OrderBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+        let query = state |> getQueryOrDefault
+        let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
+        let orderBy = OrderBy (propertyName, Asc)
+        QuerySource<'T, SelectQuery>({ query with OrderBy = query.OrderBy @ [orderBy] }, state.TableMappings)
 
-    /// Sets the ORDER BY for multiple columns
-    [<CustomOperation "orderBy">]
-    member _.OrderBy (state:SelectQuery, values) = { state with OrderBy = values }
+    /// Sets the ORDER BY for single column
+    [<CustomOperation("thenBy", MaintainsVariableSpace = true)>]
+    member this.ThenBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+        let query = state |> getQueryOrDefault
+        let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
+        let orderBy = OrderBy (propertyName, Asc)
+        QuerySource<'T, SelectQuery>({ query with OrderBy = query.OrderBy @ [orderBy] }, state.TableMappings)
+
+    /// Sets the ORDER BY DESC for single column
+    [<CustomOperation("orderByDescending", MaintainsVariableSpace = true)>]
+    member this.OrderByDescending (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+        let query = state |> getQueryOrDefault
+        let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
+        let orderBy = OrderBy (propertyName, Desc)
+        QuerySource<'T, SelectQuery>({ query with OrderBy = query.OrderBy @ [orderBy] }, state.TableMappings)
+
+    /// Sets the ORDER BY DESC for single column
+    [<CustomOperation("thenByDescending", MaintainsVariableSpace = true)>]
+    member this.ThenByDescending (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+        let query = state |> getQueryOrDefault
+        let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
+        let orderBy = OrderBy (propertyName, Desc)
+        QuerySource<'T, SelectQuery>({ query with OrderBy = query.OrderBy @ [orderBy] }, state.TableMappings)
 
     /// Sets the SKIP value for query
-    [<CustomOperation "skip">]
-    member _.Skip (state:SelectQuery, skip) = { state with Pagination = { state.Pagination with Skip = skip } }
-
+    [<CustomOperation("skip", MaintainsVariableSpace = true)>]
+    member this.Skip (state:QuerySource<'T>, skip) = 
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, SelectQuery>({ query with Pagination = { query.Pagination with Skip = skip } }, state.TableMappings)
+    
     /// Sets the TAKE value for query
-    [<CustomOperation "take">]
-    member _.Take (state:SelectQuery, take) = { state with Pagination = { state.Pagination with Take = Some take } }
+    [<CustomOperation("take", MaintainsVariableSpace = true)>]
+    member this.Take (state:QuerySource<'T>, take) = 
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, SelectQuery>({ query with Pagination = { query.Pagination with Take = Some take } }, state.TableMappings)
 
     /// Sets the SKIP and TAKE value for query
-    [<CustomOperation "skipTake">]
-    member _.SkipTake (state:SelectQuery, skip, take) = { state with Pagination = { state.Pagination with Skip = skip; Take = Some take } }
+    [<CustomOperation("skipTake", MaintainsVariableSpace = true)>]
+    member this.SkipTake (state:QuerySource<'T>, skip, take) = 
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, SelectQuery>({ query with Pagination = { query.Pagination with Skip = skip; Take = Some take } }, state.TableMappings)
 
     /// INNER JOIN table where COLNAME equals to another COLUMN (including TABLE name)
-    [<CustomOperation "innerJoin">]
-    member _.InnerJoin (state:SelectQuery, tableName, colName, equalsTo) = { state with Joins = state.Joins @ [InnerJoin(tableName, colName, equalsTo)] }
+    [<CustomOperation("innerJoin", MaintainsVariableSpace = true, IsLikeJoin = true, JoinConditionWord = "on")>]
+    member this.InnerJoin (outerSource: QuerySource<'TOuter>, 
+                      innerSource: QuerySource<'TInner>, 
+                      outerKeySelector: Expression<Func<'TOuter,'Key>>, 
+                      innerKeySelector: Expression<Func<'TInner,'Key>>, 
+                      resultSelector: Expression<Func<'TOuter,'TInner,'Result>> ) = 
 
-    /// INNER JOIN table where COLNAME equals to another COLUMN (including TABLE name)
-    [<CustomOperation "innerJoin">]
-    member _.InnerJoin (state:SelectQuery, tableName, joinList) = { state with Joins = state.Joins @ [InnerJoinOnMany(tableName, joinList)] }
+        let mergedTables = mergeTableMappings (outerSource.TableMappings, innerSource.TableMappings)
+        let innerProperties = LinqExpressionVisitors.visitJoin<'TInner, 'Key> innerKeySelector
+        let outerProperties = LinqExpressionVisitors.visitJoin<'TOuter, 'Key> outerKeySelector
+
+        let innerTableName = 
+            innerProperties 
+            |> List.map (fun p -> mergedTables.[fqName p.DeclaringType])
+            |> List.map (fun tbl -> 
+                match tbl.Schema with
+                | Some schema -> sprintf "%s.%s" schema tbl.Name
+                | None -> tbl.Name
+            )
+            |> List.head
+
+        match innerProperties, outerProperties with
+        | [innerProperty], [outerProperty] -> 
+            // Only only fully qualify outer column (because Dapper.FSharp later appends "{innerTableName}.{innerPropertyName}")
+            let join = InnerJoin (innerTableName, innerProperty.Name, outerProperty |> fullyQualifyColumn mergedTables)
+            let outerQuery = outerSource |> getQueryOrDefault
+            QuerySource<'Result, SelectQuery>({ outerQuery with Joins = outerQuery.Joins @ [join] }, mergedTables)
+        | _ -> 
+            // Only only fully qualify outer column (because Dapper.FSharp later appends "{innerTableName}.{innerPropertyName}")
+            let joinPairs = 
+                List.zip innerProperties outerProperties 
+                |> List.map (fun (innerProp, outerProp) -> innerProp.Name, outerProp |> fullyQualifyColumn mergedTables)
+            let join = InnerJoinOnMany (innerTableName, joinPairs)
+            let outerQuery = outerSource |> getQueryOrDefault
+            QuerySource<'Result, SelectQuery>({ outerQuery with Joins = outerQuery.Joins @ [join] }, mergedTables)
 
     /// LEFT JOIN table where COLNAME equals to another COLUMN (including TABLE name)
-    [<CustomOperation "leftJoin">]
-    member _.LeftJoin (state:SelectQuery, tableName, colName, equalsTo) = { state with Joins = state.Joins @ [LeftJoin(tableName, colName, equalsTo)] }
+    [<CustomOperation("leftJoin", MaintainsVariableSpace = true, IsLikeJoin = true, JoinConditionWord = "on")>]
+    member this.LeftJoin (outerSource: QuerySource<'TOuter>, 
+                          innerSource: QuerySource<'TInner>, 
+                          outerKeySelector: Expression<Func<'TOuter,'Key>>, 
+                          innerKeySelector: Expression<Func<'TInner,'Key>>, 
+                          resultSelector: Expression<Func<'TOuter,'TInner,'Result>> ) = 
 
-    /// LEFT JOIN table where COLNAME equals to another COLUMN (including TABLE name)
-    [<CustomOperation "leftJoin">]
-    member _.LeftJoin (state:SelectQuery, tableName, joinList) = { state with Joins = state.Joins @ [LeftJoinOnMany(tableName, joinList)] }
+        let mergedTables = mergeTableMappings (outerSource.TableMappings, innerSource.TableMappings)
+        let innerProperties = LinqExpressionVisitors.visitJoin<'TInner, 'Key> innerKeySelector
+        let outerProperties = LinqExpressionVisitors.visitJoin<'TOuter, 'Key> outerKeySelector
 
-    /// Use GroupBy overload with list parameter instead - this method will be removed in future version.
-    [<Obsolete "Use GroupBy overload with list parameter instead - this method will be removed in future version.">]
-    [<CustomOperation "groupByMany">]
-    member _.GroupByMany (state:SelectQuery, values) = { state with GroupBy = values }
+        let innerTableName = 
+            innerProperties 
+            |> List.map (fun p -> mergedTables.[fqName p.DeclaringType])
+            |> List.map (fun tbl -> 
+                match tbl.Schema with
+                | Some schema -> sprintf "%s.%s" schema tbl.Name
+                | None -> tbl.Name
+            )
+            |> List.head
 
-    /// Sets the ORDER BY for single column
-    [<CustomOperation "groupBy">]
-    member _.GroupBy (state:SelectQuery, colName) = { state with GroupBy = [colName] }
+        match innerProperties, outerProperties with
+        | [innerProperty], [outerProperty] -> 
+            // Only only fully qualify outer column (because Dapper.FSharp later appends "{innerTableName}.{innerPropertyName}")
+            let join = LeftJoin (innerTableName, innerProperty.Name, outerProperty |> fullyQualifyColumn mergedTables)
+            let outerQuery = outerSource |> getQueryOrDefault
+            QuerySource<'Result, SelectQuery>({ outerQuery with Joins = outerQuery.Joins @ [join] }, mergedTables)
+        | _ -> 
+            // Only only fully qualify outer column (because Dapper.FSharp later appends "{innerTableName}.{innerPropertyName}")
+            let joinPairs = 
+                List.zip innerProperties outerProperties 
+                |> List.map (fun (innerProp, outerProp) -> innerProp.Name, outerProp |> fullyQualifyColumn mergedTables)
+            let join = LeftJoinOnMany (innerTableName, joinPairs)
+            let outerQuery = outerSource |> getQueryOrDefault
+            QuerySource<'Result, SelectQuery>({ outerQuery with Joins = outerQuery.Joins @ [join] }, mergedTables)
 
-    /// Sets the ORDER BY for multiple columns
-    [<CustomOperation "groupBy">]
-    member _.GroupBy (state:SelectQuery, values) = { state with GroupBy = values }
+    /// Sets the GROUP BY for one or more columns.
+    [<CustomOperation("groupBy", MaintainsVariableSpace = true)>]
+    member this.GroupBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+        let query = state |> getQueryOrDefault
+        let properties = LinqExpressionVisitors.visitGroupBy<'T, 'Prop> propertySelector (fullyQualifyColumn state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with GroupBy = query.GroupBy @ properties}, state.TableMappings)
 
     /// COUNT aggregate function for COLNAME (or * symbol) and map it to ALIAS
-    [<CustomOperation "count">]
-    member _.Count (state:SelectQuery, colName, alias) = { state with Aggregates = state.Aggregates @ [Aggregate.Count(colName, alias)] }
+    [<CustomOperation("count", MaintainsVariableSpace = true)>]
+    member this.Count (state:QuerySource<'T>, colName, alias) = 
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Count(colName, alias)] }, state.TableMappings)
+
+    /// COUNT aggregate function for the selected column
+    [<CustomOperation("countBy", MaintainsVariableSpace = true)>]
+    member this.CountBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+        let query = state |> getQueryOrDefault
+        let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
+        QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Count(propertyName, propertyName)] }, state.TableMappings)
 
     /// AVG aggregate function for COLNAME (or * symbol) and map it to ALIAS
-    [<CustomOperation "avg">]
-    member _.Avg (state:SelectQuery, colName, alias) = { state with Aggregates = state.Aggregates @ [Aggregate.Avg(colName, alias)] }
+    [<CustomOperation("avg", MaintainsVariableSpace = true)>]
+    member this.Avg (state:QuerySource<'T>, colName, alias) = 
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Avg(colName, alias)] }, state.TableMappings)
 
+    /// AVG aggregate function for the selected column
+    //[<CustomOperation("avgBy", MaintainsVariableSpace = true)>]
+    //member this.AvgBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+    //    let query = state |> getQueryOrDefault
+    //    let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
+    //    QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Avg(propertyName, propertyName)] }, state.TableMappings)
+    
     /// SUM aggregate function for COLNAME (or * symbol) and map it to ALIAS
-    [<CustomOperation "sum">]
-    member _.Sum (state:SelectQuery, colName, alias) = { state with Aggregates = state.Aggregates @ [Aggregate.Sum(colName, alias)] }
+    [<CustomOperation("sum", MaintainsVariableSpace = true)>]
+    member this.Sum (state:QuerySource<'T>, colName, alias) = 
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Sum(colName, alias)] }, state.TableMappings)
 
+    /// SUM aggregate function for the selected column
+    //[<CustomOperation("sumBy", MaintainsVariableSpace = true)>]
+    //member this.SumBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+    //    let query = state |> getQueryOrDefault
+    //    let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
+    //    QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Sum(propertyName, propertyName)] }, state.TableMappings)
+    
     /// MIN aggregate function for COLNAME (or * symbol) and map it to ALIAS
-    [<CustomOperation "min">]
-    member _.Min (state:SelectQuery, colName, alias) = { state with Aggregates = state.Aggregates @ [Aggregate.Min(colName, alias)] }
+    [<CustomOperation("min", MaintainsVariableSpace = true)>]
+    member this.Min (state:QuerySource<'T>, colName, alias) = 
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Min(colName, alias)] }, state.TableMappings)
 
+    /// MIN aggregate function for the selected column
+    //[<CustomOperation("minBy", MaintainsVariableSpace = true)>]
+    //member this.MinBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+    //    let query = state |> getQueryOrDefault
+    //    let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
+    //    QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Min(propertyName, propertyName)] }, state.TableMappings)
+    
     /// MIN aggregate function for COLNAME (or * symbol) and map it to ALIAS
-    [<CustomOperation "max">]
-    member _.Max (state:SelectQuery, colName, alias) = { state with Aggregates = state.Aggregates @ [Aggregate.Max(colName, alias)] }
+    [<CustomOperation("max", MaintainsVariableSpace = true)>]
+    member this.Max (state:QuerySource<'T>, colName, alias) = 
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Max(colName, alias)] }, state.TableMappings)
 
+    /// MIN aggregate function for the selected column
+    //[<CustomOperation("maxBy", MaintainsVariableSpace = true)>]
+    //member this.MaxBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+    //    let query = state |> getQueryOrDefault
+    //    let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
+    //    QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Max(propertyName, propertyName)] }, state.TableMappings)
+    
     /// Sets query to return DISTINCT values
-    [<CustomOperation "distinct">]
-    member _.Distinct (state:SelectQuery) = { state with Distinct = true }
+    [<CustomOperation("distinct", MaintainsVariableSpace = true)>]
+    member this.Distinct (state:QuerySource<'T>) = 
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, SelectQuery>({ query with Distinct = true }, state.TableMappings)
 
-let insert<'a> = InsertBuilder<'a>()
-let delete = DeleteBuilder()
-let update<'a> = UpdateBuilder<'a>()
-let select = SelectBuilder()
+    /// Selects all (needed only when there are no other clauses after "for" or "join")
+    [<CustomOperation("selectAll", MaintainsVariableSpace = true)>]
+    member this.SelectAll (state:QuerySource<'T>) = 
+        state :?> QuerySource<'T, SelectQuery>
 
-/// Creates WHERE condition for column
-let column name whereComp = Where.Column(name, whereComp)
-/// WHERE column value equals to
-let eq name (o:obj) = column name (Eq o)
-/// WHERE column value not equals to
-let ne name (o:obj) = column name (Ne o)
-/// WHERE column value greater than
-let gt name (o:obj) = column name (Gt o)
-/// WHERE column value lower than
-let lt name (o:obj) = column name (Lt o)
-/// WHERE column value greater/equals than
-let ge name (o:obj) = column name (Ge o)
-/// WHERE column value lower/equals than
-let le name (o:obj) = column name (Le o)
-/// WHERE column like value
-let like name (str:string) = column name (Like str)
-/// WHERE column not like value
-let notLike name (str:string) = column name (NotLike str)
+    /// Unwraps the query
+    member this.Run (state: QuerySource<'T>) =
+        state |> getQueryOrDefault
+
+type DeleteExpressionBuilder<'T>() =
+
+    let getQueryOrDefault (state: QuerySource<'Result>) =
+        match state with
+        | :? QuerySource<'Result, DeleteQuery> as qs -> qs.Query
+        | _ -> 
+            { Schema = None
+              Table = ""
+              Where = Where.Empty } : DeleteQuery
+
+    member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
+        let tbl = state.GetOuterTableMapping()
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, DeleteQuery>({ query with Table = tbl.Name; Schema = tbl.Schema }, state.TableMappings)
+
+    member this.Yield _ =
+        QuerySource<'T>(Map.empty)
+
+    /// Sets the WHERE condition
+    [<CustomOperation("where", MaintainsVariableSpace = true)>]
+    member this.Where (state:QuerySource<'T>, [<ProjectionParameter>] whereExpression) = 
+        let query = state |> getQueryOrDefault
+        let where = LinqExpressionVisitors.visitWhere<'T> whereExpression (fullyQualifyColumn state.TableMappings)
+        QuerySource<'T, DeleteQuery>({ query with Where = where }, state.TableMappings)
+
+    /// Deletes all records in the table (only when there are is no where clause)
+    [<CustomOperation("deleteAll", MaintainsVariableSpace = true)>]
+    member this.DeleteAll (state:QuerySource<'T>) = 
+        state :?> QuerySource<'T, DeleteQuery>
+
+    /// Unwraps the query
+    member this.Run (state: QuerySource<'T>) =
+        state |> getQueryOrDefault
+
+type InsertExpressionBuilder<'T>() =
+
+    let getQueryOrDefault (state: QuerySource<'Result>) =
+        match state with
+        | :? QuerySource<'Result, InsertQuery<'T>> as qs -> qs.Query
+        | _ -> 
+            { Schema = None
+              Table = ""
+              Fields = []
+              Values = [] } : InsertQuery<'T>
+
+    member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
+        let tbl = state.GetOuterTableMapping()
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, InsertQuery<'T>>({ query with Table = tbl.Name; Schema = tbl.Schema }, state.TableMappings)
+
+    /// Sets the TABLE name for query.
+    [<CustomOperation("into")>]
+    member this.Into (state: QuerySource<'T>, table: QuerySource<'T>) =
+        let tbl = table.GetOuterTableMapping()
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, InsertQuery<'T>>({ query with Table = tbl.Name; Schema = tbl.Schema }, state.TableMappings)
+
+    member this.Yield _ =
+        QuerySource<'T>(Map.empty)
+
+    /// Sets the list of values for INSERT
+    [<CustomOperation("values", MaintainsVariableSpace = true)>]
+    member this.Values (state: QuerySource<'T>, values:'T list) = 
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, InsertQuery<'T>>({ query with Values = values }, state.TableMappings)
+
+    /// Sets the single value for INSERT
+    [<CustomOperation("value", MaintainsVariableSpace = true)>]
+    member this.Value (state:QuerySource<'T>, value:'T) = 
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, InsertQuery<'T>>({ query with Values = [value] }, state.TableMappings)
+
+    /// Includes a list of columns in the insert query.
+    [<CustomOperation("includeColumns", MaintainsVariableSpace = true)>]
+    member this.IncludeColumns (state: QuerySource<'T>, [<ProjectionParameter>] propertySelectors) = 
+        let query = state |> getQueryOrDefault
+        let props = propertySelectors |> List.map LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> |> List.map (fun x -> x.Name)
+        let newQuery = { query with Fields = (query.Fields @ props) }
+        QuerySource<'T, InsertQuery<'T>>(newQuery, state.TableMappings)
+    
+    /// Includes a column in the insert query.
+    [<CustomOperation("includeColumn", MaintainsVariableSpace = true)>]
+    member this.IncludeColumn (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+        this.IncludeColumns(state, [propertySelector])
+
+    /// Excludes a column from the insert query.
+    [<CustomOperation("excludeColumn", MaintainsVariableSpace = true)>]
+    member this.ExcludeColumn (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+        let query = state |> getQueryOrDefault
+        let prop = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector
+        let newQuery =
+            query.Fields
+            |> function
+                | [] -> Reflection.getFields typeof<'T>
+                | fields -> fields
+            |> List.filter (fun f -> f <> prop.Name)
+            |> (fun x -> { query with Fields = x })
+        QuerySource<'T, InsertQuery<'T>>(newQuery, state.TableMappings)
+
+    /// Unwraps the query
+    member this.Run (state: QuerySource<'T>) =
+        state |> getQueryOrDefault
+
+type UpdateExpressionBuilder<'T>() =
+    
+    let getQueryOrDefault (state: QuerySource<'Result>) =
+        match state with
+        | :? QuerySource<'Result, UpdateQuery<'T>> as qs -> qs.Query
+        | _ -> 
+            { Schema = None
+              Table = ""
+              Value = None
+              SetColumns = []
+              Fields = []
+              Where = Where.Empty } : UpdateQuery<'T>
+
+    member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
+        let tbl = state.GetOuterTableMapping()
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, UpdateQuery<'T>>({ query with Table = tbl.Name; Schema = tbl.Schema }, state.TableMappings)
+
+    member this.Yield _ =
+        QuerySource<'T>(Map.empty)
+
+    /// Sets a record to UPDATE
+    [<CustomOperation("set", MaintainsVariableSpace = true)>]
+    member this.Set (state: QuerySource<'T>, value: 'T) = 
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, UpdateQuery<'T>>({ query with Value = Some value }, state.TableMappings)
+
+    /// Sets an individual column to UPDATE
+    [<CustomOperation("setColumn", MaintainsVariableSpace = true)>]
+    member this.SetColumn (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector: Expression<Func<'T, 'Prop>>, value: 'Prop) = 
+        let query = state |> getQueryOrDefault
+        let prop = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector :?> Reflection.PropertyInfo
+        QuerySource<'T, UpdateQuery<'T>>({ query with SetColumns = query.SetColumns @ [ prop.Name, box value ] }, state.TableMappings)
+
+    /// Includes a column in the update query.
+    [<CustomOperation("includeColumn", MaintainsVariableSpace = true)>]
+    member this.IncludeColumn (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+        let query = state |> getQueryOrDefault
+        let prop = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector
+        let newQuery = { query with Fields = (query.Fields @ [prop.Name]) }
+        QuerySource<'T, UpdateQuery<'T>>(newQuery, state.TableMappings)
+
+    /// Excludes a column from the update query.
+    [<CustomOperation("excludeColumn", MaintainsVariableSpace = true)>]
+    member this.ExcludeColumn (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+        let query = state |> getQueryOrDefault
+        let prop = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector
+        let newQuery = 
+            query.Fields
+            |> function
+                | [] -> Reflection.getFields typeof<'T>
+                | fields -> fields
+            |> List.filter (fun f -> f <> prop.Name)
+            |> (fun x -> { query with Fields = x })
+        QuerySource<'T, UpdateQuery<'T>>(newQuery, state.TableMappings)
+
+    /// Sets the WHERE condition
+    [<CustomOperation("where", MaintainsVariableSpace = true)>]
+    member this.Where (state: QuerySource<'T>, [<ProjectionParameter>] whereExpression) = 
+        let query = state |> getQueryOrDefault
+        let where = LinqExpressionVisitors.visitWhere<'T> whereExpression (fullyQualifyColumn state.TableMappings)
+        QuerySource<'T, UpdateQuery<'T>>({ query with Where = where }, state.TableMappings)
+
+    /// Unwraps the query
+    member this.Run (state: QuerySource<'T>) =
+        state |> getQueryOrDefault
+
+let select<'T> = SelectExpressionBuilder<'T>()
+let delete<'T> = DeleteExpressionBuilder<'T>()
+let insert<'T> = InsertExpressionBuilder<'T>()
+let update<'T> = UpdateExpressionBuilder<'T>()
+
 /// WHERE column is IN values
-let isIn name (os:obj list) = column name (In os)
+let isIn<'P> (prop: 'P) (values: 'P list) = true
 /// WHERE column is NOT IN values
-let isNotIn name (os:obj list) = column name (NotIn os)
+let isNotIn<'P> (prop: 'P) (values: 'P list) = true
+/// WHERE column like value   
+let like<'P> (prop: 'P) (pattern: string) = true
+/// WHERE column not like value   
+let notLike<'P> (prop: 'P) (pattern: string) = true
 /// WHERE column IS NULL
-let isNullValue name = column name IsNull
+let isNullValue<'P> (prop: 'P) = true
 /// WHERE column IS NOT NULL
-let isNotNullValue name = column name IsNotNull
+let isNotNullValue<'P> (prop: 'P) = true
 
-module Operators =
+module Operators = 
     /// WHERE column is IN values
-    let (|=|) = isIn
+    let (|=|) (prop: 'P) (values: 'P list) = true
     /// WHERE column is NOT IN values
-    let (|<>|) = isNotIn
-    /// WHERE column like value
-    let (=%) = like
-    /// WHERE column not like value
-    let (<>%) = notLike
+    let (|<>|) (prop: 'P) (values: 'P list) = true
+    /// WHERE column like value   
+    let (=%) (prop: 'P) (pattern: string) = true
+    /// WHERE column not like value   
+    let (<>%) (prop: 'P) (pattern: string) = true

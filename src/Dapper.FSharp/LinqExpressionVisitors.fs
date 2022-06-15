@@ -221,8 +221,8 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
             | Property p, Value value -> 
                 let pattern = string value
                 match m.Method.Name with
-                | "like" | "op_EqualsPercent" -> like (qualifyColumn p) pattern
-                | _ -> notLike (qualifyColumn p) pattern
+                | "like" | "op_EqualsPercent" -> Column ((qualifyColumn p), (Like pattern))
+                | _ -> Column ((qualifyColumn p), (NotLike pattern))
             | _ -> notImpl()
         | MethodCall m when m.Method.Name = "isNullValue" || m.Method.Name = "isNotNullValue" ->
             match m.Arguments.[0] with
@@ -281,7 +281,27 @@ let visitGroupBy<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) (qua
 
     visit (propertySelector :> Expression)
 
-/// Returns a fully qualified column name: "{schema}.{table}.{column}"
+/// Returns one or more column members
+let visitJoin<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) =
+    let rec visit (exp: Expression) : MemberInfo list =
+        match exp with
+        | Lambda x -> visit x.Body
+        | MethodCall m when m.Method.Name = "Invoke" ->
+            // Handle tuples
+            visit m.Object
+        | New n -> 
+            // Handle groupBy that returns a tuple of multiple columns
+            n.Arguments |> Seq.map visit |> Seq.toList |> List.collect id
+        | Member m -> 
+            if m.Member.DeclaringType |> isOptionType
+            then visit m.Expression
+            else [ m.Member ]
+        | Property mi -> [ mi ]
+        | _ -> notImpl()
+
+    visit (propertySelector :> Expression)
+
+/// Returns a column member
 let visitPropertySelector<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) =
     let rec visit (exp: Expression) : MemberInfo =
         match exp with
@@ -289,8 +309,11 @@ let visitPropertySelector<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Pro
         | MethodCall m when m.Method.Name = "Invoke" ->
             // Handle tuples
             visit m.Object
-        | Member m -> m.Member  // Handle simple properties
-        | Property mi -> mi     // Handle options
+        | Member m -> 
+            if m.Member.DeclaringType |> isOptionType
+            then visit m.Expression
+            else m.Member
+        | Property mi -> mi
         | _ -> notImpl()
 
     visit (propertySelector :> Expression)

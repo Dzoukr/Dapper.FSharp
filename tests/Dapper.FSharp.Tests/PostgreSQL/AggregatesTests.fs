@@ -7,18 +7,21 @@ open Dapper.FSharp.Tests.PostgreSQL.Database
 open Dapper.FSharp
 open Dapper.FSharp.PostgreSQL
 
+let persons = table'<Persons.View> "Persons"
+let dogs = table'<Dogs.View> "Dogs"
+
 let tests (conn:IDbConnection) = Tests.testList "SELECT - AGGREGATES" [
     testTask "Selects with COUNT aggregate function" {
         do! Persons.init conn
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                into persons
                 values rs
             } |> conn.InsertAsync
         let fromDb =
             select {
-                table "Persons"
+                for p in persons do
                 count "*" "Value"
             }
             |> conn.SelectAsync<{| Value : int64 |}>
@@ -33,15 +36,15 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT - AGGREGATES" [
             |> List.map (fun x -> if x.Position > 5 then { x with Position = 10 } else x)
         let! _ =
             insert {
-                table "Persons"
+                into persons
                 values rs
             } |> conn.InsertAsync
         let fromDb =
             select {
-                table "Persons"
+                for p in persons do
                 count "*" "Value"
-                orderBy "Position" Desc
-                groupBy "Position"
+                orderByDescending p.Position
+                groupBy p.Position
             }
             |> conn.SelectAsync<{| Value : int64; Position : int |}>
             |> taskToList
@@ -56,14 +59,14 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT - AGGREGATES" [
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                into persons
                 values rs
             } |> conn.InsertAsync
         let fromDb =
             select {
-                table "Persons"
+                for p in persons do
                 count "*" "Value"
-                where (gt "Position" 5)
+                where (p.Position > 5)
             }
             |> conn.SelectAsync<{| Value : int64 |}>
             |> taskToList
@@ -75,12 +78,12 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT - AGGREGATES" [
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                into persons
                 values rs
             } |> conn.InsertAsync
         let fromDb =
             select {
-                table "Persons"
+                for p in persons do
                 avg "Position" "Value"
             }
             |> conn.SelectAsync<{| Value : decimal |}>
@@ -93,12 +96,12 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT - AGGREGATES" [
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                into persons
                 values rs
             } |> conn.InsertAsync
         let fromDb =
             select {
-                table "Persons"
+                for p in persons do
                 sum "Position" "Value"
             }
             |> conn.SelectAsync<{| Value : int64 |}>
@@ -111,12 +114,12 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT - AGGREGATES" [
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                into persons
                 values rs
             } |> conn.InsertAsync
         let fromDb =
             select {
-                table "Persons"
+                for p in persons do
                 min "Position" "Value"
             }
             |> conn.SelectAsync<{| Value : int |}>
@@ -129,12 +132,12 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT - AGGREGATES" [
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                into persons
                 values rs
             } |> conn.InsertAsync
         let fromDb =
             select {
-                table "Persons"
+                for p in persons do
                 max "Position" "Value"
             }
             |> conn.SelectAsync<{| Value : int |}>
@@ -146,24 +149,24 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT - AGGREGATES" [
         do! Persons.init conn
         do! Dogs.init conn
 
-        let persons = Persons.View.generate 10
-        let dogs = Dogs.View.generate1toN 5 persons.Head
+        let ps = Persons.View.generate 10
+        let ds = Dogs.View.generate1toN 5 ps.Head
         let! _ =
             insert {
-                table "Persons"
-                values persons
+                into persons
+                values ps
             } |> conn.InsertAsync
         let! _ =
             insert {
-                table "Dogs"
-                values dogs
+                into dogs
+                values ds
             } |> conn.InsertAsync
 
         let fromDb =
             select {
-                table "Persons"
+                for p in persons do
+                leftJoin d in dogs on (p.Id = d.OwnerId)
                 distinct
-                leftJoin "Dogs" "OwnerId" "Persons.Id"
             }
             |> conn.SelectAsync<{| FirstName:string |}>
             |> taskToList
@@ -176,12 +179,12 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT - AGGREGATES" [
         let rs = Persons.View.generate 10
         let! _ =
             insert {
-                table "Persons"
+                into persons
                 values rs
             } |> conn.InsertAsync
         let fromDb =
             select {
-                table "Persons"
+                for p in persons do
                 max "Position" "MaxValue"
                 min "Position" "MinValue"
             }
@@ -196,26 +199,26 @@ let tests (conn:IDbConnection) = Tests.testList "SELECT - AGGREGATES" [
         do! Persons.init conn
         do! Dogs.init conn
 
-        let persons = Persons.View.generate 10
-        let dogs = Dogs.View.generate1toN 5 persons.Head
+        let ps = Persons.View.generate 10
+        let ds = Dogs.View.generate1toN 5 ps.Head
         let! _ =
             insert {
-                table "Persons"
-                values persons
+                into persons
+                values ps
             } |> conn.InsertAsync
         let! _ =
             insert {
-                table "Dogs"
-                values dogs
+                into dogs
+                values ds
             } |> conn.InsertAsync
 
         let one,two =
             select {
-                table "Persons"
-                leftJoin "Dogs" "OwnerId" "Persons.Id"
+                for p in persons do
+                leftJoin d in dogs on (p.Id = d.OwnerId)
                 count "Persons.Position" "Count"
-                groupBy ["Persons.Id"; "Persons.Position"; "Dogs.OwnerId"]
-                orderBy "Persons.Position" Asc
+                groupBy (p.Id, p.Position, d.OwnerId)
+                orderBy p.Position
             }
             |> conn.SelectAsync<{| Id: System.Guid; Position:int; Count:int64 |}, {| OwnerId : System.Guid |}>
             |> taskToList

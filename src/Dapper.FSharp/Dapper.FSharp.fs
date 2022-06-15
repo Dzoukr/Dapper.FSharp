@@ -84,7 +84,8 @@ type InsertQuery<'a> = {
 type UpdateQuery<'a> = {
     Schema : string option
     Table : string
-    Value : 'a
+    Value : 'a option
+    SetColumns: (string * obj) list
     Fields : string list
     Where : Where
 }
