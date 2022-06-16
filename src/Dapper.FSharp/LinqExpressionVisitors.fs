@@ -281,9 +281,13 @@ let visitGroupBy<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) (qua
 
     visit (propertySelector :> Expression)
 
+type JoinInfo = 
+    | MI of MemberInfo
+    | Const of obj
+
 /// Returns one or more column members
 let visitJoin<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) =
-    let rec visit (exp: Expression) : MemberInfo list =
+    let rec visit (exp: Expression) : JoinInfo list =
         match exp with
         | Lambda x -> visit x.Body
         | MethodCall m when m.Method.Name = "Invoke" ->
@@ -295,8 +299,10 @@ let visitJoin<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) =
         | Member m -> 
             if m.Member.DeclaringType |> isOptionType
             then visit m.Expression
-            else [ m.Member ]
-        | Property mi -> [ mi ]
+            else [ MI m.Member ]
+        | Property mi -> [ MI mi ]
+        | Constant c -> 
+            [ Const c.Value ]
         | _ -> notImpl()
 
     visit (propertySelector :> Expression)
