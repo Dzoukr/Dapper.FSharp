@@ -552,6 +552,20 @@ let tests = testList "SELECT QUERY BUILDER" [
         ] ""
     }
 
+    
+    ftestTask "Inner Join Multi-Column with Constant Values" {
+        let query = 
+            select {
+                for l in table<MultiJoinLeft> do
+                innerJoin r in table<MultiJoinRight> on ((3, 5L) = (r.Key1, r.Key2)) 
+                selectAll
+            }
+
+        Expect.equal query.Joins [
+            InnerJoinOnMany ("MultiJoinRight", ["Key1", "3"; "Key2", "5"])
+        ] ""
+    }
+
     testTask "Left Join Multi-Column" {
         let query = 
             select {
