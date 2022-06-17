@@ -183,15 +183,13 @@ type SelectExpressionBuilder<'T>() =
             let outerQuery = outerSource |> getQueryOrDefault
             QuerySource<'Result, SelectQuery>({ outerQuery with Joins = outerQuery.Joins @ [join] }, mergedTables)
         | _ -> 
-            // Only only fully qualify outer column (because Dapper.FSharp later appends "{innerTableName}.{innerPropertyName}")
+            // Only fully qualify outer column (because Dapper.FSharp later appends "{innerTableName}.{innerPropertyName}")
             let joinPairs = 
                 List.zip innerProperties outerProperties 
                 |> List.map (fun (innerProp, outerProp) -> 
                     match outerProp with
-                    | MI outerProp -> 
-                        innerProp.Name, outerProp |> fullyQualifyColumn mergedTables
-                    | Const value -> 
-                        innerProp.Name, string value
+                    | MI outerProp -> innerProp.Name, outerProp |> fullyQualifyColumn mergedTables |> JoinColumn
+                    | Const value -> innerProp.Name, value |> JoinConstant
                 )
             let join = InnerJoinOnMany (innerTableName, joinPairs)
             let outerQuery = outerSource |> getQueryOrDefault
@@ -234,10 +232,8 @@ type SelectExpressionBuilder<'T>() =
                 List.zip innerProperties outerProperties 
                 |> List.map (fun (innerProp, outerProp) -> 
                     match outerProp with
-                    | MI outerProp -> 
-                        innerProp.Name, outerProp |> fullyQualifyColumn mergedTables
-                    | Const value -> 
-                        innerProp.Name, string value
+                    | MI outerProp -> innerProp.Name, outerProp |> fullyQualifyColumn mergedTables |> JoinColumn
+                    | Const value -> innerProp.Name, value |> JoinConstant
                 )
             let join = LeftJoinOnMany (innerTableName, joinPairs)
             let outerQuery = outerSource |> getQueryOrDefault

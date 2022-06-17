@@ -8,6 +8,11 @@ let private inBrackets (s:string) =
     |> Array.map (sprintf "[%s]")
     |> String.concat "."
 
+let private formatConstant (value: obj) = 
+    match value with 
+    | :? string as str -> $"'{str}'"
+    | _ as o -> $"{o}"
+
 let private safeTableName schema table =
     match schema, table with
     | None, table -> table |> inBrackets
@@ -63,9 +68,16 @@ module private Evaluators =
         | { Take = None; Skip = o } -> sprintf "OFFSET %i ROWS" o
         | { Take = Some f; Skip = o } -> sprintf "OFFSET %i ROWS FETCH NEXT %i ROWS ONLY" o f
 
-    let buildJoinOnMany joinType tableName (joinList: List<string * string>) =
+    let buildJoinOnMany joinType tableName (joinList: List<string * OuterJoinOn>) =
         joinList
-        |> List.map (fun (colName, eqToCol) -> sprintf "%s.%s=%s" (inBrackets tableName) (inBrackets colName) (inBrackets eqToCol))
+        |> List.map (fun (colName, eqToColOrValue) -> 
+            let outerColumn = 
+                match eqToColOrValue with
+                | JoinColumn fqColName -> inBrackets fqColName
+                | JoinConstant value -> formatConstant (string value)
+
+            sprintf "%s.%s=%s" (inBrackets tableName) (inBrackets colName) outerColumn
+        )
         |> List.reduce (fun s1 s2 -> s1 + " AND " + s2 )
         |> sprintf " %s JOIN %s ON %s" joinType tableName
 

@@ -11,6 +11,11 @@ let private inQuotes (s:string) =
     |> Array.map (fun x -> if specialStrings.Contains(x) then x else sprintf "`%s`" x)
     |> String.concat "."
 
+let private formatConstant (value: obj) = 
+    match value with 
+    | :? string as str -> $"'{str}'"
+    | _ as o -> $"{o}"
+
 let private safeTableName schema table =
     match schema, table with
     | None, table -> table |> inQuotes
@@ -66,9 +71,16 @@ module private Evaluators =
         | { Take = None; Skip = o } -> sprintf "LIMIT %i, %i" o (System.UInt64.MaxValue)
         | { Take = Some f; Skip = o } -> sprintf "LIMIT %i, %i" o f
 
-    let buildJoinOnMany joinType tableName (joinList: List<string * string>) =
+    let buildJoinOnMany joinType tableName (joinList: List<string * OuterJoinOn>) =
         joinList
-        |> List.map (fun (colName, eqToCol) -> sprintf "%s.%s=%s" (inQuotes tableName) (inQuotes colName) (inQuotes eqToCol))
+        |> List.map (fun (colName, eqToColOrValue) -> 
+            let outerColumn = 
+                match eqToColOrValue with
+                | JoinColumn fqColName -> inQuotes fqColName
+                | JoinConstant value -> formatConstant (string value)
+
+            sprintf "%s.%s=%s" (inQuotes tableName) (inQuotes colName) outerColumn
+        )
         |> List.reduce (fun s1 s2 -> s1 + " AND " + s2 )
         |> sprintf " %s JOIN %s ON %s" joinType tableName
 

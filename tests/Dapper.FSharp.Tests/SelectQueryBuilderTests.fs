@@ -535,7 +535,7 @@ let tests = testList "SELECT QUERY BUILDER" [
             }
 
         Expect.equal query.Joins [
-            InnerJoinOnMany ("MultiJoinRight", ["Key1", "MultiJoinLeft.Key1"; "Key2", "MultiJoinLeft.Key2"])
+            InnerJoinOnMany ("MultiJoinRight", ["Key1", JoinColumn "MultiJoinLeft.Key1"; "Key2", JoinColumn "MultiJoinLeft.Key2"])
         ] ""
     }
     
@@ -548,7 +548,7 @@ let tests = testList "SELECT QUERY BUILDER" [
             }
 
         Expect.equal query.Joins [
-            InnerJoinOnMany ("MultiJoinRight", ["Key2", "5"])
+            InnerJoinOnMany ("MultiJoinRight", ["Key2", JoinConstant 5L])
         ] ""
     }
 
@@ -562,7 +562,7 @@ let tests = testList "SELECT QUERY BUILDER" [
             }
 
         Expect.equal query.Joins [
-            InnerJoinOnMany ("MultiJoinRight", ["Key1", "3"; "Key2", "5"])
+            InnerJoinOnMany ("MultiJoinRight", ["Key1", JoinConstant 3; "Key2", JoinConstant 5L])
         ] ""
     }
 
@@ -575,7 +575,7 @@ let tests = testList "SELECT QUERY BUILDER" [
             }
 
         Expect.equal query.Joins [
-            LeftJoinOnMany ("MultiJoinRight", ["Key1", "MultiJoinLeft.Key1"; "Key2", "MultiJoinLeft.Key2"])
+            LeftJoinOnMany ("MultiJoinRight", ["Key1", JoinColumn "MultiJoinLeft.Key1"; "Key2", JoinColumn "MultiJoinLeft.Key2"])
         ] ""
     }
 
