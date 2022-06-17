@@ -380,7 +380,7 @@ let tests = testList "SELECT QUERY BUILDER" [
                 where (p.Id = 1 && a.PersonId = 2) 
             }
     
-        Expect.equal query.Joins [InnerJoin ("Address", "PersonId", "Person.Id")] "Expected INNER JOIN Address ON Person.Id = Address.PersonId"
+        Expect.equal query.Joins [InnerJoin ("Address", ["PersonId", EqualsToColumn "Person.Id"])] "Expected INNER JOIN Address ON Person.Id = Address.PersonId"
         Expect.equal query.Where (eq "Person.Id" 1 + eq "Address.PersonId" 2) "Expected both types in where clause"
     }
     
@@ -394,8 +394,8 @@ let tests = testList "SELECT QUERY BUILDER" [
             }
     
         Expect.equal query.Joins [
-            InnerJoin ("Address", "PersonId", "Person.Id")
-            InnerJoin ("Contact", "PersonId", "Person.Id")
+            InnerJoin ("Address", ["PersonId", EqualsToColumn "Person.Id"])
+            InnerJoin ("Contact", ["PersonId", EqualsToColumn "Person.Id"])
         ] "Expected INNER JOIN Address ON Person.Id = Address.PersonId"
     }
 
@@ -407,7 +407,7 @@ let tests = testList "SELECT QUERY BUILDER" [
                 where (p.Id = 1 && a.PersonId = 2) 
             }
     
-        Expect.equal query.Joins [LeftJoin ("Address", "PersonId", "Person.Id")] "Expected LEFT JOIN Address ON Person.Id = Address.PersonId"
+        Expect.equal query.Joins [LeftJoin ("Address", ["PersonId", EqualsToColumn "Person.Id"])] "Expected LEFT JOIN Address ON Person.Id = Address.PersonId"
         Expect.equal query.Where (eq "Person.Id" 1 + eq "Address.PersonId" 2) "Expected both types in where clause"
     }
 
@@ -421,8 +421,8 @@ let tests = testList "SELECT QUERY BUILDER" [
             }
     
         Expect.equal query.Joins [
-            LeftJoin ("Address", "PersonId", "Person.Id")
-            LeftJoin ("Contact", "PersonId", "Person.Id")
+            LeftJoin ("Address", ["PersonId", EqualsToColumn "Person.Id"])
+            LeftJoin ("Contact", ["PersonId", EqualsToColumn "Person.Id"])
         ] "Expected LEFT JOIN Address ON Person.Id = Address.PersonId"
         Expect.equal query.Where (eq "Person.Id" 1 + eq "Address.PersonId" 2 + eq "Contact.Phone" "919-765-4321") "Expected all types in where clause"
     }
@@ -446,8 +446,8 @@ let tests = testList "SELECT QUERY BUILDER" [
         Expect.equal query.Schema (Some "dbo") "Expected schema = dbo"
         Expect.equal query.Table "People" "Expected table = People"
         Expect.equal query.Joins [
-            InnerJoin ("dbo.Addresses", "PersonId", "dbo.People.Id")
-            InnerJoin ("dbo.Contacts", "PersonId", "dbo.People.Id")
+            InnerJoin ("dbo.Addresses", ["PersonId", EqualsToColumn "dbo.People.Id"])
+            InnerJoin ("dbo.Contacts", ["PersonId", EqualsToColumn "dbo.People.Id"])
         ] "Expected tables and columns to be fully qualified with schema and overriden table names"
         Expect.equal query.Where 
             (eq "dbo.People.FName" "John" + eq "dbo.Addresses.City" "Chicago" + eq "dbo.Contacts.Phone" "919-765-4321") 
@@ -478,8 +478,8 @@ let tests = testList "SELECT QUERY BUILDER" [
         Expect.equal query.Schema (Some "dbo") "Expected schema = dbo"
         Expect.equal query.Table "People" "Expected table = People"
         Expect.equal query.Joins [
-            LeftJoin ("dbo.Addresses", "PersonId", "dbo.People.Id")
-            LeftJoin ("dbo.Contacts", "PersonId", "dbo.People.Id")
+            LeftJoin ("dbo.Addresses", ["PersonId", EqualsToColumn "dbo.People.Id"])
+            LeftJoin ("dbo.Contacts", ["PersonId", EqualsToColumn "dbo.People.Id"])
         ] "Expected tables and columns to be fully qualified with schema and overriden table names"
         Expect.equal query.Where 
             (eq "dbo.People.FName" "John" + eq "dbo.Addresses.City" "Chicago" + eq "dbo.Contacts.Phone" "919-765-4321") 
@@ -505,7 +505,7 @@ let tests = testList "SELECT QUERY BUILDER" [
             }
 
         Expect.equal query.Joins [
-            InnerJoin ("dbo.Addresses", "City", "dbo.People.MI")
+            InnerJoin ("dbo.Addresses", ["City", EqualsToColumn "dbo.People.MI"])
         ] "Expected that option column (MI) should be unwrapped."
     }
     
@@ -522,7 +522,7 @@ let tests = testList "SELECT QUERY BUILDER" [
             }
     
         Expect.equal query.Joins [
-            InnerJoin ("dbo.Addresses", "City", "dbo.People.MI")
+            InnerJoin ("dbo.Addresses", ["City", EqualsToColumn "dbo.People.MI"])
         ] "Expected that option column (MI) should be unwrapped."
     }
 
@@ -535,7 +535,7 @@ let tests = testList "SELECT QUERY BUILDER" [
             }
 
         Expect.equal query.Joins [
-            InnerJoinOnMany ("MultiJoinRight", [JoinColumn "Key1", JoinFqColumn "MultiJoinLeft.Key1"; JoinColumn "Key2", JoinFqColumn "MultiJoinLeft.Key2"])
+            InnerJoin ("MultiJoinRight", ["Key1", EqualsToColumn "MultiJoinLeft.Key1"; "Key2", EqualsToColumn "MultiJoinLeft.Key2"])
         ] ""
     }
     
@@ -548,7 +548,7 @@ let tests = testList "SELECT QUERY BUILDER" [
             }
 
         Expect.equal query.Joins [
-            InnerJoinOnMany ("MultiJoinRight", [JoinColumn "Key2", JoinConstant 5L])
+            InnerJoin ("MultiJoinRight", ["Key2", EqualsToConstant 5L])
         ] ""
     }
 
@@ -562,7 +562,7 @@ let tests = testList "SELECT QUERY BUILDER" [
             }
 
         Expect.equal query.Joins [
-            InnerJoinOnMany ("MultiJoinRight", [JoinColumn "Key1", JoinConstant 3; JoinColumn "Key2", JoinConstant 5L])
+            InnerJoin ("MultiJoinRight", ["Key1", EqualsToConstant 3; "Key2", EqualsToConstant 5L])
         ] ""
     }
 
@@ -575,7 +575,7 @@ let tests = testList "SELECT QUERY BUILDER" [
             }
 
         Expect.equal query.Joins [
-            LeftJoinOnMany ("MultiJoinRight", [JoinColumn "Key1", JoinFqColumn "MultiJoinLeft.Key1"; JoinColumn "Key2", JoinFqColumn "MultiJoinLeft.Key2"])
+            LeftJoin ("MultiJoinRight", ["Key1", EqualsToColumn "MultiJoinLeft.Key1"; "Key2", EqualsToColumn "MultiJoinLeft.Key2"])
         ] ""
     }
 
