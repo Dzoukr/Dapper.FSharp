@@ -539,7 +539,7 @@ let tests = testList "SELECT QUERY BUILDER" [
         ] ""
     }
     
-    ftestTask "Inner Join with Constant Value" {
+    testTask "Inner Join with Constant Value" {
         let query = 
             select {
                 for l in table<MultiJoinLeft> do
@@ -553,7 +553,7 @@ let tests = testList "SELECT QUERY BUILDER" [
     }
 
     
-    ftestTask "Inner Join Multi-Column with Constant Values" {
+    testTask "Inner Join Multi-Column with Constant Values" {
         let query = 
             select {
                 for l in table<MultiJoinLeft> do

@@ -18,8 +18,8 @@ let private sharedTests crud init = [
     DeleteTests.testsBasic crud init
     UpdateTests.testsBasic crud init
     SelectTests.testsBasic crud init
+    IssuesTests.testsBasic crud init
     //TODO
-    //IssuesTests.testsBasic crud init
     //IssuesTests.testsOutput crud init
 ]
 
@@ -69,13 +69,12 @@ let postgresTests connString =
 
 [<EntryPoint>]
 let main argv =
-
     let conf = (ConfigurationBuilder()).AddJsonFile("settings.json").Build()
     Dapper.FSharp.OptionTypes.register()
     [
-//        conf.["mssqlConnectionString"] |> mssqlTests
-//        conf.["mysqlConnectionString"] |> mysqlTests
-//        conf.["postgresConnectionString"] |> postgresTests
+        conf.["mssqlConnectionString"] |> mssqlTests
+        conf.["mysqlConnectionString"] |> mysqlTests
+        conf.["postgresConnectionString"] |> postgresTests
         SelectQueryBuilderTests.tests
     ]
     |> testList "✔"
