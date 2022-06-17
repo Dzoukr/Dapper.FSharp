@@ -12,8 +12,9 @@ let select1<'a> evalSelectQuery (q:SelectQuery) =
     let fields = typeof<'a> |> Reflection.getFields
     // extract metadata
     let meta = WhereAnalyzer.getWhereMetadata [] q.Where
-    let query : string = evalSelectQuery fields meta q
-    let pars = WhereAnalyzer.extractWhereParams meta |> Map.ofList
+    let joinMeta = JoinAnalyzer.getJoinMetadata q.Joins
+    let query : string = evalSelectQuery fields meta joinMeta q
+    let pars = WhereAnalyzer.extractWhereParams meta |> Map.ofList |> JoinAnalyzer.addToMap joinMeta
     query, pars
 
 let select2<'a,'b> evalSelectQuery (q:SelectQuery) =
@@ -22,19 +23,21 @@ let select2<'a,'b> evalSelectQuery (q:SelectQuery) =
     let fieldsTwo, splitOn = extractFieldsAndSplit<'b> joinsArray.[0]
     // extract metadata
     let meta = WhereAnalyzer.getWhereMetadata [] q.Where
-    let query : string = evalSelectQuery (fieldsOne @ fieldsTwo) meta q
-    let pars = WhereAnalyzer.extractWhereParams meta |> Map.ofList
+    let joinMeta = JoinAnalyzer.getJoinMetadata q.Joins
+    let query : string = evalSelectQuery (fieldsOne @ fieldsTwo) meta joinMeta q
+    let pars = WhereAnalyzer.extractWhereParams meta |> Map.ofList |> JoinAnalyzer.addToMap joinMeta
     query, pars, createSplitOn [splitOn]
 
-let select3<'a,'b, 'c> evalSelectQuery (q:SelectQuery) =
+let select3<'a,'b,'c> evalSelectQuery (q:SelectQuery) =
     let joinsArray = q.Joins |> Array.ofList
     let fieldsOne = typeof<'a> |> Reflection.getFields |> List.map (sprintf "%s.%s" q.Table)
     let fieldsTwo, splitOn1 = extractFieldsAndSplit<'b> joinsArray.[0]
     let fieldsThree, splitOn2 = extractFieldsAndSplit<'c> joinsArray.[1]
     // extract metadata
     let meta = WhereAnalyzer.getWhereMetadata [] q.Where
-    let query : string = evalSelectQuery (fieldsOne @ fieldsTwo @ fieldsThree) meta q
-    let pars = WhereAnalyzer.extractWhereParams meta |> Map.ofList
+    let joinMeta = JoinAnalyzer.getJoinMetadata q.Joins
+    let query : string = evalSelectQuery (fieldsOne @ fieldsTwo @ fieldsThree) meta joinMeta q
+    let pars = WhereAnalyzer.extractWhereParams meta |> Map.ofList |> JoinAnalyzer.addToMap joinMeta
     query, pars, createSplitOn [splitOn1;splitOn2]
 
 let private _insert evalInsertQuery (q:InsertQuery<_>) fields outputFields =

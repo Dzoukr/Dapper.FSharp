@@ -66,21 +66,21 @@ module private Evaluators =
         | { Take = None; Skip = o } -> sprintf "LIMIT %i, %i" o (System.UInt64.MaxValue)
         | { Take = Some f; Skip = o } -> sprintf "LIMIT %i, %i" o f
     
-    let buildjoinType = function
+    let buildjoinType (meta:JoinAnalyzer.JoinMetadata list) = function
         | EqualsToColumn eqToCol -> (inQuotes eqToCol)
-
+        | EqualsToConstant con -> meta |> List.find (fun x -> x.Key = con) |> (fun x -> "@" + x.ParameterName)
     
-    let buildJoinOnMany joinType tableName (joinList: List<string * JoinType>) =
+    let buildJoinOnMany meta joinType tableName (joinList: List<string * JoinType>) =
         joinList
-        |> List.map (fun (colName, joinType) -> sprintf "%s.%s=%s" (inQuotes tableName) (inQuotes colName) (buildjoinType joinType))
+        |> List.map (fun (colName, jt) -> sprintf "%s.%s=%s" (inQuotes tableName) (inQuotes colName) (buildjoinType meta jt))
         |> List.reduce (fun s1 s2 -> s1 + " AND " + s2 )
         |> sprintf " %s JOIN %s ON %s" joinType tableName
 
-    let evalJoins (joins:Join list) =
+    let evalJoins (meta:JoinAnalyzer.JoinMetadata list) (joins:Join list) =
         let sb = StringBuilder()
         let evalJoin = function
-            | InnerJoin(table, list) -> buildJoinOnMany "INNER" table list
-            | LeftJoin(table, list) -> buildJoinOnMany "LEFT" table list
+            | InnerJoin(table, list) -> buildJoinOnMany meta "INNER" table list
+            | LeftJoin(table, list) -> buildJoinOnMany meta "LEFT" table list
         joins |> List.map evalJoin |> List.iter (sb.Append >> ignore)
         sb.ToString()
 
@@ -109,7 +109,7 @@ module private Evaluators =
         |> List.map inQuotes
         |> String.concat ", "
 
-    let evalSelectQuery fields meta (q:SelectQuery) =
+    let evalSelectQuery fields meta joinMeta (q:SelectQuery) =
         let aggregates = q.Aggregates |> evalAggregates
         let fieldNames =
             fields
@@ -120,7 +120,7 @@ module private Evaluators =
         // basic query
         let sb = StringBuilder(sprintf "SELECT %s%s FROM %s" distinct fieldNames (safeTableName q.Schema q.Table))
         // joins
-        let joins = evalJoins q.Joins
+        let joins = evalJoins joinMeta q.Joins
         if joins.Length > 0 then sb.Append joins |> ignore
         // where
         let where = evalWhere meta q.Where
