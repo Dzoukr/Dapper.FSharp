@@ -72,15 +72,19 @@ module private Evaluators =
         | { Take = None; Skip = o } -> sprintf "LIMIT ALL OFFSET %i" o
         | { Take = Some f; Skip = o } -> sprintf "LIMIT %i OFFSET %i" f o
 
-    let buildJoinOnMany joinType tableName (joinList: List<string * OuterJoinOn>) =
+    let buildJoinOnMany joinType tableName (joinList: List<InnerJoinOn * OuterJoinOn>) =
         joinList
-        |> List.map (fun (colName, eqToColOrValue) -> 
+        |> List.map (fun (col, eqToColOrValue) -> 
+            let innerColumn = 
+                match col with
+                | JoinColumn colName -> inQuotes colName
+
             let outerColumn = 
                 match eqToColOrValue with
-                | JoinColumn fqColName -> inQuotes fqColName
+                | JoinFqColumn fqColName -> inQuotes fqColName
                 | JoinConstant value -> formatConstant (string value)
 
-            sprintf "%s.%s=%s" (inQuotes tableName) (inQuotes colName) outerColumn
+            sprintf "%s.%s=%s" (inQuotes tableName) innerColumn outerColumn
         )
         |> List.reduce (fun s1 s2 -> s1 + " AND " + s2 )
         |> sprintf " %s JOIN %s ON %s" joinType (inQuotes tableName)

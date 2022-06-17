@@ -42,15 +42,18 @@ type Pagination = {
     Take : int option
 }
 
+type InnerJoinOn = 
+    | JoinColumn of colName: string
+
 type OuterJoinOn =
-    | JoinColumn of fqName: string
+    | JoinFqColumn of fqColName: string
     | JoinConstant of value: obj
 
 type Join =
     | InnerJoin of table:string * colName:string * equalsToColumn:string
     | LeftJoin of table:string * colName:string * equalsToColumn:string
-    | InnerJoinOnMany of table:string * List<string * OuterJoinOn>
-    | LeftJoinOnMany of table:string * List<string * OuterJoinOn>
+    | InnerJoinOnMany of table:string * List<InnerJoinOn * OuterJoinOn>
+    | LeftJoinOnMany of table:string * List<InnerJoinOn * OuterJoinOn>
 
 module Join =
     let tableName = function

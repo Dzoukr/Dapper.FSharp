@@ -188,8 +188,8 @@ type SelectExpressionBuilder<'T>() =
                 List.zip innerProperties outerProperties 
                 |> List.map (fun (innerProp, outerProp) -> 
                     match outerProp with
-                    | MI outerProp -> innerProp.Name, outerProp |> fullyQualifyColumn mergedTables |> JoinColumn
-                    | Const value -> innerProp.Name, value |> JoinConstant
+                    | MI outerProp -> JoinColumn innerProp.Name, JoinFqColumn (outerProp |> fullyQualifyColumn mergedTables)
+                    | Const value -> JoinColumn innerProp.Name, JoinConstant value
                 )
             let join = InnerJoinOnMany (innerTableName, joinPairs)
             let outerQuery = outerSource |> getQueryOrDefault
@@ -232,8 +232,8 @@ type SelectExpressionBuilder<'T>() =
                 List.zip innerProperties outerProperties 
                 |> List.map (fun (innerProp, outerProp) -> 
                     match outerProp with
-                    | MI outerProp -> innerProp.Name, outerProp |> fullyQualifyColumn mergedTables |> JoinColumn
-                    | Const value -> innerProp.Name, value |> JoinConstant
+                    | MI outerProp -> JoinColumn innerProp.Name, JoinFqColumn (outerProp |> fullyQualifyColumn mergedTables)
+                    | Const value -> JoinColumn innerProp.Name, JoinConstant value
                 )
             let join = LeftJoinOnMany (innerTableName, joinPairs)
             let outerQuery = outerSource |> getQueryOrDefault
