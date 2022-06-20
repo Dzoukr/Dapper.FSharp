@@ -4,6 +4,7 @@ module Dapper.FSharp.Builders
 open System.Linq.Expressions
 open System
 open System.Collections.Generic
+open LinqExpressionVisitors
 
 [<AutoOpen>]
 module FQ = 
@@ -159,11 +160,14 @@ type SelectExpressionBuilder<'T>() =
                       resultSelector: Expression<Func<'TOuter,'TInner,'Result>> ) = 
 
         let mergedTables = mergeTableMappings (outerSource.TableMappings, innerSource.TableMappings)
-        let innerProperties = LinqExpressionVisitors.visitJoin<'TInner, 'Key> innerKeySelector
+        let innerProperties = 
+            LinqExpressionVisitors.visitJoin<'TInner, 'Key> innerKeySelector
+            |> List.choose (function | MI mi -> Some mi | Const _ -> failwith "Left side in join must be a column.")
+
         let outerProperties = LinqExpressionVisitors.visitJoin<'TOuter, 'Key> outerKeySelector
 
         let innerTableName = 
-            innerProperties 
+            innerProperties             
             |> List.map (fun p -> mergedTables.[fqName p.DeclaringType])
             |> List.map (fun tbl -> 
                 match tbl.Schema with
@@ -173,17 +177,23 @@ type SelectExpressionBuilder<'T>() =
             |> List.head
 
         match innerProperties, outerProperties with
-        | [innerProperty], [outerProperty] -> 
+        | [innerProperty], [MI outerProperty] -> 
             // Only only fully qualify outer column (because Dapper.FSharp later appends "{innerTableName}.{innerPropertyName}")
-            let join = InnerJoin (innerTableName, innerProperty.Name, outerProperty |> fullyQualifyColumn mergedTables)
+            let join = InnerJoin (innerTableName, [innerProperty.Name, outerProperty |> fullyQualifyColumn mergedTables |> EqualsToColumn ])
             let outerQuery = outerSource |> getQueryOrDefault
             QuerySource<'Result, SelectQuery>({ outerQuery with Joins = outerQuery.Joins @ [join] }, mergedTables)
         | _ -> 
             // Only only fully qualify outer column (because Dapper.FSharp later appends "{innerTableName}.{innerPropertyName}")
             let joinPairs = 
                 List.zip innerProperties outerProperties 
-                |> List.map (fun (innerProp, outerProp) -> innerProp.Name, outerProp |> fullyQualifyColumn mergedTables)
-            let join = InnerJoinOnMany (innerTableName, joinPairs)
+                |> List.map (fun (innerProp, outerProp) -> 
+                    match outerProp with
+                    | MI outerProp -> 
+                        innerProp.Name, (outerProp |> fullyQualifyColumn mergedTables |> EqualsToColumn)
+                    | Const value -> 
+                        innerProp.Name, (value |> EqualsToConstant)
+                )
+            let join = InnerJoin (innerTableName, joinPairs)
             let outerQuery = outerSource |> getQueryOrDefault
             QuerySource<'Result, SelectQuery>({ outerQuery with Joins = outerQuery.Joins @ [join] }, mergedTables)
 
@@ -196,7 +206,10 @@ type SelectExpressionBuilder<'T>() =
                           resultSelector: Expression<Func<'TOuter,'TInner,'Result>> ) = 
 
         let mergedTables = mergeTableMappings (outerSource.TableMappings, innerSource.TableMappings)
-        let innerProperties = LinqExpressionVisitors.visitJoin<'TInner, 'Key> innerKeySelector
+        let innerProperties = 
+            LinqExpressionVisitors.visitJoin<'TInner, 'Key> innerKeySelector
+            |> List.choose (function | MI mi -> Some mi | Const _ -> failwith "Left side in join must be a column.")
+
         let outerProperties = LinqExpressionVisitors.visitJoin<'TOuter, 'Key> outerKeySelector
 
         let innerTableName = 
@@ -210,17 +223,23 @@ type SelectExpressionBuilder<'T>() =
             |> List.head
 
         match innerProperties, outerProperties with
-        | [innerProperty], [outerProperty] -> 
+        | [innerProperty], [MI outerProperty] -> 
             // Only only fully qualify outer column (because Dapper.FSharp later appends "{innerTableName}.{innerPropertyName}")
-            let join = LeftJoin (innerTableName, innerProperty.Name, outerProperty |> fullyQualifyColumn mergedTables)
+            let join = LeftJoin (innerTableName, [innerProperty.Name, outerProperty |> fullyQualifyColumn mergedTables |> EqualsToColumn])
             let outerQuery = outerSource |> getQueryOrDefault
             QuerySource<'Result, SelectQuery>({ outerQuery with Joins = outerQuery.Joins @ [join] }, mergedTables)
         | _ -> 
             // Only only fully qualify outer column (because Dapper.FSharp later appends "{innerTableName}.{innerPropertyName}")
             let joinPairs = 
                 List.zip innerProperties outerProperties 
-                |> List.map (fun (innerProp, outerProp) -> innerProp.Name, outerProp |> fullyQualifyColumn mergedTables)
-            let join = LeftJoinOnMany (innerTableName, joinPairs)
+                |> List.map (fun (innerProp, outerProp) -> 
+                    match outerProp with
+                    | MI outerProp -> 
+                        innerProp.Name, (outerProp |> fullyQualifyColumn mergedTables |> EqualsToColumn)
+                    | Const value -> 
+                        innerProp.Name, (value |> EqualsToConstant)
+                )
+            let join = LeftJoin (innerTableName, joinPairs)
             let outerQuery = outerSource |> getQueryOrDefault
             QuerySource<'Result, SelectQuery>({ outerQuery with Joins = outerQuery.Joins @ [join] }, mergedTables)
 

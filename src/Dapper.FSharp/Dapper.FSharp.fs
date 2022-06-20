@@ -42,18 +42,18 @@ type Pagination = {
     Take : int option
 }
 
+type JoinType =
+    | EqualsToColumn of string
+    | EqualsToConstant of obj
+
 type Join =
-    | InnerJoin of table:string * colName:string * equalsToColumn:string
-    | LeftJoin of table:string * colName:string * equalsToColumn:string
-    | InnerJoinOnMany of table:string * List<string * string>
-    | LeftJoinOnMany of table:string * List<string * string>
+    | InnerJoin of table:string * List<string * JoinType>
+    | LeftJoin of table:string * List<string * JoinType>
 
 module Join =
     let tableName = function
-        | InnerJoin (t,_,_)
-        | InnerJoinOnMany (t, _)
-        | LeftJoinOnMany (t, _)
-        | LeftJoin (t,_,_) -> t
+        | InnerJoin (t, _)
+        | LeftJoin (t, _) -> t
 
 type Aggregate =
     | Count of columnName:string * alias:string

@@ -3,10 +3,7 @@
 open System.Threading.Tasks
 open Dapper.FSharp
 open Dapper.FSharp.Tests.Database
-open Dapper.FSharp.Builders
-open Dapper.FSharp.Builders.Operators
 open Expecto
-open FSharp.Control.Tasks.V2
 open System.Threading
 open Dapper.FSharp.Tests.Extensions
 
