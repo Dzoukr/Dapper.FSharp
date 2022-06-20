@@ -10,7 +10,7 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "Issues" [
     let personsView = table'<Persons.View> "Persons" // |> inSchema "dbo"
     let dogsView = table'<Dogs.View> "Dogs" //|> inSchema "dbo"
     
-    ftestTask "Select with join over constant #62" {
+    testTask "Select with inner join over constant #62" {
         do! init.InitPersons()
         do! init.InitDogs()
 
@@ -39,6 +39,36 @@ let testsBasic (crud:ICrud) (init:ICrudInitializer) = testList "Issues" [
         
         Expect.equal 1 (Seq.length fromDb) ""
         Expect.equal (thirdPerson, thirdDog) (Seq.head fromDb) ""
+    }
+    
+    testTask "Select with left join over constant #62" {
+        do! init.InitPersons()
+        do! init.InitDogs()
+
+        let persons = Persons.View.generate 10
+        let secondPerson = persons.[1]
+        let secondPersonId = secondPerson.Id
+        
+        let dogs = Dogs.View.generate1toN 5 secondPerson
+        
+        let! _ =
+            insert {
+                into personsView
+                values persons
+            } |> crud.InsertAsync
+        let! _ =
+            insert {
+                into dogsView
+                values dogs
+            } |> crud.InsertAsync
+        let! fromDb =
+            select {
+                for p in personsView do
+                leftJoin d in dogsView on ((p.Id, secondPersonId) = (d.OwnerId,d.OwnerId))
+                selectAll
+            } |> crud.SelectAsyncOption<Persons.View, Dogs.View>
+        
+        Expect.equal 14 (Seq.length fromDb) ""
     }
 ]
 
