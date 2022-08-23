@@ -205,12 +205,13 @@ update {
 ```
 
 
-Partial updates are also possible by using an anonymous record:
+Partial updates are also possible by using `setColumn` keyword:
 
 ```F#
 update {
     for p in personTable do
-    set {| FirstName = "UPDATED"; LastName = "UPDATED" |}
+    setColumn p.FirstName "UPDATED"
+    setColumn p.LastName "UPDATED"
     where (p.Position = 1)
 } |> conn.UpdateAsync
 ```
