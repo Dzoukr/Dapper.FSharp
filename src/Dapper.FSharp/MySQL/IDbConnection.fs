@@ -1,7 +1,8 @@
-﻿module Dapper.FSharp.MySQL
+﻿[<AutoOpen>]
+module Dapper.FSharp.MySQL.IDbConnection
 
+open Dapper.FSharp
 open Dapper.FSharp.MySQL
-open Dapper.FSharp.MySQL.Evaluator
 open System.Data
 open System.Threading
 

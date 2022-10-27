@@ -1,4 +1,5 @@
-﻿namespace Dapper.FSharp.MySQL
+﻿[<AutoOpen>]
+module Dapper.FSharp.MySQL.Deconstructor
 
 open Dapper.FSharp.MySQL.Evaluator
 

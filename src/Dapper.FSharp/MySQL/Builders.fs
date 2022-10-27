@@ -3,7 +3,7 @@ module Dapper.FSharp.MySQL.Builders
 
 open Dapper.FSharp
 open Dapper.FSharp.MySQL
-open Dapper.FSharp.MySQL
+open Dapper.FSharp.MySQL.LinqExpressionVisitors
 open System.Linq.Expressions
 open System
 open System.Collections.Generic

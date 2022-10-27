@@ -1,4 +1,4 @@
-﻿module internal Dapper.FSharp.MySQL_LinqExpressionVisitors
+﻿module internal Dapper.FSharp.MySQL.LinqExpressionVisitors
 
 open System.Linq.Expressions
 open System

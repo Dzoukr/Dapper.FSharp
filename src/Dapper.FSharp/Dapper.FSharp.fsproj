@@ -31,15 +31,15 @@
 <!--    <Compile Include="MSSQL\Deconstructor.fs" />-->
 <!--    <Compile Include="MSSQL\IDbConnection.fs" />-->
 <!--    -->
-<!--    <Compile Include="MySQL\Domain.fs" />-->
-<!--    <Compile Include="MySQL\LinqExpressionVisitors.fs" />-->
-<!--    <Compile Include="MySQL\Builders.fs" />-->
-<!--    <Compile Include="MySQL\JoinAnalyzer.fs" />-->
-<!--    <Compile Include="MySQL\WhereAnalyzer.fs" />-->
-<!--    <Compile Include="MySQL\GenericDeconstructor.fs" />-->
-<!--    <Compile Include="MySQL\Evaluator.fs" />-->
-<!--    <Compile Include="MySQL\Deconstructor.fs" />-->
-<!--    <Compile Include="MySQL\MySQL.fs" />-->
+    <Compile Include="MySQL\Domain.fs" />
+    <Compile Include="MySQL\LinqExpressionVisitors.fs" />
+    <Compile Include="MySQL\Builders.fs" />
+    <Compile Include="MySQL\JoinAnalyzer.fs" />
+    <Compile Include="MySQL\WhereAnalyzer.fs" />
+    <Compile Include="MySQL\GenericDeconstructor.fs" />
+    <Compile Include="MySQL\Evaluator.fs" />
+    <Compile Include="MySQL\Deconstructor.fs" />
+    <Compile Include="MySQL\IDbConnection.fs" />
     
     <Compile Include="PostgreSQL\Domain.fs" />
     <Compile Include="PostgreSQL\LinqExpressionVisitors.fs" />

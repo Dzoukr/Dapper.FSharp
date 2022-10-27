@@ -1,4 +1,5 @@
-﻿namespace Dapper.FSharp.MySQL
+﻿[<AutoOpen>]
+module Dapper.FSharp.MySQL.Domain
 
 type OrderDirection =
     | Asc
