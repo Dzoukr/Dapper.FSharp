@@ -18,17 +18,39 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Reflection.fs" />
-    <Compile Include="Dapper.FSharp.fs" />
-    <Compile Include="LinqExpressionVisitors.fs" />
-    <Compile Include="Builders.fs" />
-    <Compile Include="WhereAnalyzer.fs" />
-    <Compile Include="JoinAnalyzer.fs" />
-    <Compile Include="GenericDeconstructor.fs" />
     <Compile Include="IDbConnection.fs" />
-    <Compile Include="MSSQL.fs" />
-    <Compile Include="MySQL.fs" />
-    <Compile Include="PostgreSQL.fs" />
     <Compile Include="OptionTypes.fs" />
+    
+<!--    <Compile Include="MSSQL\MSSQL.fs" />-->
+<!--    <Compile Include="MSSQL\LinqExpressionVisitors.fs" />-->
+<!--    <Compile Include="MSSQL\Builders.fs" />-->
+<!--    <Compile Include="MSSQL\JoinAnalyzer.fs" />-->
+<!--    <Compile Include="MSSQL\WhereAnalyzer.fs" />-->
+<!--    <Compile Include="MSSQL\GenericDeconstructor.fs" />-->
+<!--    <Compile Include="MSSQL\Evaluator.fs" />-->
+<!--    <Compile Include="MSSQL\Deconstructor.fs" />-->
+<!--    <Compile Include="MSSQL\IDbConnection.fs" />-->
+<!--    -->
+<!--    <Compile Include="MySQL\Domain.fs" />-->
+<!--    <Compile Include="MySQL\LinqExpressionVisitors.fs" />-->
+<!--    <Compile Include="MySQL\Builders.fs" />-->
+<!--    <Compile Include="MySQL\JoinAnalyzer.fs" />-->
+<!--    <Compile Include="MySQL\WhereAnalyzer.fs" />-->
+<!--    <Compile Include="MySQL\GenericDeconstructor.fs" />-->
+<!--    <Compile Include="MySQL\Evaluator.fs" />-->
+<!--    <Compile Include="MySQL\Deconstructor.fs" />-->
+<!--    <Compile Include="MySQL\MySQL.fs" />-->
+    
+    <Compile Include="PostgreSQL\Domain.fs" />
+    <Compile Include="PostgreSQL\LinqExpressionVisitors.fs" />
+    <Compile Include="PostgreSQL\Builders.fs" />
+    <Compile Include="PostgreSQL\JoinAnalyzer.fs" />
+    <Compile Include="PostgreSQL\WhereAnalyzer.fs" />
+    <Compile Include="PostgreSQL\GenericDeconstructor.fs" />
+    <Compile Include="PostgreSQL\Evaluator.fs" />
+    <Compile Include="PostgreSQL\Deconstructor.fs" />
+    <Compile Include="PostgreSQL\IDbConnection.fs" />
   </ItemGroup>
+  
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

@@ -1,10 +1,12 @@
 ﻿[<AutoOpen>]
-module Dapper.FSharp.Builders
+module Dapper.FSharp.MySQL.Builders
 
+open Dapper.FSharp
+open Dapper.FSharp.MySQL
+open Dapper.FSharp.MySQL
 open System.Linq.Expressions
 open System
 open System.Collections.Generic
-open LinqExpressionVisitors
 
 [<AutoOpen>]
 module FQ = 

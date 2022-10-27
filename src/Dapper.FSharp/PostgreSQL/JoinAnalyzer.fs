@@ -1,8 +1,8 @@
-﻿module internal Dapper.FSharp.JoinAnalyzer
+﻿module internal Dapper.FSharp.PostgreSQL.JoinAnalyzer
 
 
 open System.Linq
-open Dapper.FSharp
+open Dapper.FSharp.PostgreSQL
 
 type JoinMetadata = {
     Key : obj
@@ -28,9 +28,7 @@ let getJoinMetadata (joins:Join list)  =
     joins
     |> extractJoins
     |> extractConstants
-    |> List.mapi (fun i c ->
-        { Key = c; ParameterName = sprintf "JoinConst_%i" i }
-    )
+    |> List.mapi (fun i c -> { Key = c; ParameterName = sprintf "JoinConst_%i" i })
 
 let addToMap (meta:JoinMetadata list) (m:Map<string, obj>)  =
     meta

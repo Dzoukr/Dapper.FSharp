@@ -1,4 +1,4 @@
-﻿module Dapper.FSharp.Reflection
+﻿module internal Dapper.FSharp.Reflection
 
 open System
 

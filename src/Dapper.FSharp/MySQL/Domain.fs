@@ -1,4 +1,4 @@
-﻿namespace Dapper.FSharp
+﻿namespace Dapper.FSharp.MySQL
 
 type OrderDirection =
     | Asc

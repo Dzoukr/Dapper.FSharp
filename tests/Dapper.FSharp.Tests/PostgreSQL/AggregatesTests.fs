@@ -4,7 +4,6 @@ open System.Data
 open Expecto
 open Dapper.FSharp.Tests.Database
 open Dapper.FSharp.Tests.PostgreSQL.Database
-open Dapper.FSharp
 open Dapper.FSharp.PostgreSQL
 
 let persons = table'<Persons.View> "Persons"
