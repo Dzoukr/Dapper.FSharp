@@ -1,5 +1,7 @@
-﻿module Dapper.FSharp.MSSQL
+﻿[<AutoOpen>]
+module Dapper.FSharp.MSSQL.IDbConnection
 
+open Dapper.FSharp
 open Dapper.FSharp.MSSQL
 open System.Data
 open System.Threading

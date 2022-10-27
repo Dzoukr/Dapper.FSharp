@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>Dapper.FSharp</PackageId>
     <Description>Lightweight F# extension for StackOverflow Dapper with support for MSSQL, MySQL and PostgreSQL</Description>
@@ -21,16 +21,16 @@
     <Compile Include="IDbConnection.fs" />
     <Compile Include="OptionTypes.fs" />
     
-<!--    <Compile Include="MSSQL\MSSQL.fs" />-->
-<!--    <Compile Include="MSSQL\LinqExpressionVisitors.fs" />-->
-<!--    <Compile Include="MSSQL\Builders.fs" />-->
-<!--    <Compile Include="MSSQL\JoinAnalyzer.fs" />-->
-<!--    <Compile Include="MSSQL\WhereAnalyzer.fs" />-->
-<!--    <Compile Include="MSSQL\GenericDeconstructor.fs" />-->
-<!--    <Compile Include="MSSQL\Evaluator.fs" />-->
-<!--    <Compile Include="MSSQL\Deconstructor.fs" />-->
-<!--    <Compile Include="MSSQL\IDbConnection.fs" />-->
-<!--    -->
+    <Compile Include="MSSQL\Domain.fs" />
+    <Compile Include="MSSQL\LinqExpressionVisitors.fs" />
+    <Compile Include="MSSQL\Builders.fs" />
+    <Compile Include="MSSQL\JoinAnalyzer.fs" />
+    <Compile Include="MSSQL\WhereAnalyzer.fs" />
+    <Compile Include="MSSQL\GenericDeconstructor.fs" />
+    <Compile Include="MSSQL\Evaluator.fs" />
+    <Compile Include="MSSQL\Deconstructor.fs" />
+    <Compile Include="MSSQL\IDbConnection.fs" />
+
     <Compile Include="MySQL\Domain.fs" />
     <Compile Include="MySQL\LinqExpressionVisitors.fs" />
     <Compile Include="MySQL\Builders.fs" />

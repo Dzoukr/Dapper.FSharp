@@ -1,4 +1,5 @@
-﻿namespace Dapper.FSharp.MSSQL
+﻿[<AutoOpen>]
+module Dapper.FSharp.MSSQL.Domain
 
 type OrderDirection =
     | Asc
