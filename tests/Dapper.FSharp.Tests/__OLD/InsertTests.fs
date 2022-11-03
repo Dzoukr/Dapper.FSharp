@@ -1,7 +1,6 @@
 ﻿module Dapper.FSharp.Tests.InsertTests
 
 open Dapper.FSharp
-open Dapper.FSharp.Builders
 open Dapper.FSharp.Tests.Database
 open Expecto
 open System.Threading
