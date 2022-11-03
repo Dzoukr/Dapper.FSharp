@@ -3,8 +3,6 @@
 open System.Threading
 open System.Threading.Tasks
 open Dapper.FSharp
-open Microsoft.Data.SqlClient
-open Microsoft.Extensions.Configuration
 open NUnit.Framework
 open Dapper.FSharp.MSSQL
 open Dapper.FSharp.Tests.Database
@@ -16,15 +14,11 @@ type SelectTests () =
     let personsView = table'<Persons.View> "Persons"
     let dogsView = table'<Dogs.View> "Dogs"
     let dogsWeightsView = table'<DogsWeights.View> "DogsWeights"
-    let conf = ConfigurationBuilder().AddJsonFile("settings.json").Build()
-    let conn = new SqlConnection(conf.["mssqlConnectionString"])
+    let conn = Database.getConnection()
     let init = Database.getInitializer conn
     
     [<OneTimeSetUp>]
-    member _.``Setup DB``() =
-        Database.init conn
-        OptionTypes.register()
-    
+    member _.``Setup DB``() = conn |> Database.safeInit
         
     [<Test>]
     member _.``Selects by single where condition``() =

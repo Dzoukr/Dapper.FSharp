@@ -1,18 +1,33 @@
 ﻿module Dapper.FSharp.Tests.MSSQL.Database
 
+open Dapper.FSharp
 open Dapper.FSharp.Tests.Database
 open Dapper.FSharp.Tests.Extensions
 open System.Data
+open Microsoft.Data.SqlClient
+open Microsoft.Extensions.Configuration
 
-let init (conn:IDbConnection) =
+let getConnection () =
+    let conf = ConfigurationBuilder().AddJsonFile("settings.json").Build()
+    new SqlConnection(conf.["mssqlConnectionString"])
+
+let mutable isAlreadyInitialized = false
+
+let safeInit (conn:IDbConnection) =
     task {
-        do! DbName |> sprintf "DROP DATABASE IF EXISTS %s;" |> conn.ExecuteIgnore
-        do! DbName |> sprintf "CREATE DATABASE %s;" |> conn.ExecuteIgnore
-        conn.Open()
-        conn.ChangeDatabase DbName
-        do! TestSchema |> sprintf "DROP SCHEMA IF EXISTS %s;" |> conn.ExecuteIgnore
-        do! TestSchema |> sprintf "CREATE SCHEMA %s;" |> conn.ExecuteIgnore
-    } |> Async.AwaitTask |> Async.RunSynchronously
+        if isAlreadyInitialized |> not then
+            
+            do! DbName |> sprintf "DROP DATABASE IF EXISTS %s;" |> conn.ExecuteIgnore
+            do! DbName |> sprintf "CREATE DATABASE %s;" |> conn.ExecuteIgnore
+            conn.Open()
+            conn.ChangeDatabase DbName
+            do! TestSchema |> sprintf "DROP SCHEMA IF EXISTS %s;" |> conn.ExecuteIgnore
+            do! TestSchema |> sprintf "CREATE SCHEMA %s;" |> conn.ExecuteIgnore
+            isAlreadyInitialized <- true
+            OptionTypes.register()
+    }
+    |> Async.AwaitTask
+    |> Async.RunSynchronously
 
 module Persons =
 
@@ -169,7 +184,6 @@ module Issues =
                 return ()
             }
 
-open Dapper.FSharp.MSSQL
 
 let getInitializer (conn:IDbConnection) =
     { new ICrudInitializer with
