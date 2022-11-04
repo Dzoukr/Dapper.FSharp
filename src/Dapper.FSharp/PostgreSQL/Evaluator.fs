@@ -46,6 +46,8 @@ let rec evalWhere (meta:FieldWhereMetadata list) (w:Where) =
         | NotIn _ -> withField "<> ALL"
         | Like _ -> withField "LIKE"
         | NotLike _ -> withField "NOT LIKE"
+        | ILike _ -> withField "ILIKE"
+        | NotILike _ -> withField "NOT ILIKE"
         | IsNull -> sprintf "%s IS NULL" fieldName
         | IsNotNull -> sprintf "%s IS NOT NULL" fieldName
     | Binary(w1, comb, w2) ->

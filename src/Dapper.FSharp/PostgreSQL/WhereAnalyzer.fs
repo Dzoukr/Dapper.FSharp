@@ -21,7 +21,9 @@ let extractWhereParams (meta:FieldWhereMetadata list) =
                 let x = ReflectiveListBuilder.BuildTypedResizeArray (h.GetType()) p
                 (m.ParameterName, x) |> Some
             | None -> (m.ParameterName, p.ToArray() :> obj) |> Some
-        | Like str -> (m.ParameterName, str :> obj) |> Some
+        | Like str
+        | ILike str
+        | NotILike str
         | NotLike str -> (m.ParameterName, str :> obj) |> Some
         | IsNull | IsNotNull -> None
     meta

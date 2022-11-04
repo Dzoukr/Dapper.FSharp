@@ -207,8 +207,8 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
         | MethodCall m when m.Method.Name = "Invoke" ->
             // Handle tuples
             visit m.Object
-        | MethodCall m when List.contains m.Method.Name [ "isIn"; "isNotIn"; "op_BarEqualsBar"; "op_BarLessGreaterBar" ] ->
-            let comparisonType = m.Method.Name |> function "isIn" | "op_BarEqualsBar" -> In | _ -> NotIn
+        | MethodCall m when List.contains m.Method.Name [ "isIn"; "isNotIn" ] ->
+            let comparisonType = m.Method.Name |> function "isIn" -> In | _ -> NotIn
             match m.Arguments.[0], m.Arguments.[1] with
             | Property p, MethodCall lst ->
                 let lstValues = unwrapListExpr ([], lst)                
@@ -217,13 +217,16 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
                 let lstValues = (value :?> System.Collections.IEnumerable) |> Seq.cast<obj> |> Seq.toList
                 Column (qualifyColumn p, comparisonType lstValues)
             | _ -> notImpl()
-        | MethodCall m when List.contains m.Method.Name [ "like"; "notLike"; "op_EqualsPercent"; "op_LessGreaterPercent" ] ->
+        | MethodCall m when List.contains m.Method.Name [ "like"; "notLike"; "ilike"; "notILike" ] ->
             match m.Arguments.[0], m.Arguments.[1] with
             | Property p, Value value -> 
                 let pattern = string value
                 match m.Method.Name with
-                | "like" | "op_EqualsPercent" -> Column ((qualifyColumn p), (Like pattern))
-                | _ -> Column ((qualifyColumn p), (NotLike pattern))
+                | "like" -> Column ((qualifyColumn p), (Like pattern))
+                | "ilike" -> Column ((qualifyColumn p), (ILike pattern))
+                | "notLike" -> Column ((qualifyColumn p), (NotLike pattern))
+                | "notILike" -> Column ((qualifyColumn p), (NotILike pattern))
+                | _ -> notImplMsg "Proper method not found"
             | _ -> notImpl()
         | MethodCall m when m.Method.Name = "isNullValue" || m.Method.Name = "isNotNullValue" ->
             match m.Arguments.[0] with

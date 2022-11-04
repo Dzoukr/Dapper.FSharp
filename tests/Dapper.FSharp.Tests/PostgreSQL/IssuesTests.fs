@@ -79,3 +79,47 @@ type IssuesTests () =
             
             Assert.AreEqual(14, Seq.length fromDb)
         }
+    
+    [<Test>]
+    member _.``Support for ilike in postgresql #65``() = 
+        task {
+            do! init.InitPersons()
+
+            let persons = Persons.View.generate 10
+            
+            let! _ =
+                insert {
+                    into personsView
+                    values persons
+                } |> conn.InsertAsync
+          
+            let! fromDb =
+                select {
+                    for p in personsView do
+                    where (ilike p.FirstName "fIrSt_%")
+                } |> conn.SelectAsync<Persons.View>
+            
+            Assert.AreEqual(10, Seq.length fromDb)
+        }
+    
+    [<Test>]
+    member _.``Support for not ilike in postgresql #65``() = 
+        task {
+            do! init.InitPersons()
+
+            let persons = Persons.View.generate 10
+            
+            let! _ =
+                insert {
+                    into personsView
+                    values persons
+                } |> conn.InsertAsync
+          
+            let! fromDb =
+                select {
+                    for p in personsView do
+                    where (notILike p.FirstName "fIrSt_%")
+                } |> conn.SelectAsync<Persons.View>
+            
+            Assert.AreEqual(0, Seq.length fromDb)
+        }

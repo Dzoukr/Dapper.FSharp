@@ -514,17 +514,11 @@ let isNotIn<'P> (prop: 'P) (values: 'P list) = true
 let like<'P> (prop: 'P) (pattern: string) = true
 /// WHERE column not like value   
 let notLike<'P> (prop: 'P) (pattern: string) = true
+/// WHERE column ilike value   
+let ilike<'P> (prop: 'P) (pattern: string) = true
+/// WHERE column not ilike value   
+let notILike<'P> (prop: 'P) (pattern: string) = true
 /// WHERE column IS NULL
 let isNullValue<'P> (prop: 'P) = true
 /// WHERE column IS NOT NULL
 let isNotNullValue<'P> (prop: 'P) = true
-
-module Operators = 
-    /// WHERE column is IN values
-    let (|=|) (prop: 'P) (values: 'P list) = true
-    /// WHERE column is NOT IN values
-    let (|<>|) (prop: 'P) (values: 'P list) = true
-    /// WHERE column like value   
-    let (=%) (prop: 'P) (pattern: string) = true
-    /// WHERE column not like value   
-    let (<>%) (prop: 'P) (pattern: string) = true

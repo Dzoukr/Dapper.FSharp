@@ -499,13 +499,3 @@ let notLike<'P> (prop: 'P) (pattern: string) = true
 let isNullValue<'P> (prop: 'P) = true
 /// WHERE column IS NOT NULL
 let isNotNullValue<'P> (prop: 'P) = true
-
-module Operators = 
-    /// WHERE column is IN values
-    let (|=|) (prop: 'P) (values: 'P list) = true
-    /// WHERE column is NOT IN values
-    let (|<>|) (prop: 'P) (values: 'P list) = true
-    /// WHERE column like value   
-    let (=%) (prop: 'P) (pattern: string) = true
-    /// WHERE column not like value   
-    let (<>%) (prop: 'P) (pattern: string) = true
