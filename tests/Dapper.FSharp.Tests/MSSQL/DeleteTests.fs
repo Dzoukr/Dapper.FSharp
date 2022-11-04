@@ -44,24 +44,24 @@ type DeleteTests () =
     [<Test>]
     member _.`` Cancellation works``() =
         task {
-        do! init.InitPersons()
-        let rs = Persons.View.generate 10
-        let! _ =
-            insert {
-                into personsView
-                values rs
-            } |> conn.InsertAsync
-        use cts = new CancellationTokenSource()
-        cts.Cancel()
-        let deleteCrud query =
-            conn.DeleteAsync(query, cancellationToken = cts.Token) :> Task
-        let action () = 
-            delete {
-                for p in personsView do
-                where (p.Position = 10)
-            } |> deleteCrud 
-        
-        Assert.ThrowsAsync<TaskCanceledException>(action) |> ignore
+            do! init.InitPersons()
+            let rs = Persons.View.generate 10
+            let! _ =
+                insert {
+                    into personsView
+                    values rs
+                } |> conn.InsertAsync
+            use cts = new CancellationTokenSource()
+            cts.Cancel()
+            let deleteCrud query =
+                conn.DeleteAsync(query, cancellationToken = cts.Token) :> Task
+            let action () = 
+                delete {
+                    for p in personsView do
+                    where (p.Position = 10)
+                } |> deleteCrud 
+            
+            Assert.ThrowsAsync<TaskCanceledException>(action) |> ignore
     }
     
     [<Test>]

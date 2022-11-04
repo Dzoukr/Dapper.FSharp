@@ -25,6 +25,14 @@
 <!--    <Compile Include="__OLD\UpdateTests.fs" />-->
     <Compile Include="Extensions.fs" />
     <Compile Include="Database.fs" />
+    <Compile Include="MySQL\Database.fs" />
+    <Compile Include="MySQL\DeleteTests.fs" />
+    <Compile Include="MySQL\IssuesTests.fs" />
+    <Compile Include="MySQL\AggregatesTests.fs" />
+    <Compile Include="MySQL\UpdateTests.fs" />
+    <Compile Include="MySQL\InsertTests.fs" />
+    <Compile Include="MySQL\SelectTests.fs" />
+      
     <Compile Include="MSSQL\Database.fs" />
     <Compile Include="MSSQL\DeleteTests.fs" />
     <Compile Include="MSSQL\IssuesTests.fs" />
