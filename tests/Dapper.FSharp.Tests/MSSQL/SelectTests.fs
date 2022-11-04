@@ -2,7 +2,6 @@
 
 open System.Threading
 open System.Threading.Tasks
-open Dapper.FSharp
 open NUnit.Framework
 open Dapper.FSharp.MSSQL
 open Dapper.FSharp.Tests.Database

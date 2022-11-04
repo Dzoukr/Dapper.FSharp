@@ -28,6 +28,7 @@
     <Compile Include="MSSQL\Database.fs" />
     <Compile Include="MSSQL\DeleteTests.fs" />
     <Compile Include="MSSQL\IssuesTests.fs" />
+    <Compile Include="MSSQL\AggregatesTests.fs" />
     <Compile Include="MSSQL\UpdateTests.fs" />
     <Compile Include="MSSQL\InsertTests.fs" />
     <Compile Include="MSSQL\SelectTests.fs" />

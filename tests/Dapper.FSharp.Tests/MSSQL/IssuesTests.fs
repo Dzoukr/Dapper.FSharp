@@ -1,7 +1,5 @@
 ﻿module Dapper.FSharp.Tests.MSSQL.IssuesTests
 
-open System.Threading
-open System.Threading.Tasks
 open NUnit.Framework
 open Dapper.FSharp.MSSQL
 open Dapper.FSharp.Tests.Database
