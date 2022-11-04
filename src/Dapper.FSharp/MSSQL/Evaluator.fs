@@ -102,6 +102,15 @@ let evalGroupBy (cols:string list) =
     cols
     |> String.concat ", "
 
+let evalQueryOption (op:QueryOption) =
+    match op with
+    | QueryOption.OptionRecompile -> "OPTION(RECOMPILE)"
+
+let evalQueryOptions (opt:QueryOption list) =
+    opt
+    |> List.map evalQueryOption
+    |> String.concat " "
+
 let evalSelectQuery fields meta joinMeta (q:SelectQuery) =
     let aggregates = q.Aggregates |> evalAggregates
     let fieldNames =
@@ -128,6 +137,9 @@ let evalSelectQuery fields meta joinMeta (q:SelectQuery) =
     // pagination
     let pagination = evalPagination q.Pagination
     if pagination.Length > 0 then sb.Append (sprintf " %s" pagination) |> ignore
+    // query options
+    let queryOptions = evalQueryOptions q.QueryOptions
+    if queryOptions.Length > 0 then sb.Append (sprintf " %s" queryOptions) |> ignore
     sb.ToString()
 
 let evalInsertQuery fields outputFields (q:InsertQuery<_>) =

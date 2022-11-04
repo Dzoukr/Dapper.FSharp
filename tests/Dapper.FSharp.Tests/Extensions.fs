@@ -14,4 +14,3 @@ type System.Data.IDbConnection with
                 do! this.ExecuteIgnore(cmd)
             with _ -> return ()
         }
-

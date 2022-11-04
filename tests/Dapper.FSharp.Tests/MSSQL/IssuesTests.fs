@@ -79,3 +79,28 @@ type IssuesTests () =
             
             Assert.AreEqual(14, Seq.length fromDb)
         }
+    
+    [<Test>]
+    member _.``Support for OPTION(RECOMPILE) #70``() = 
+        task {
+            do! init.InitPersons()
+
+            let persons = Persons.View.generate 10
+            
+            let! _ =
+                insert {
+                    into personsView
+                    values persons
+                } |> conn.InsertAsync
+            let q =
+                select {
+                    for p in personsView do
+                    selectAll
+                    optionRecompile
+                }
+            
+            let! fromDb = q |> conn.SelectAsync<Persons.View>
+            let query,_ = q |> Deconstructor.select<Persons.View>
+            Assert.AreEqual(10, Seq.length fromDb)
+            Assert.IsTrue(query.Contains("OPTION(RECOMPILE)"))
+        }

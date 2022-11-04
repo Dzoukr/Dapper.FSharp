@@ -63,6 +63,9 @@ type Aggregate =
     | Min of columnName:string * alias:string
     | Max of columnName:string * alias:string
 
+type QueryOption =
+    | OptionRecompile
+
 type SelectQuery = {
     Schema : string option
     Table : string
@@ -73,6 +76,7 @@ type SelectQuery = {
     Aggregates : Aggregate list
     GroupBy : string list
     Distinct : bool
+    QueryOptions : QueryOption list
 }
 
 type InsertQuery<'a> = {

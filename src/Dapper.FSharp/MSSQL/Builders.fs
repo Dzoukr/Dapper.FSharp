@@ -70,15 +70,18 @@ type SelectExpressionBuilder<'T>() =
         match state with
         | :? QuerySource<'Result, SelectQuery> as qs -> qs.Query
         | _ -> 
-            { Schema = None
-              Table = ""
-              Where = Where.Empty
-              OrderBy = []
-              Pagination = { Skip = 0; Take = None }
-              Joins = []
-              Aggregates = []
-              GroupBy = []
-              Distinct = false } : SelectQuery    
+            {
+                Schema = None
+                Table = ""
+                Where = Where.Empty
+                OrderBy = []
+                Pagination = { Skip = 0; Take = None }
+                Joins = []
+                Aggregates = []
+                GroupBy = []
+                Distinct = false
+                QueryOptions = []
+            } : SelectQuery    
 
     let mergeTableMappings (a: Map<FQName, TableMapping>, b: Map<FQName, TableMapping>) =
         Map (Seq.concat [ (Map.toSeq a); (Map.toSeq b) ])
@@ -270,58 +273,36 @@ type SelectExpressionBuilder<'T>() =
         let query = state |> getQueryOrDefault
         QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Avg(colName, alias)] }, state.TableMappings)
 
-    /// AVG aggregate function for the selected column
-    //[<CustomOperation("avgBy", MaintainsVariableSpace = true)>]
-    //member this.AvgBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-    //    let query = state |> getQueryOrDefault
-    //    let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
-    //    QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Avg(propertyName, propertyName)] }, state.TableMappings)
-    
     /// SUM aggregate function for COLNAME (or * symbol) and map it to ALIAS
     [<CustomOperation("sum", MaintainsVariableSpace = true)>]
     member this.Sum (state:QuerySource<'T>, colName, alias) = 
         let query = state |> getQueryOrDefault
         QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Sum(colName, alias)] }, state.TableMappings)
 
-    /// SUM aggregate function for the selected column
-    //[<CustomOperation("sumBy", MaintainsVariableSpace = true)>]
-    //member this.SumBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-    //    let query = state |> getQueryOrDefault
-    //    let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
-    //    QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Sum(propertyName, propertyName)] }, state.TableMappings)
-    
     /// MIN aggregate function for COLNAME (or * symbol) and map it to ALIAS
     [<CustomOperation("min", MaintainsVariableSpace = true)>]
     member this.Min (state:QuerySource<'T>, colName, alias) = 
         let query = state |> getQueryOrDefault
         QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Min(colName, alias)] }, state.TableMappings)
 
-    /// MIN aggregate function for the selected column
-    //[<CustomOperation("minBy", MaintainsVariableSpace = true)>]
-    //member this.MinBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-    //    let query = state |> getQueryOrDefault
-    //    let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
-    //    QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Min(propertyName, propertyName)] }, state.TableMappings)
-    
     /// MIN aggregate function for COLNAME (or * symbol) and map it to ALIAS
     [<CustomOperation("max", MaintainsVariableSpace = true)>]
     member this.Max (state:QuerySource<'T>, colName, alias) = 
         let query = state |> getQueryOrDefault
         QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Max(colName, alias)] }, state.TableMappings)
 
-    /// MIN aggregate function for the selected column
-    //[<CustomOperation("maxBy", MaintainsVariableSpace = true)>]
-    //member this.MaxBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
-    //    let query = state |> getQueryOrDefault
-    //    let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
-    //    QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Max(propertyName, propertyName)] }, state.TableMappings)
-    
     /// Sets query to return DISTINCT values
     [<CustomOperation("distinct", MaintainsVariableSpace = true)>]
     member this.Distinct (state:QuerySource<'T>) = 
         let query = state |> getQueryOrDefault
         QuerySource<'T, SelectQuery>({ query with Distinct = true }, state.TableMappings)
-
+    
+    /// Sets query to use OPTION(RECOMPILE)
+    [<CustomOperation("optionRecompile", MaintainsVariableSpace = true)>]
+    member this.OptionRecompile (state:QuerySource<'T>) = 
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, SelectQuery>({ query with QueryOptions = query.QueryOptions @ [ QueryOption.OptionRecompile ] }, state.TableMappings)
+    
     /// Selects all (needed only when there are no other clauses after "for" or "join")
     [<CustomOperation("selectAll", MaintainsVariableSpace = true)>]
     member this.SelectAll (state:QuerySource<'T>) = 
