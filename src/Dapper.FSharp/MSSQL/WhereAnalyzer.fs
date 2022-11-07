@@ -1,6 +1,7 @@
-﻿module internal Dapper.FSharp.WhereAnalyzer
+﻿module internal Dapper.FSharp.MSSQL.WhereAnalyzer
 
 open System.Linq
+open Dapper.FSharp.Reflection
 
 type FieldWhereMetadata = {
     Key : string * ColumnComparison
@@ -16,7 +17,7 @@ let extractWhereParams (meta:FieldWhereMetadata list) =
         | In p | NotIn p ->
             match p |> Seq.tryHead with
             | Some h ->
-                let x = Reflection.ReflectiveListBuilder.BuildTypedResizeArray (h.GetType()) p
+                let x = ReflectiveListBuilder.BuildTypedResizeArray (h.GetType()) p
                 (m.ParameterName, x) |> Some
             | None -> (m.ParameterName, p.ToArray() :> obj) |> Some
         | Like str -> (m.ParameterName, str :> obj) |> Some

@@ -1,20 +1,34 @@
 ﻿module Dapper.FSharp.Tests.MySQL.Database
 
+open Dapper.FSharp
 open Dapper.FSharp.Tests.Database
 open Dapper.FSharp.Tests.Extensions
-open System
 open System.Data
-open FSharp.Control.Tasks
+open Microsoft.Extensions.Configuration
+open MySql.Data.MySqlClient
 
-let init (conn:IDbConnection) =
+let getConnection () =
+    let conf = ConfigurationBuilder().AddJsonFile("settings.json").Build()
+    let conn = new MySqlConnection(conf.["mysqlConnectionString"])
+    conn.Open()
+    conn.ChangeDatabase DbName
+    conn
+
+let mutable isAlreadyInitialized = false
+
+let safeInit (conn:IDbConnection) =
     task {
-        do! DbName |> sprintf "DROP DATABASE IF EXISTS %s;" |> conn.ExecuteIgnore
-        do! DbName |> sprintf "CREATE DATABASE %s;" |> conn.ExecuteIgnore
-        conn.Open()
-        conn.ChangeDatabase DbName
-        do! TestSchema |> sprintf "DROP SCHEMA IF EXISTS %s;" |> conn.ExecuteIgnore
-        do! TestSchema |> sprintf "CREATE SCHEMA %s;" |> conn.ExecuteIgnore
-    } |> Async.AwaitTask |> Async.RunSynchronously
+        if isAlreadyInitialized |> not then
+            do! DbName |> sprintf "DROP DATABASE IF EXISTS %s;" |> conn.ExecuteIgnore
+            do! DbName |> sprintf "CREATE DATABASE %s;" |> conn.ExecuteIgnore
+            conn.ChangeDatabase DbName
+            do! TestSchema |> sprintf "DROP SCHEMA IF EXISTS %s;" |> conn.ExecuteIgnore
+            do! TestSchema |> sprintf "CREATE SCHEMA %s;" |> conn.ExecuteIgnore
+            isAlreadyInitialized <- true
+            OptionTypes.register()
+    }
+    |> Async.AwaitTask
+    |> Async.RunSynchronously
 
 module Persons =
 
@@ -174,18 +188,6 @@ module Issues =
             }
 
 open Dapper.FSharp.MySQL
-
-let getCrud (conn:IDbConnection) =
-    { new ICrud with
-        member x.SelectAsync<'a> (q, cancellationToken) = conn.SelectAsync<'a>(q, ?cancellationToken = cancellationToken)
-        member x.SelectAsync<'a,'b> q = conn.SelectAsync<'a,'b>(q)
-        member x.SelectAsync<'a,'b,'c> q = conn.SelectAsync<'a,'b,'c>(q)
-        member x.SelectAsyncOption<'a,'b> q = conn.SelectAsyncOption<'a,'b>(q)
-        member x.SelectAsyncOption<'a,'b,'c> q = conn.SelectAsyncOption<'a,'b,'c>(q)
-        member x.InsertAsync<'a> (q, cancellationToken) = conn.InsertAsync<'a>(q, ?cancellationToken = cancellationToken)
-        member x.DeleteAsync (q, cancellationToken) = conn.DeleteAsync(q, ?cancellationToken = cancellationToken)
-        member x.UpdateAsync (q, cancellationToken) = conn.UpdateAsync(q, ?cancellationToken = cancellationToken)
-    }
 
 let getInitializer (conn:IDbConnection) =
     { new ICrudInitializer with

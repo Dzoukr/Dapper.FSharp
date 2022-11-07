@@ -31,7 +31,7 @@ let publishNuget proj =
 
 Target.create "Pack" (fun _ -> "src" </> "Dapper.FSharp" |> createNuget)
 Target.create "Publish" (fun _ -> "src" </> "Dapper.FSharp" |> publishNuget)
-Target.create "Test" (fun _ -> Tools.dotnet "run" ("tests" </> "Dapper.FSharp.Tests"))
+Target.create "Test" (fun _ -> Tools.dotnet "test" ("tests" </> "Dapper.FSharp.Tests"))
 
 let dependencies = [
     "Test" ==> "Pack"

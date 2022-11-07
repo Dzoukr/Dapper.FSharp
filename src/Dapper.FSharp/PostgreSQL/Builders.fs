@@ -1,10 +1,11 @@
 ﻿[<AutoOpen>]
-module Dapper.FSharp.Builders
+module Dapper.FSharp.PostgreSQL.Builders
 
+open Dapper.FSharp
+open Dapper.FSharp.PostgreSQL.LinqExpressionVisitors
 open System.Linq.Expressions
 open System
 open System.Collections.Generic
-open LinqExpressionVisitors
 
 [<AutoOpen>]
 module FQ = 
@@ -98,14 +99,14 @@ type SelectExpressionBuilder<'T>() =
     [<CustomOperation("where", MaintainsVariableSpace = true)>]
     member this.Where (state:QuerySource<'T>, [<ProjectionParameter>] whereExpression) = 
         let query = state |> getQueryOrDefault
-        let where = LinqExpressionVisitors.visitWhere<'T> whereExpression (fullyQualifyColumn state.TableMappings)
+        let where = visitWhere<'T> whereExpression (fullyQualifyColumn state.TableMappings)
         QuerySource<'T, SelectQuery>({ query with Where = where }, state.TableMappings)
 
     /// Sets the ORDER BY for single column
     [<CustomOperation("orderBy", MaintainsVariableSpace = true)>]
     member this.OrderBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let query = state |> getQueryOrDefault
-        let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
+        let propertyName = visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
         let orderBy = OrderBy (propertyName, Asc)
         QuerySource<'T, SelectQuery>({ query with OrderBy = query.OrderBy @ [orderBy] }, state.TableMappings)
 
@@ -113,7 +114,7 @@ type SelectExpressionBuilder<'T>() =
     [<CustomOperation("thenBy", MaintainsVariableSpace = true)>]
     member this.ThenBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let query = state |> getQueryOrDefault
-        let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
+        let propertyName = visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
         let orderBy = OrderBy (propertyName, Asc)
         QuerySource<'T, SelectQuery>({ query with OrderBy = query.OrderBy @ [orderBy] }, state.TableMappings)
 
@@ -121,7 +122,7 @@ type SelectExpressionBuilder<'T>() =
     [<CustomOperation("orderByDescending", MaintainsVariableSpace = true)>]
     member this.OrderByDescending (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let query = state |> getQueryOrDefault
-        let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
+        let propertyName = visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
         let orderBy = OrderBy (propertyName, Desc)
         QuerySource<'T, SelectQuery>({ query with OrderBy = query.OrderBy @ [orderBy] }, state.TableMappings)
 
@@ -129,7 +130,7 @@ type SelectExpressionBuilder<'T>() =
     [<CustomOperation("thenByDescending", MaintainsVariableSpace = true)>]
     member this.ThenByDescending (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let query = state |> getQueryOrDefault
-        let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
+        let propertyName = visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
         let orderBy = OrderBy (propertyName, Desc)
         QuerySource<'T, SelectQuery>({ query with OrderBy = query.OrderBy @ [orderBy] }, state.TableMappings)
 
@@ -161,10 +162,10 @@ type SelectExpressionBuilder<'T>() =
 
         let mergedTables = mergeTableMappings (outerSource.TableMappings, innerSource.TableMappings)
         let innerProperties = 
-            LinqExpressionVisitors.visitJoin<'TInner, 'Key> innerKeySelector
+            visitJoin<'TInner, 'Key> innerKeySelector
             |> List.choose (function | MI mi -> Some mi | Const _ -> failwith "Left side in join must be a column.")
 
-        let outerProperties = LinqExpressionVisitors.visitJoin<'TOuter, 'Key> outerKeySelector
+        let outerProperties = visitJoin<'TOuter, 'Key> outerKeySelector
 
         let innerTableName = 
             innerProperties             
@@ -207,10 +208,10 @@ type SelectExpressionBuilder<'T>() =
 
         let mergedTables = mergeTableMappings (outerSource.TableMappings, innerSource.TableMappings)
         let innerProperties = 
-            LinqExpressionVisitors.visitJoin<'TInner, 'Key> innerKeySelector
+            visitJoin<'TInner, 'Key> innerKeySelector
             |> List.choose (function | MI mi -> Some mi | Const _ -> failwith "Left side in join must be a column.")
 
-        let outerProperties = LinqExpressionVisitors.visitJoin<'TOuter, 'Key> outerKeySelector
+        let outerProperties = visitJoin<'TOuter, 'Key> outerKeySelector
 
         let innerTableName = 
             innerProperties 
@@ -247,7 +248,7 @@ type SelectExpressionBuilder<'T>() =
     [<CustomOperation("groupBy", MaintainsVariableSpace = true)>]
     member this.GroupBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let query = state |> getQueryOrDefault
-        let properties = LinqExpressionVisitors.visitGroupBy<'T, 'Prop> propertySelector (fullyQualifyColumn state.TableMappings)
+        let properties = visitGroupBy<'T, 'Prop> propertySelector (fullyQualifyColumn state.TableMappings)
         QuerySource<'T, SelectQuery>({ query with GroupBy = query.GroupBy @ properties}, state.TableMappings)
 
     /// COUNT aggregate function for COLNAME (or * symbol) and map it to ALIAS
@@ -260,7 +261,7 @@ type SelectExpressionBuilder<'T>() =
     [<CustomOperation("countBy", MaintainsVariableSpace = true)>]
     member this.CountBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let query = state |> getQueryOrDefault
-        let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
+        let propertyName = visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
         QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Count(propertyName, propertyName)] }, state.TableMappings)
 
     /// AVG aggregate function for COLNAME (or * symbol) and map it to ALIAS
@@ -352,7 +353,7 @@ type DeleteExpressionBuilder<'T>() =
     [<CustomOperation("where", MaintainsVariableSpace = true)>]
     member this.Where (state:QuerySource<'T>, [<ProjectionParameter>] whereExpression) = 
         let query = state |> getQueryOrDefault
-        let where = LinqExpressionVisitors.visitWhere<'T> whereExpression (fullyQualifyColumn state.TableMappings)
+        let where = visitWhere<'T> whereExpression (fullyQualifyColumn state.TableMappings)
         QuerySource<'T, DeleteQuery>({ query with Where = where }, state.TableMappings)
 
     /// Deletes all records in the table (only when there are is no where clause)
@@ -406,7 +407,7 @@ type InsertExpressionBuilder<'T>() =
     [<CustomOperation("includeColumns", MaintainsVariableSpace = true)>]
     member this.IncludeColumns (state: QuerySource<'T>, [<ProjectionParameter>] propertySelectors) = 
         let query = state |> getQueryOrDefault
-        let props = propertySelectors |> List.map LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> |> List.map (fun x -> x.Name)
+        let props = propertySelectors |> List.map visitPropertySelector<'T, 'Prop> |> List.map (fun x -> x.Name)
         let newQuery = { query with Fields = (query.Fields @ props) }
         QuerySource<'T, InsertQuery<'T>>(newQuery, state.TableMappings)
     
@@ -419,7 +420,7 @@ type InsertExpressionBuilder<'T>() =
     [<CustomOperation("excludeColumn", MaintainsVariableSpace = true)>]
     member this.ExcludeColumn (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let query = state |> getQueryOrDefault
-        let prop = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector
+        let prop = visitPropertySelector<'T, 'Prop> propertySelector
         let newQuery =
             query.Fields
             |> function
@@ -464,14 +465,14 @@ type UpdateExpressionBuilder<'T>() =
     [<CustomOperation("setColumn", MaintainsVariableSpace = true)>]
     member this.SetColumn (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector: Expression<Func<'T, 'Prop>>, value: 'Prop) = 
         let query = state |> getQueryOrDefault
-        let prop = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector :?> Reflection.PropertyInfo
+        let prop = visitPropertySelector<'T, 'Prop> propertySelector :?> Reflection.PropertyInfo
         QuerySource<'T, UpdateQuery<'T>>({ query with SetColumns = query.SetColumns @ [ prop.Name, box value ] }, state.TableMappings)
 
     /// Includes a column in the update query.
     [<CustomOperation("includeColumn", MaintainsVariableSpace = true)>]
     member this.IncludeColumn (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let query = state |> getQueryOrDefault
-        let prop = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector
+        let prop = visitPropertySelector<'T, 'Prop> propertySelector
         let newQuery = { query with Fields = (query.Fields @ [prop.Name]) }
         QuerySource<'T, UpdateQuery<'T>>(newQuery, state.TableMappings)
 
@@ -479,7 +480,7 @@ type UpdateExpressionBuilder<'T>() =
     [<CustomOperation("excludeColumn", MaintainsVariableSpace = true)>]
     member this.ExcludeColumn (state: QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let query = state |> getQueryOrDefault
-        let prop = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector
+        let prop = visitPropertySelector<'T, 'Prop> propertySelector
         let newQuery = 
             query.Fields
             |> function
@@ -493,7 +494,7 @@ type UpdateExpressionBuilder<'T>() =
     [<CustomOperation("where", MaintainsVariableSpace = true)>]
     member this.Where (state: QuerySource<'T>, [<ProjectionParameter>] whereExpression) = 
         let query = state |> getQueryOrDefault
-        let where = LinqExpressionVisitors.visitWhere<'T> whereExpression (fullyQualifyColumn state.TableMappings)
+        let where = visitWhere<'T> whereExpression (fullyQualifyColumn state.TableMappings)
         QuerySource<'T, UpdateQuery<'T>>({ query with Where = where }, state.TableMappings)
 
     /// Unwraps the query
@@ -513,17 +514,11 @@ let isNotIn<'P> (prop: 'P) (values: 'P list) = true
 let like<'P> (prop: 'P) (pattern: string) = true
 /// WHERE column not like value   
 let notLike<'P> (prop: 'P) (pattern: string) = true
+/// WHERE column ilike value   
+let ilike<'P> (prop: 'P) (pattern: string) = true
+/// WHERE column not ilike value   
+let notILike<'P> (prop: 'P) (pattern: string) = true
 /// WHERE column IS NULL
 let isNullValue<'P> (prop: 'P) = true
 /// WHERE column IS NOT NULL
 let isNotNullValue<'P> (prop: 'P) = true
-
-module Operators = 
-    /// WHERE column is IN values
-    let (|=|) (prop: 'P) (values: 'P list) = true
-    /// WHERE column is NOT IN values
-    let (|<>|) (prop: 'P) (values: 'P list) = true
-    /// WHERE column like value   
-    let (=%) (prop: 'P) (pattern: string) = true
-    /// WHERE column not like value   
-    let (<>%) (prop: 'P) (pattern: string) = true

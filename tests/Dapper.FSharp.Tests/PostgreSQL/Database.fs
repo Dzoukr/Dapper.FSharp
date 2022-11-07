@@ -1,21 +1,33 @@
 ﻿module Dapper.FSharp.Tests.PostgreSQL.Database
 
+open Dapper.FSharp
 open Dapper.FSharp.Tests.Database
 open Dapper.FSharp.Tests.Extensions
-open System
 open System.Data
-open FSharp.Control.Tasks
+open Microsoft.Extensions.Configuration
+open Npgsql
 
-let init (conn:IDbConnection) =
+let getConnection () =
+    let conf = ConfigurationBuilder().AddJsonFile("settings.json").Build()
+    new NpgsqlConnection(conf.["postgresConnectionString"]) :> IDbConnection
+
+let mutable isAlreadyInitialized = false
+
+let safeInit (conn:IDbConnection) =
     task {
-        let dbName = DbName.ToLowerInvariant()
-        do! dbName |> sprintf "drop database if exists %s;" |> conn.ExecuteCatchIgnore
-        do! dbName |> sprintf "create database %s;" |> conn.ExecuteIgnore
-        conn.Open()
-        conn.ChangeDatabase dbName
-        do! TestSchema |> sprintf "drop schema if exists %s;" |> conn.ExecuteIgnore
-        do! TestSchema |> sprintf "create schema %s;" |> conn.ExecuteIgnore
-    } |> Async.AwaitTask |> Async.RunSynchronously
+        if isAlreadyInitialized |> not then
+            let dbName = DbName.ToLowerInvariant()
+            do! dbName |> sprintf "drop database if exists %s;" |> conn.ExecuteCatchIgnore
+            do! dbName |> sprintf "create database %s;" |> conn.ExecuteIgnore
+            conn.Open()
+            conn.ChangeDatabase dbName
+            do! TestSchema |> sprintf "drop schema if exists %s;" |> conn.ExecuteIgnore
+            do! TestSchema |> sprintf "create schema %s;" |> conn.ExecuteIgnore
+            isAlreadyInitialized <- true
+            OptionTypes.register()
+    }
+    |> Async.AwaitTask
+    |> Async.RunSynchronously
 
 module Persons =
 
@@ -172,21 +184,6 @@ module Issues =
             }
 
 open Dapper.FSharp.PostgreSQL
-
-let getCrud (conn:IDbConnection) =
-    { new ICrudOutput with
-        member x.SelectAsync<'a> (q, cancellationToken) = conn.SelectAsync<'a>(q, ?cancellationToken = cancellationToken)
-        member x.SelectAsync<'a,'b> q = conn.SelectAsync<'a,'b>(q)
-        member x.SelectAsync<'a,'b,'c> q = conn.SelectAsync<'a,'b,'c>(q)
-        member x.SelectAsyncOption<'a,'b> q = conn.SelectAsyncOption<'a,'b>(q)
-        member x.SelectAsyncOption<'a,'b,'c> q = conn.SelectAsyncOption<'a,'b,'c>(q)
-        member x.InsertAsync<'a> (q, cancellationToken) = conn.InsertAsync<'a>(q, ?cancellationToken = cancellationToken)
-        member x.DeleteAsync (q, cancellationToken) = conn.DeleteAsync(q, ?cancellationToken = cancellationToken)
-        member x.UpdateAsync (q, cancellationToken) = conn.UpdateAsync(q, ?cancellationToken = cancellationToken)
-        member x.InsertOutputAsync q = conn.InsertOutputAsync(q)
-        member x.DeleteOutputAsync q = conn.DeleteOutputAsync(q)
-        member x.UpdateOutputAsync q = conn.UpdateOutputAsync(q)
-    }
 
 let getInitializer (conn:IDbConnection) =
     { new ICrudInitializer with

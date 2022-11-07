@@ -6,13 +6,15 @@ framework: net5.0, net6.0
 
 nuget FSharp.Core
 nuget Dapper
-nuget Expecto
 nuget Microsoft.Data.SqlClient
-nuget TaskBuilder.fs
 nuget Microsoft.Extensions.Configuration.Json
 nuget MySql.Data
 nuget Npgsql
 nuget Microsoft.SourceLink.GitHub copy_local: true
+nuget Microsoft.NET.Test.Sdk
+nuget NUnit
+nuget NUnit3TestAdapter
+nuget coverlet.collector
 
 group Build
     source https://api.nuget.org/v3/index.json

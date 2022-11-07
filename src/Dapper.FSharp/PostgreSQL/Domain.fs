@@ -1,4 +1,5 @@
-﻿namespace Dapper.FSharp
+﻿[<AutoOpen>]
+module Dapper.FSharp.PostgreSQL.Domain
 
 type OrderDirection =
     | Asc
@@ -17,6 +18,8 @@ type ColumnComparison =
     | NotIn of obj list
     | Like of string
     | NotLike of string
+    | ILike of string
+    | NotILike of string
     | IsNull
     | IsNotNull
 

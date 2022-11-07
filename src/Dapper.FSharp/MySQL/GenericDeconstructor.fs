@@ -1,4 +1,6 @@
-﻿module internal Dapper.FSharp.GenericDeconstructor
+﻿module internal Dapper.FSharp.MySQL.GenericDeconstructor
+
+open Dapper.FSharp
 
 let private extractFieldsAndSplit<'a> (j:Join) =
     let table = j |> Join.tableName
@@ -58,14 +60,6 @@ let insert evalInsertQuery (q:InsertQuery<'a>) =
         | fields -> fields
     _insert evalInsertQuery q fields []
 
-let insertOutput<'Input, 'Output> evalInsertQuery (q:InsertQuery<'Input>) =
-    let fields = 
-        match q.Fields with
-        | [] -> typeof<'Input> |> Reflection.getFields
-        | fields -> fields
-    let outputFields = typeof<'Output> |> Reflection.getFields
-    _insert evalInsertQuery q fields outputFields
-
 let private _update evalUpdateQuery (q:UpdateQuery<_>) fields (outputFields:string list) =
     let values = 
         match q.Value with
@@ -84,15 +78,6 @@ let update<'a> evalUpdateQuery (q:UpdateQuery<'a>) =
         | Some _, fields, _ -> fields
         | None, _, setCols -> setCols |> List.map fst
     _update evalUpdateQuery q fields [] 
-    
-let updateOutput<'Input, 'Output> evalUpdateQuery (q:UpdateQuery<'Input>) =
-    let fields = 
-        match q.Value, q.Fields, q.SetColumns with
-        | Some _, [], _ -> typeof<'Input> |> Reflection.getFields
-        | Some _, fields, _ -> fields
-        | None, _, setCols -> setCols |> List.map fst
-    let outputFields = typeof<'Output> |> Reflection.getFields
-    _update evalUpdateQuery q fields outputFields 
 
 let private _delete evalDeleteQuery (q:DeleteQuery) outputFields =
     let meta = WhereAnalyzer.getWhereMetadata [] q.Where
@@ -101,7 +86,3 @@ let private _delete evalDeleteQuery (q:DeleteQuery) outputFields =
     query, pars
     
 let delete evalDeleteQuery (q:DeleteQuery) = _delete evalDeleteQuery q []
-
-let deleteOutput<'Output> evalDeleteQuery (q:DeleteQuery) =
-    let outputFields = typeof<'Output> |> Reflection.getFields
-    _delete evalDeleteQuery q outputFields
