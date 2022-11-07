@@ -301,7 +301,13 @@ type SelectExpressionBuilder<'T>() =
     [<CustomOperation("optionRecompile", MaintainsVariableSpace = true)>]
     member this.OptionRecompile (state:QuerySource<'T>) = 
         let query = state |> getQueryOrDefault
-        QuerySource<'T, SelectQuery>({ query with QueryOptions = query.QueryOptions @ [ QueryOption.OptionRecompile ] }, state.TableMappings)
+        QuerySource<'T, SelectQuery>({ query with QueryOptions = query.QueryOptions @ [ QueryOption.Recompile ] }, state.TableMappings)
+    
+    /// Sets query to use OPTION(OPTIMIZE FOR UNKNOWN)
+    [<CustomOperation("optionOptimizeForUnknown", MaintainsVariableSpace = true)>]
+    member this.OptionOptimizeForUnknown (state:QuerySource<'T>) = 
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, SelectQuery>({ query with QueryOptions = query.QueryOptions @ [ QueryOption.OptimizeForUnknown ] }, state.TableMappings)
     
     /// Selects all (needed only when there are no other clauses after "for" or "join")
     [<CustomOperation("selectAll", MaintainsVariableSpace = true)>]

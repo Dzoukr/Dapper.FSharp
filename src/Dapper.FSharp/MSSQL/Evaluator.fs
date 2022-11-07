@@ -104,7 +104,8 @@ let evalGroupBy (cols:string list) =
 
 let evalQueryOption (op:QueryOption) =
     match op with
-    | QueryOption.OptionRecompile -> "OPTION(RECOMPILE)"
+    | QueryOption.Recompile -> "OPTION(RECOMPILE)"
+    | QueryOption.OptimizeForUnknown -> "OPTION(OPTIMIZE FOR UNKNOWN)"
 
 let evalQueryOptions (opt:QueryOption list) =
     opt

@@ -64,7 +64,8 @@ type Aggregate =
     | Max of columnName:string * alias:string
 
 type QueryOption =
-    | OptionRecompile
+    | Recompile
+    | OptimizeForUnknown
 
 type SelectQuery = {
     Schema : string option

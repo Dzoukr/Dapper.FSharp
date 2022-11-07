@@ -104,3 +104,28 @@ type IssuesTests () =
             Assert.AreEqual(10, Seq.length fromDb)
             Assert.IsTrue(query.Contains("OPTION(RECOMPILE)"))
         }
+    
+    [<Test>]
+    member _.``Support for OPTION (OPTIMIZE FOR UNKNOWN) #70``() = 
+        task {
+            do! init.InitPersons()
+
+            let persons = Persons.View.generate 10
+            
+            let! _ =
+                insert {
+                    into personsView
+                    values persons
+                } |> conn.InsertAsync
+            let q =
+                select {
+                    for p in personsView do
+                    selectAll
+                    optionOptimizeForUnknown
+                }
+            
+            let! fromDb = q |> conn.SelectAsync<Persons.View>
+            let query,_ = q |> Deconstructor.select<Persons.View>
+            Assert.AreEqual(10, Seq.length fromDb)
+            Assert.IsTrue(query.Contains("OPTION(OPTIMIZE FOR UNKNOWN)"))
+        }

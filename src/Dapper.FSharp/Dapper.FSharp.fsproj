@@ -10,8 +10,8 @@
     <PackageIconUrl>https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png</PackageIconUrl>
     <PackageTags>fsharp;dapper;linq;database;mssql;mysql;postgresql</PackageTags>
     <Authors>Roman Provazník;Jordan Marr</Authors>
-    <Version>3.4.0</Version>
-    <PackageReleaseNotes>Add OptionHandler for byte [] #68</PackageReleaseNotes>
+    <Version>4.0.0</Version>
+    <PackageReleaseNotes>Version 4 release #71</PackageReleaseNotes>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <DebugType>embedded</DebugType>

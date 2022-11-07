@@ -9,7 +9,7 @@ Lightweight F# extension for StackOverflow Dapper with support for MSSQL, MySQL,
 ## Features
 
 - No *auto-attribute-based-only-author-maybe-knows-magic* behavior
-- Support for (anonymous) F# records
+- Support for F# records / anonymous records
 - Support for F# options
 - LINQ Query Provider
 - Support for SQL Server 2012 (11.x) and later / Azure SQL Database, MySQL 8.0, PostgreSQL 12.0
@@ -27,21 +27,19 @@ or using [Paket](http://fsprojects.github.io/Paket/getting-started.html)
 
     paket add Dapper.FSharp
 
-## What's new in v4?
-Reasoning behind version 4 is described in [this issue](https://github.com/Dzoukr/Dapper.FSharp/issues/71), but the main changes are:
+## What's new in v3?
+3rd version is rather an evolution, than revolution. The major concern was to keep the library maintainable with low possible effort while providing the best type safety. Hence version 3 contains two major (breaking) changes:
+- Old API has been dropped in favor of LINQ (watch out for namespace change - `Dapper.FSharp.LinqBuilders` are no more)
+- `join` has been renamed to `innerJoin`
+- Minimal supported version is `NET 5.0`
 
-- Each database provider has its own query definition
-- New database-specific keywords for MSSQL & Postgres
-- Operators considered harmful (removed for functions `IN`, `NOT IN`, `LIKE` and `NOT LIKE`)
-- Minimal supported version is `NET 6.0`
-
-If you still need/want to use `v3.0`, follow the [Version 3 docs](README_v3.md).
+If you still need/want to use `v2.0`, follow the [Version 2 docs](README_v2.md).
 
 
 ## FAQ
 
 ### Why another library around Dapper?
-I've created this library to cover most of my own use-cases where in 90% I need just a few simple queries for CRUD operations using Dapper and don't want to write column names manually. All I need is a simple record with properties and want to have them filled from the query or to insert / update data.
+I've created this library to cover most of my own use-cases where in 90% I need just a few simple queries for CRUD operations using Dapper and don't want to write column names manually. All I need is a simple (anonymous) record with properties and want to have them filled from the query or to insert / update data.
 
 ### How does the library works?
 This library does two things:
@@ -126,6 +124,7 @@ let personTable = table'<Person> "People" |> inSchema "dbo"
 Inserting a single record:
 
 ```f#
+open Dapper.FSharp
 open Dapper.FSharp.MSSQL
 
 let conn : IDbConnection = ... // get it somewhere
@@ -143,6 +142,7 @@ insert {
 Inserting Multiple Records:
 
 ```f#
+open Dapper.FSharp
 open Dapper.FSharp.MSSQL
 
 let conn : IDbConnection = ... // get it somewhere
@@ -161,6 +161,7 @@ insert {
 Excluding Fields from the Insert:
 
 ```f#
+open Dapper.FSharp
 open Dapper.FSharp.MSSQL
 
 let conn : IDbConnection = ... // get it somewhere
@@ -193,6 +194,7 @@ update {
 Partial updates are possible by manually specifying one or more `includeColumn` properties:
 
 ```F#
+
 update {
     for p in personTable do
     set modifiedPerson
@@ -358,6 +360,7 @@ For simple queries with join, you can use innerJoin and leftJoin in combination 
 
 
 ```F#
+
 let personTable = table<Person>
 let dogsTable = table<Dog>
 let dogsWeightsTable = table<DogsWeight>
@@ -402,7 +405,7 @@ See this example of how to get the amount of persons having a position value gre
 select {
     for p in persons do
     count "*" "Value" // column name and alias (must match the view record property!!!)
-    where (p.Position > 5)
+    where (gt "Position" 5)
 } |> conn.SelectAsync<{| Value : int |}>
 ```
 
@@ -451,25 +454,6 @@ printfn "%A" values
 //      ("LastName0", "Great");
 //      ("Position0", 1)]
 ```
-
-## Database-specific syntax
-
-Since version 4 `Dapper.FSharp` supports database-specific syntax.
-
-### MSSQL
-
-| Query  | Keyword                    | Description                                             |
-|--------|----------------------------|---------------------------------------------------------|
-| SELECT | `optionRecompile`          | Adds `OPTION(RECOMPILE)` as the query option            |
-| SELECT | `optionOptimizeForUnknown` | Adds `OPTION(OPTIMIZE FOR UNKNOWN)` as the query option |
-
-### PostgreSQL
-
-| Query | Keyword    | Description                          |
-|-------|------------|--------------------------------------|
-| ALL   | `iLike`    | Adds `ILIKE` for WHERE condition     |
-| ALL   | `notILike` | Adds `NOT ILIKE` for WHERE condition |
-
 
 ## IncludeColumn vs ExcludeColumn (there can be a 🐲)
 
