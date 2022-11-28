@@ -50,17 +50,17 @@
     <Compile Include="PostgreSQL\Evaluator.fs" />
     <Compile Include="PostgreSQL\Deconstructor.fs" />
     <Compile Include="PostgreSQL\IDbConnection.fs" />
-    
-	<Compile Include="SQLite\TypeHandlers.fs" />
-	<Compile Include="SQLite\Domain.fs" />
-	<Compile Include="SQLite\LinqExpressionVisitors.fs" />
-	<Compile Include="SQLite\Builders.fs" />
-	<Compile Include="SQLite\JoinAnalyzer.fs" />
-	<Compile Include="SQLite\WhereAnalyzer.fs" />
-	<Compile Include="SQLite\GenericDeconstructor.fs" />
-	<Compile Include="SQLite\Evaluator.fs" />
-	<Compile Include="SQLite\Deconstructor.fs" />
-	<Compile Include="SQLite\IDbConnection.fs" />
+
+    <Compile Include="SQLite\TypeHandlers.fs" />
+    <Compile Include="SQLite\Domain.fs" />
+    <Compile Include="SQLite\LinqExpressionVisitors.fs" />
+    <Compile Include="SQLite\Builders.fs" />
+    <Compile Include="SQLite\JoinAnalyzer.fs" />
+    <Compile Include="SQLite\WhereAnalyzer.fs" />
+    <Compile Include="SQLite\GenericDeconstructor.fs" />
+    <Compile Include="SQLite\Evaluator.fs" />
+    <Compile Include="SQLite\Deconstructor.fs" />
+    <Compile Include="SQLite\IDbConnection.fs" />
   </ItemGroup>
   
   <Import Project="..\..\.paket\Paket.Restore.targets" />
