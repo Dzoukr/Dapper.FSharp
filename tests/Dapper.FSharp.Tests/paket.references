@@ -7,3 +7,4 @@ Microsoft.NET.Test.Sdk
 NUnit
 NUnit3TestAdapter
 coverlet.collector
+Microsoft.Data.Sqlite
