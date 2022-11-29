@@ -78,7 +78,6 @@ type InsertQuery<'a> = {
     Table : string
     Fields : string list
     Values : 'a list
-    OrReplace : bool
 }
 
 type UpdateQuery<'a> = {

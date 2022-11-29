@@ -26,6 +26,9 @@ type IDbConnection with
     member this.InsertAsync<'a> (q:InsertQuery<'a>, ?trans:IDbTransaction, ?timeout:int, ?logFunction, ?cancellationToken : CancellationToken ) =
         q |> Deconstructor.insert<'a> |> IDbConnection.execute this trans timeout cancellationToken logFunction
 
+    member this.InsertOrReplaceAsync<'a> (q:InsertQuery<'a>, ?trans:IDbTransaction, ?timeout:int, ?logFunction, ?cancellationToken : CancellationToken ) =
+        q |> Deconstructor.insertOrReplace<'a> |> IDbConnection.execute this trans timeout cancellationToken logFunction
+
     member this.UpdateAsync<'a> (q:UpdateQuery<'a>, ?trans:IDbTransaction, ?timeout:int, ?logFunction, ?cancellationToken : CancellationToken) =
         q |> Deconstructor.update<'a> |> IDbConnection.execute this trans timeout cancellationToken logFunction
 

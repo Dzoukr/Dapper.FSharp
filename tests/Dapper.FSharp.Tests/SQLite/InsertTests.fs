@@ -154,11 +154,10 @@ type InsertTests () =
             // insert initial data
             let! _ = 
                 insert { 
-                    orReplace
                     into personsView
                     values rs
                 }
-                |> conn.InsertAsync
+                |> conn.InsertOrReplaceAsync
 
             // modify everything
             let modified = 
@@ -168,11 +167,10 @@ type InsertTests () =
             // insert again, everything should be updated
             let! conflictCount = 
                 insert {
-                    orReplace
                     into personsView
                     values modified
                 }
-                |> conn.InsertAsync
+                |> conn.InsertOrReplaceAsync
 
             // get data back and ensure everything is modified
             let! fromDb = select { for p in personsView do orderBy p.Position } |> conn.SelectAsync<Persons.View>

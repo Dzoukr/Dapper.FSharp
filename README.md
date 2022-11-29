@@ -4,7 +4,7 @@
 <img src="https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png" width="150px"/>
 </p>
 
-Lightweight F# extension for StackOverflow Dapper with support for MSSQL, MySQL, and PostgreSQL
+Lightweight F# extension for StackOverflow Dapper with support for MSSQL, MySQL, PostgreSQL and SQLite
 
 ## Features
 
@@ -12,9 +12,10 @@ Lightweight F# extension for StackOverflow Dapper with support for MSSQL, MySQL,
 - Support for (anonymous) F# records
 - Support for F# options
 - LINQ Query Provider
-- Support for SQL Server 2012 (11.x) and later / Azure SQL Database, MySQL 8.0, PostgreSQL 12.0
+- Support for SQL Server 2012 (11.x) and later / Azure SQL Database, MySQL 8.0, PostgreSQL 12.0, SQLite 3
 - Support for SELECT (including JOINs), INSERT, UPDATE (full / partial), DELETE
 - Support for OUTPUT clause (MSSQL only)
+- Support for INSERT OR REPLACE clause (SQLite)
 - Easy usage thanks to F# computation expressions
 - Keeps things simple
 
@@ -422,6 +423,10 @@ Please keep in mind that work with aggregate functions can quickly turn into a n
 ## OUTPUT clause support (MSSQL & PostgreSQL only)
 This library supports `OUTPUT` clause for MSSQL & PostgreSQL using special methods: `InsertOutputAsync`, `UpdateOutputAsync` and `DeleteOutputAsync`. Please check tests located under tests/Dapper.FSharp.Tests folder for more examples.
 
+## INSERT or REPLACE (SQLite only)
+This library supports `INSERT or REPLACE` clause for SQLite using special method: `InsertOrReplaceAsync`.
+
+
 ## Deconstructor
 To provide better usage with plain Dapper, this library contains `Deconstructor` converting `Dapper.FSharp` queries to a tuple of parameterized SQL query and `Map` of parameter values.
 
@@ -470,11 +475,6 @@ Since version 4 `Dapper.FSharp` supports database-specific syntax.
 | ALL   | `iLike`    | Adds `ILIKE` for WHERE condition     |
 | ALL   | `notILike` | Adds `NOT ILIKE` for WHERE condition |
 
-### SQLite
-
-| Query | Keyword    | Description                              |
-|-------|------------|------------------------------------------|
-| INSERT| `orReplace`| Uses REPLACE INTO instead of INSERT INTO |
 
 ## IncludeColumn vs ExcludeColumn (there can be a 🐲)
 

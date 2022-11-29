@@ -20,7 +20,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionIt
 		LICENSE = LICENSE
 		logo.png = logo.png
 		paket.dependencies = paket.dependencies
-		paket.lock = paket.lock
 		paket.references = paket.references
 		README.md = README.md
 		README_v2.md = README_v2.md

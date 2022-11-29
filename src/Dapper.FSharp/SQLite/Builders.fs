@@ -328,7 +328,7 @@ type InsertExpressionBuilder<'T>() =
             { Table = ""
               Fields = []
               Values = []
-              OrReplace = false } : InsertQuery<'T>
+            } : InsertQuery<'T>
 
     member this.For (state: QuerySource<'T>, f: 'T -> QuerySource<'T>) =
         let tbl = state.GetOuterTableMapping()
@@ -383,12 +383,7 @@ type InsertExpressionBuilder<'T>() =
             |> List.filter (fun f -> f <> prop.Name)
             |> (fun x -> { query with Fields = x })
         QuerySource<'T, InsertQuery<'T>>(newQuery, state.TableMappings)
-
-    [<CustomOperation("orReplace", MaintainsVariableSpace = true)>]
-    member this.OrReplace (state: QuerySource<'T>) = 
-        let query = state |> getQueryOrDefault
-        QuerySource<'T, InsertQuery<'T>>({ query with OrReplace = true }, state.TableMappings)
-
+    
     /// Unwraps the query
     member this.Run (state: QuerySource<'T>) =
         state |> getQueryOrDefault

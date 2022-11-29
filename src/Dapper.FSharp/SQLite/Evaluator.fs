@@ -128,16 +128,17 @@ let evalSelectQuery fields meta joinMeta (q:SelectQuery) =
     // query options
     sb.ToString()
 
-let evalInsertQuery fields _outputFields (q:InsertQuery<_>) =
+let evalInsertQuery orReplace fields _outputFields (q:InsertQuery<_>) =
     let fieldNames = fields |> List.map inBrackets |> String.concat ", " |> sprintf "(%s)"
     let values =
         q.Values
         |> List.mapi (fun i _ -> fields |> List.map (fun field -> sprintf "@%s%i" field i ) |> String.concat ", " |> sprintf "(%s)")
         |> String.concat ", "
-
-    match q.OrReplace with
-    | true -> sprintf "REPLACE INTO %s %s VALUES %s" (safeTableName q.Table) fieldNames values
-    | false -> sprintf "INSERT INTO %s %s VALUES %s" (safeTableName q.Table) fieldNames values
+    
+    if orReplace then
+        sprintf "REPLACE INTO %s %s VALUES %s" (safeTableName q.Table) fieldNames values
+    else
+        sprintf "INSERT INTO %s %s VALUES %s" (safeTableName q.Table) fieldNames values
 
 let evalUpdateQuery fields _outputFields meta (q:UpdateQuery<'a>) =
     // basic query

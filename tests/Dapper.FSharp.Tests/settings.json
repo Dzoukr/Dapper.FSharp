@@ -1,6 +1,6 @@
 {
-  "mssqlConnectionString": "User Id=SA;Password=yourStrong(!)Password;data source=localhost",
-  "mysqlConnectionString": "User Id=root;Password=dapperfsharp;Host=localhost",
+  "mssqlConnectionString": "User Id=SA;Password=yourStrong(!)Password;data source=localhost;encrypt=false;",
+  "mysqlConnectionString": "User Id=root;Password=dapperfsharp;Host=localhost;CharSet=utf8;",
   "postgresConnectionString": "User Id=postgres;Password=dapperfsharp;Host=localhost",
   "sqliteConnectionString": "Data Source=IntegrationTests.sqlite"
 }
