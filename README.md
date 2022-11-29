@@ -470,6 +470,11 @@ Since version 4 `Dapper.FSharp` supports database-specific syntax.
 | ALL   | `iLike`    | Adds `ILIKE` for WHERE condition     |
 | ALL   | `notILike` | Adds `NOT ILIKE` for WHERE condition |
 
+### SQLite
+
+| Query | Keyword    | Description                              |
+|-------|------------|------------------------------------------|
+| INSERT| `orReplace`| Uses REPLACE INTO instead of INSERT INTO |
 
 ## IncludeColumn vs ExcludeColumn (there can be a 🐲)
 

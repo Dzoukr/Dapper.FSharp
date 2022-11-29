@@ -49,6 +49,14 @@
     <Compile Include="MSSQL\UpdateTests.fs" />
     <Compile Include="MSSQL\InsertTests.fs" />
     <Compile Include="MSSQL\SelectTests.fs" />
+	  
+    <Compile Include="SQLite\Database.fs" />
+    <Compile Include="SQLite\DeleteTests.fs" />
+    <Compile Include="SQLite\IssuesTests.fs" />
+    <Compile Include="SQLite\AggregatesTests.fs" />
+    <Compile Include="SQLite\UpdateTests.fs" />
+    <Compile Include="SQLite\InsertTests.fs" />
+    <Compile Include="SQLite\SelectTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Dapper.FSharp\Dapper.FSharp.fsproj" />
