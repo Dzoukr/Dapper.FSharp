@@ -11,7 +11,9 @@ let getConnection () =
     let conf = ConfigurationBuilder().AddJsonFile("settings.json").Build()
     let conn = new MySqlConnection(conf.["mysqlConnectionString"])
     conn.Open()
-    conn.ChangeDatabase DbName
+    try
+        conn.ChangeDatabase DbName
+    with _ -> ()
     conn
 
 let mutable isAlreadyInitialized = false

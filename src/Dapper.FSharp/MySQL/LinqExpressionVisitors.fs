@@ -247,7 +247,8 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
                 let cp = getComparison exp.NodeType
                 let rt = qualifyColumn p2
                 Expr (sprintf "%s %s %s" lt cp rt)
-            | Property p, Value value ->
+            | Property p, Value value
+            | Value value, Property p ->
                 // Handle column to value comparisons
                 let columnComparison = getColumnComparison(exp.NodeType, value)
                 Column (qualifyColumn p, columnComparison)
