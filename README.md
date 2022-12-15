@@ -97,6 +97,18 @@ type Person = {
 }
 ```
 
+If you prefer not exposing your records, you can use internal types:
+
+```f#
+type internal Person = {
+    Id : Guid
+    FirstName : string
+    LastName : string
+    Position : int
+    DateOfBirth : DateTime option
+}
+```
+
 *Hint: Check tests located under tests/Dapper.FSharp.Tests folder for more examples*
 
 
