@@ -2,17 +2,20 @@ version 5.241.2
 
 source https://api.nuget.org/v3/index.json
 storage: none
-framework: net5.0, net6.0
+framework: net6.0
 
-nuget FSharp.Core
+nuget FSharp.Core = 6.0.7
 nuget Dapper
-nuget Expecto
 nuget Microsoft.Data.SqlClient
-nuget TaskBuilder.fs
 nuget Microsoft.Extensions.Configuration.Json
 nuget MySql.Data
 nuget Npgsql
 nuget Microsoft.SourceLink.GitHub copy_local: true
+nuget Microsoft.NET.Test.Sdk
+nuget NUnit
+nuget NUnit3TestAdapter
+nuget coverlet.collector
+nuget Microsoft.Data.Sqlite
 
 group Build
     source https://api.nuget.org/v3/index.json

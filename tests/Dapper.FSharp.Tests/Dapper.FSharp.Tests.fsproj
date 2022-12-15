@@ -11,21 +11,41 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+
     <Compile Include="Extensions.fs" />
     <Compile Include="Database.fs" />
-    <Compile Include="MSSQL\Database.fs" />
-    <Compile Include="MSSQL\AggregatesTests.fs" />
-    <Compile Include="MySQL\Database.fs" />
-    <Compile Include="MySQL\AggregatesTests.fs" />
+      
     <Compile Include="PostgreSQL\Database.fs" />
+    <Compile Include="PostgreSQL\DeleteTests.fs" />
+    <Compile Include="PostgreSQL\IssuesTests.fs" />
     <Compile Include="PostgreSQL\AggregatesTests.fs" />
-    <Compile Include="IssuesTests.fs" />
-    <Compile Include="SelectQueryBuilderTests.fs" />
-    <Compile Include="DeleteTests.fs" />
-    <Compile Include="InsertTests.fs" />
-    <Compile Include="UpdateTests.fs" />
-    <Compile Include="SelectTests.fs" />
-    <Compile Include="Program.fs" />
+    <Compile Include="PostgreSQL\UpdateTests.fs" />
+    <Compile Include="PostgreSQL\InsertTests.fs" />
+    <Compile Include="PostgreSQL\SelectTests.fs" />
+    
+    <Compile Include="MySQL\Database.fs" />
+    <Compile Include="MySQL\DeleteTests.fs" />
+    <Compile Include="MySQL\IssuesTests.fs" />
+    <Compile Include="MySQL\AggregatesTests.fs" />
+    <Compile Include="MySQL\UpdateTests.fs" />
+    <Compile Include="MySQL\InsertTests.fs" />
+    <Compile Include="MySQL\SelectTests.fs" />
+      
+    <Compile Include="MSSQL\Database.fs" />
+    <Compile Include="MSSQL\DeleteTests.fs" />
+    <Compile Include="MSSQL\IssuesTests.fs" />
+    <Compile Include="MSSQL\AggregatesTests.fs" />
+    <Compile Include="MSSQL\UpdateTests.fs" />
+    <Compile Include="MSSQL\InsertTests.fs" />
+    <Compile Include="MSSQL\SelectTests.fs" />
+	  
+    <Compile Include="SQLite\Database.fs" />
+    <Compile Include="SQLite\DeleteTests.fs" />
+    <Compile Include="SQLite\IssuesTests.fs" />
+    <Compile Include="SQLite\AggregatesTests.fs" />
+    <Compile Include="SQLite\UpdateTests.fs" />
+    <Compile Include="SQLite\InsertTests.fs" />
+    <Compile Include="SQLite\SelectTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Dapper.FSharp\Dapper.FSharp.fsproj" />

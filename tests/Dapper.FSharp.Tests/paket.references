@@ -1,7 +1,10 @@
 FSharp.Core
 Microsoft.Data.SqlClient
-Expecto
-TaskBuilder.fs
 Microsoft.Extensions.Configuration.Json
 MySql.Data
 Npgsql
+Microsoft.NET.Test.Sdk
+NUnit
+NUnit3TestAdapter
+coverlet.collector
+Microsoft.Data.Sqlite
