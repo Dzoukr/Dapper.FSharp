@@ -21,7 +21,7 @@ let taskToList (t:Task<seq<'a>>) = t |> Async.AwaitTask |> Async.RunSynchronousl
 
 module Persons =
 
-    type View = {
+    type internal View = {
         Id : Guid
         FirstName : string
         LastName : string
@@ -36,7 +36,7 @@ module Persons =
         Position : int
     }
 
-    module View =
+    module internal View =
         let generate x =
             [1..x]
             |> List.map (fun x ->
@@ -56,7 +56,7 @@ module Dogs =
         Nickname : string
     }
 
-    module View =
+    module internal View =
         let generate1to1 (owners:Persons.View list) =
             owners
             |> List.mapi (fun i x ->
