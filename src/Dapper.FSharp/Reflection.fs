@@ -1,6 +1,7 @@
 ﻿module Dapper.FSharp.Reflection
 
 open System
+open System.Reflection
 
 let mkSome (typ:Type) arg =
     let unionType = typedefof<option<_>>.MakeGenericType typ
@@ -13,7 +14,7 @@ let makeOption<'a> (v:obj) : Option<'a> =
     | x -> mkSome typeof<'a> x :?> Option<_>
 
 let getFields (t:Type) =
-    FSharp.Reflection.FSharpType.GetRecordFields(t)
+    FSharp.Reflection.FSharpType.GetRecordFields(t, BindingFlags.Public ||| BindingFlags.Instance ||| BindingFlags.NonPublic)
     |> Array.map (fun x -> x.Name)
     |> Array.toList
 
@@ -22,7 +23,7 @@ let getValues r =
     |> Array.toList
 
 let getValuesForFields fields r = 
-    FSharp.Reflection.FSharpType.GetRecordFields(r.GetType())
+    FSharp.Reflection.FSharpType.GetRecordFields(r.GetType(), BindingFlags.Public ||| BindingFlags.Instance ||| BindingFlags.NonPublic)
     |> Array.filter (fun p -> fields |> List.contains(p.Name))
     |> Array.map (fun p -> p.GetValue r)
     |> Array.toList
