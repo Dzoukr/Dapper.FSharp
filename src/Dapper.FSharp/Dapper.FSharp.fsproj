@@ -10,8 +10,8 @@
     <PackageIconUrl>https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png</PackageIconUrl>
     <PackageTags>fsharp;dapper;linq;database;mssql;mysql;postgresql;sqlite</PackageTags>
     <Authors>Roman Provazník;Jordan Marr</Authors>
-    <Version>4.1.1</Version>
-    <PackageReleaseNotes>Fixing NotImpl exception for switched condition in WHERE</PackageReleaseNotes>
+    <Version>4.3.0</Version>
+    <PackageReleaseNotes>Spliting unified Option type handlers #78</PackageReleaseNotes>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <DebugType>embedded</DebugType>
@@ -30,6 +30,7 @@
     <Compile Include="MSSQL\Evaluator.fs" />
     <Compile Include="MSSQL\Deconstructor.fs" />
     <Compile Include="MSSQL\IDbConnection.fs" />
+    <Compile Include="MSSQL\OptionTypes.fs" />
 
     <Compile Include="MySQL\Domain.fs" />
     <Compile Include="MySQL\LinqExpressionVisitors.fs" />
@@ -40,6 +41,7 @@
     <Compile Include="MySQL\Evaluator.fs" />
     <Compile Include="MySQL\Deconstructor.fs" />
     <Compile Include="MySQL\IDbConnection.fs" />
+    <Compile Include="MySQL\OptionTypes.fs" />
     
     <Compile Include="PostgreSQL\Domain.fs" />
     <Compile Include="PostgreSQL\LinqExpressionVisitors.fs" />
@@ -50,8 +52,9 @@
     <Compile Include="PostgreSQL\Evaluator.fs" />
     <Compile Include="PostgreSQL\Deconstructor.fs" />
     <Compile Include="PostgreSQL\IDbConnection.fs" />
+    <Compile Include="PostgreSQL\OptionTypes.fs" />
 
-    <Compile Include="SQLite\TypeHandlers.fs" />
+
     <Compile Include="SQLite\Domain.fs" />
     <Compile Include="SQLite\LinqExpressionVisitors.fs" />
     <Compile Include="SQLite\Builders.fs" />
@@ -61,6 +64,8 @@
     <Compile Include="SQLite\Evaluator.fs" />
     <Compile Include="SQLite\Deconstructor.fs" />
     <Compile Include="SQLite\IDbConnection.fs" />
+    <Compile Include="SQLite\OptionTypes.fs" />
+    <Compile Include="SQLite\TypeHandlers.fs" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

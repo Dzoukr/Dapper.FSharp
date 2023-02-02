@@ -24,7 +24,7 @@ let safeInit (conn:IDbConnection) =
             do! TestSchema |> sprintf "DROP SCHEMA IF EXISTS %s;" |> conn.ExecuteIgnore
             do! TestSchema |> sprintf "CREATE SCHEMA %s;" |> conn.ExecuteIgnore
             isAlreadyInitialized <- true
-            OptionTypes.register()
+            Dapper.FSharp.MSSQL.OptionTypes.register()
     }
     |> Async.AwaitTask
     |> Async.RunSynchronously

@@ -19,8 +19,7 @@ let safeInit (conn:IDbConnection) =
             
             conn.Open()
             isAlreadyInitialized <- true
-            OptionTypes.register()
-            Dapper.FSharp.SQLite.TypeHandlers.addSQLiteTypeHandlers()
+            Dapper.FSharp.SQLite.OptionTypes.register()
     }
     |> Async.AwaitTask
     |> Async.RunSynchronously

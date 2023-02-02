@@ -24,7 +24,7 @@ let safeInit (conn:IDbConnection) =
             do! TestSchema |> sprintf "drop schema if exists %s;" |> conn.ExecuteIgnore
             do! TestSchema |> sprintf "create schema %s;" |> conn.ExecuteIgnore
             isAlreadyInitialized <- true
-            OptionTypes.register()
+            Dapper.FSharp.PostgreSQL.OptionTypes.register()
     }
     |> Async.AwaitTask
     |> Async.RunSynchronously

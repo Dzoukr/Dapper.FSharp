@@ -67,7 +67,17 @@ Fallback to plain Dapper then. Really. Dapper is an amazing library and sometime
 First of all, you need to init registration of mappers for optional types to have Dapper mappings understand that `NULL` from database = `Option.None`
 
 ```f#
-Dapper.FSharp.OptionTypes.register()
+// for MSSQL
+Dapper.FSharp.MSSQL.OptionTypes.register()
+
+// for MySQL
+Dapper.FSharp.MySQL.OptionTypes.register()
+
+// for PostgreSQL
+Dapper.FSharp.PostgreSQL.OptionTypes.register()
+
+// for SQLite
+Dapper.FSharp.SQLite.OptionTypes.register()
 ```
 
 It's recommended to do it somewhere close to the program entry point or in `Startup` class.
