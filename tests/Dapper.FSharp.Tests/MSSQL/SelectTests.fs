@@ -13,6 +13,7 @@ type SelectTests () =
     let personsView = table'<Persons.View> "Persons"
     let dogsView = table'<Dogs.View> "Dogs"
     let dogsWeightsView = table'<DogsWeights.View> "DogsWeights"
+    let vaccinationHistoryView = table'<DogVaccinationHistory.View> "VaccinationHistory"
     let conn = Database.getConnection()
     let init = Database.getInitializer conn
     
@@ -577,4 +578,69 @@ type SelectTests () =
             Assert.AreEqual(None, dn)
             Assert.AreEqual(None, wn)
             Assert.AreEqual(16, Seq.length fromDb)
+        }
+        
+    [<Test>]
+    member _.``Selects with three left joins``() =
+        task {
+            do! init.InitPersons()
+            do! init.InitDogs()
+            do! init.InitDogsWeights()
+            do! init.InitVaccinationHistory()
+
+            let persons = Persons.View.generate 10
+            let dogs = Dogs.View.generate1toN 5 persons.Head
+            let weights = DogsWeights.View.generate1toN 3 dogs.Head
+            let vaccinations = DogVaccinationHistory.View.generate1toN 3 dogs.Head
+
+            let! _ =
+                insert {
+                    into personsView
+                    values persons
+                } |> conn.InsertAsync
+            let! _ =
+                insert {
+                    into dogsView
+                    values dogs
+                } |> conn.InsertAsync
+            let! _ =
+                insert {
+                    into dogsWeightsView
+                    values weights
+                } |> conn.InsertAsync
+                
+            let! _ =
+                insert {
+                    into vaccinationHistoryView
+                    values vaccinations
+                } |> conn.InsertAsync
+
+            let! fromDb =
+                select {
+                    for p in personsView do
+                    leftJoin d in dogsView on (p.Id = d.OwnerId)
+                    leftJoin dw in dogsWeightsView on (d.Nickname = dw.DogNickname)
+                    leftJoin v in vaccinationHistoryView on (dw.DogNickname = v.DogNickname)
+                    orderBy p.Position
+                    thenBy d.Nickname
+                    thenBy dw.Year
+                    thenBy v.PetOwnerId
+                } |> conn.SelectAsyncOption<Persons.View, Dogs.View, DogsWeights.View, DogVaccinationHistory.View>
+
+            let p1,d1,w1,v1 = fromDb |> Seq.head
+            Assert.AreEqual(persons.Head, p1)
+            Assert.AreEqual(Some dogs.Head, d1)
+            Assert.AreEqual(Some weights.Head, w1)
+            
+            Assert.That(vaccinations.Head.PetOwnerId, Is.EqualTo(v1.Value.PetOwnerId))
+            Assert.That(vaccinations.Head.DogNickname, Is.EqualTo(v1.Value.DogNickname))
+            Assert.That(vaccinations.Head.VaccinationDate, Is.EqualTo(v1.Value.VaccinationDate))
+            
+            //Assert.AreEqual(Some vaccinations.Head, v1)
+
+            let pn,dn,wn,vn = fromDb |> Seq.last
+            Assert.AreEqual((persons |> Seq.last), pn)
+            Assert.AreEqual(None, dn)
+            Assert.AreEqual(None, wn)
+            Assert.AreEqual(None, vn)
         }
