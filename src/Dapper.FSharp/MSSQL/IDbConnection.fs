@@ -19,6 +19,9 @@ type IDbConnection with
         
     member this.SelectAsync<'a,'b,'c,'d> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.select<'a,'b,'c,'d> |> IDbConnection.query4<'a,'b,'c,'d> this trans timeout logFunction
+        
+    member this.SelectAsync<'a,'b,'c,'d,'e> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
+        q |> Deconstructor.select<'a,'b,'c,'d,'e> |> IDbConnection.query5<'a,'b,'c,'d,'e> this trans timeout logFunction
 
     member this.SelectAsyncOption<'a,'b> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.select<'a,'b>|> IDbConnection.query2Option<'a,'b> this trans timeout logFunction
@@ -28,6 +31,9 @@ type IDbConnection with
         
     member this.SelectAsyncOption<'a,'b,'c,'d> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
         q |> Deconstructor.select<'a,'b,'c,'d> |> IDbConnection.query4Option<'a,'b,'c,'d> this trans timeout logFunction
+        
+    member this.SelectAsyncOption<'a,'b,'c,'d,'e> (q:SelectQuery, ?trans:IDbTransaction, ?timeout:int, ?logFunction) =
+        q |> Deconstructor.select<'a,'b,'c,'d,'e> |> IDbConnection.query5Option<'a,'b,'c,'d,'e> this trans timeout logFunction
 
     member this.InsertAsync<'a> (q:InsertQuery<'a>, ?trans:IDbTransaction, ?timeout:int, ?logFunction, ?cancellationToken : CancellationToken ) =
         q |> Deconstructor.insert<'a> |> IDbConnection.execute this trans timeout cancellationToken logFunction

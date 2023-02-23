@@ -86,22 +86,39 @@ module Dogs =
             return ()
         }
 
-module VaccinationHistory =
+module Vaccinations =
 
     let init (conn:IDbConnection) =
         task {
-            do! "DROP TABLE [dbo].VaccinationHistory" |> conn.ExecuteCatchIgnore
+            do! "DROP TABLE [dbo].Vaccinations" |> conn.ExecuteCatchIgnore
             do!
                 """
-                CREATE TABLE [dbo].[VaccinationHistory] (
+                CREATE TABLE [dbo].[Vaccinations] (
                     [PetOwnerId] [uniqueidentifier] NOT NULL,
                     [DogNickname] [nvarchar](max) NOT NULL,
-                    [VaccinationDate] datetime2 NOT NULL
+                    [Vaccination] [nvarchar](max) NOT NULL
                 )
                 """
                 |> conn.ExecuteIgnore
             return ()
         }
+        
+module VaccinationManufacturers =
+    
+    let init (conn:IDbConnection) =
+        task {
+            do! "DROP TABLE [dbo].VaccinationManufacturers" |> conn.ExecuteCatchIgnore
+            do!
+                """
+                CREATE TABLE [dbo].[VaccinationManufacturers] (
+                    [Vaccination] [nvarchar](max) NOT NULL,
+                    [Manufacturer] [nvarchar](max) NOT NULL
+                )
+                """
+                |> conn.ExecuteIgnore
+            return ()
+        }
+    
 module DogsWeights =
 
     let init (conn:IDbConnection) =
@@ -195,5 +212,6 @@ let getInitializer (conn:IDbConnection) =
         member x.InitSchemedGroups () = Issues.SchemedGroup.init conn
         member x.InitDogs () = Dogs.init conn
         member x.InitDogsWeights () = DogsWeights.init conn
-        member x.InitVaccinationHistory () = VaccinationHistory.init conn
+        member x.InitVaccinations () = Vaccinations.init conn
+        member x.InitVaccinationManufacturers () = VaccinationManufacturers.init conn
     }

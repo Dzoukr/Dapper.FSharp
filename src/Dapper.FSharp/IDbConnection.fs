@@ -21,6 +21,10 @@ let query3<'a,'b,'c> (this:IDbConnection) trans timeout (logFunction:LogFn optio
 let query4<'a,'b,'c,'d> (this:IDbConnection) trans timeout (logFunction:LogFn option) (query, pars, splitOn) =
     if logFunction.IsSome then (query, pars) |> logFunction.Value
     this.QueryAsync<'a,'b,'c,'d,('a * 'b * 'c * 'd)>(query, (fun a b c d -> a,b,c,d), pars, splitOn = splitOn, ?transaction = trans, ?commandTimeout =timeout)
+    
+let query5<'a,'b,'c,'d,'e> (this:IDbConnection) trans timeout (logFunction:LogFn option) (query, pars, splitOn) =
+    if logFunction.IsSome then (query, pars) |> logFunction.Value
+    this.QueryAsync<'a,'b,'c,'d,'e,('a * 'b * 'c * 'd * 'e)>(query, (fun a b c d e -> a,b,c,d,e), pars, splitOn = splitOn, ?transaction = trans, ?commandTimeout =timeout)
 
 let query2Option<'a,'b> (this:IDbConnection) trans timeout (logFunction:LogFn option) (query, pars, splitOn) =
     if logFunction.IsSome then (query, pars) |> logFunction.Value
@@ -32,8 +36,26 @@ let query3Option<'a,'b,'c> (this:IDbConnection) trans timeout (logFunction:LogFn
 
 let query4Option<'a,'b,'c,'d> (this:IDbConnection) trans timeout (logFunction:LogFn option) (query, pars, splitOn) =
     if logFunction.IsSome then (query, pars) |> logFunction.Value
-    this.QueryAsync<'a,'b,'c,'d,('a * 'b option * 'c option * 'd option)>(query, (fun a b c d -> a, Reflection.makeOption b, Reflection.makeOption c, Reflection.makeOption d), pars, splitOn = splitOn, ?transaction = trans, ?commandTimeout = timeout)
+    this.QueryAsync<'a, 'b, 'c, 'd, ('a * 'b option * 'c option * 'd option)>(
+    query,
+    (fun a b c d -> a, Reflection.makeOption b, Reflection.makeOption c, Reflection.makeOption d),
+    pars,
+    splitOn = splitOn,
+    ?transaction = trans,
+    ?commandTimeout = timeout
+)
     
+let query5Option<'a,'b,'c,'d,'e> (this:IDbConnection) trans timeout (logFunction:LogFn option) (query, pars, splitOn) =
+    if logFunction.IsSome then (query, pars) |> logFunction.Value
+    this.QueryAsync<'a, 'b, 'c, 'd, 'e, ('a * 'b option * 'c option * 'd option * 'e option)>(
+        query,
+        (fun a b c d e ->
+            a, Reflection.makeOption b, Reflection.makeOption c, Reflection.makeOption d, Reflection.makeOption e),
+        pars,
+        splitOn = splitOn,
+        ?transaction = trans,
+        ?commandTimeout = timeout
+    )
 let execute (this:IDbConnection) trans timeout cancellationToken (logFunction:LogFn option) (query, values) =
     if logFunction.IsSome then (query, values) |> logFunction.Value
     CommandDefinition(query, values, ?transaction = trans, ?commandTimeout = timeout, ?cancellationToken = cancellationToken)

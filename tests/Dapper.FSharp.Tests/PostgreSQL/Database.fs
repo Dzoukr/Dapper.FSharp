@@ -1,5 +1,6 @@
 ﻿module Dapper.FSharp.Tests.PostgreSQL.Database
 
+open System
 open Dapper.FSharp
 open Dapper.FSharp.Tests.Database
 open Dapper.FSharp.Tests.Extensions
@@ -85,22 +86,39 @@ module Dogs =
             return ()
         }
 
-module VaccinationHistory =
+module Vaccinations =
 
     let init (conn:IDbConnection) =
         task {
-            do! "drop table if exists \"VaccinationHistory\"" |> conn.ExecuteCatchIgnore
+            do! "drop table if exists \"Vaccinations\"" |> conn.ExecuteCatchIgnore
             do!
                 """
-                create table "VaccinationHistory" (
+                create table "Vaccinations" (
                     "PetOwnerId" uuid not null,
                     "DogNickname" text not null,
-                    "VaccinationDate" timestamp not null
+                    "Vaccination" text not null
                 )
                 """
                 |> conn.ExecuteIgnore
             return ()
         }
+        
+module VaccinationManufacturers =
+
+    let init (conn:IDbConnection) =
+        task {
+            do! "drop table if exists \"VaccinationManufacturers\"" |> conn.ExecuteCatchIgnore
+            do!
+                """
+                create table "VaccinationManufacturers" (
+                    "Vaccination" text not null,
+                    "Manufacturer" text not null
+                )
+                """
+                |> conn.ExecuteIgnore
+            return ()
+        }
+        
 module DogsWeights =
 
     let init (conn:IDbConnection) =
@@ -195,5 +213,6 @@ let getInitializer (conn:IDbConnection) =
         member x.InitSchemedGroups () = Issues.SchemedGroup.init conn
         member x.InitDogs () = Dogs.init conn
         member x.InitDogsWeights () = DogsWeights.init conn
-        member x.InitVaccinationHistory () = VaccinationHistory.init conn
+        member x.InitVaccinations () = Vaccinations.init conn
+        member x.InitVaccinationManufacturers () = VaccinationManufacturers.init conn
     }

@@ -185,5 +185,6 @@ let getInitializer (conn:IDbConnection) =
         member x.InitSchemedGroups () = Issues.SchemedGroup.init conn
         member x.InitDogs () = Dogs.init conn
         member x.InitDogsWeights () = DogsWeights.init conn
-        member x.InitVaccinationHistory () = VaccinationHistory.init conn
+        member x.InitVaccinations () = VaccinationHistory.init conn
+        member x.InitVaccinationManufacturers () = failwith "not implemented"
     }
