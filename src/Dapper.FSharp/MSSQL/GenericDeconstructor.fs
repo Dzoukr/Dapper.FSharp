@@ -41,6 +41,33 @@ let select3<'a,'b,'c> evalSelectQuery (q:SelectQuery) =
     let query : string = evalSelectQuery (fieldsOne @ fieldsTwo @ fieldsThree) meta joinMeta q
     let pars = WhereAnalyzer.extractWhereParams meta |> Map.ofList |> JoinAnalyzer.addToMap joinMeta
     query, pars, createSplitOn [splitOn1;splitOn2]
+    
+let select4<'a,'b,'c,'d> evalSelectQuery (q:SelectQuery) =
+    let joinsArray = q.Joins |> Array.ofList
+    let fieldsOne = typeof<'a> |> Reflection.getFields |> List.map (sprintf "%s.%s" q.Table)
+    let fieldsTwo, splitOn1 = extractFieldsAndSplit<'b> joinsArray.[0]
+    let fieldsThree, splitOn2 = extractFieldsAndSplit<'c> joinsArray.[1]
+    let fieldsFour, splitOn3 = extractFieldsAndSplit<'d> joinsArray.[2]
+    // extract metadata
+    let meta = WhereAnalyzer.getWhereMetadata [] q.Where
+    let joinMeta = JoinAnalyzer.getJoinMetadata q.Joins
+    let query : string = evalSelectQuery (fieldsOne @ fieldsTwo @ fieldsThree @ fieldsFour) meta joinMeta q
+    let pars = WhereAnalyzer.extractWhereParams meta |> Map.ofList |> JoinAnalyzer.addToMap joinMeta
+    query, pars, createSplitOn [splitOn1;splitOn2;splitOn3]
+    
+let select5<'a,'b,'c,'d,'e> evalSelectQuery (q:SelectQuery) =
+    let joinsArray = q.Joins |> Array.ofList
+    let fieldsOne = typeof<'a> |> Reflection.getFields |> List.map (sprintf "%s.%s" q.Table)
+    let fieldsTwo, splitOn1 = extractFieldsAndSplit<'b> joinsArray.[0]
+    let fieldsThree, splitOn2 = extractFieldsAndSplit<'c> joinsArray.[1]
+    let fieldsFour, splitOn3 = extractFieldsAndSplit<'d> joinsArray.[2]
+    let fieldsFive, splitOn4 = extractFieldsAndSplit<'e> joinsArray.[3]
+    // extract metadata
+    let meta = WhereAnalyzer.getWhereMetadata [] q.Where
+    let joinMeta = JoinAnalyzer.getJoinMetadata q.Joins
+    let query : string = evalSelectQuery (fieldsOne @ fieldsTwo @ fieldsThree @ fieldsFour @ fieldsFive) meta joinMeta q
+    let pars = WhereAnalyzer.extractWhereParams meta |> Map.ofList |> JoinAnalyzer.addToMap joinMeta
+    query, pars, createSplitOn [splitOn1;splitOn2;splitOn3;splitOn4]
 
 let private _insert evalInsertQuery (q:InsertQuery<_>) fields outputFields =
     let query : string = evalInsertQuery fields outputFields q

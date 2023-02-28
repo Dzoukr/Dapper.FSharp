@@ -90,23 +90,39 @@ module Dogs =
             return ()
         }
 
-module VaccinationHistory =
+module Vaccinations =
 
     let init (conn:IDbConnection) =
         task {
-            do! "drop table VaccinationHistory" |> conn.ExecuteCatchIgnore
+            do! "drop table Vaccinations" |> conn.ExecuteCatchIgnore
             do!
                 """
-                CREATE TABLE VaccinationHistory (
+                CREATE TABLE Vaccinations (
                     PetOwnerId char(36) not null,
                     DogNickname longtext not null,
-                    VaccinationDate datetime not null
+                    Vaccination longtext not null
                 )
                 """
                 |> conn.ExecuteIgnore
             return ()
         }
+        
+module VaccinationManufacturers =
 
+    let init (conn:IDbConnection) =
+        task {
+            do! "drop table VaccinationManufacturers" |> conn.ExecuteCatchIgnore
+            do!
+                """
+                CREATE TABLE VaccinationManufacturers (
+                    Vaccination longtext not null,
+                    Manufacturer longtext not null
+                )
+                """
+                |> conn.ExecuteIgnore
+            return ()
+        }
+        
 module DogsWeights =
 
     let init (conn:IDbConnection) =
@@ -201,5 +217,6 @@ let getInitializer (conn:IDbConnection) =
         member x.InitSchemedGroups () = Issues.SchemedGroup.init conn
         member x.InitDogs () = Dogs.init conn
         member x.InitDogsWeights () = DogsWeights.init conn
-        member x.InitVaccinationHistory () = VaccinationHistory.init conn
+        member x.InitVaccinations () = Vaccinations.init conn
+        member x.InitVaccinationManufacturers () = VaccinationManufacturers.init conn
     }

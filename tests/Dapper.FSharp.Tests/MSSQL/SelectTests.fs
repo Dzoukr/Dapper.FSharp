@@ -13,6 +13,8 @@ type SelectTests () =
     let personsView = table'<Persons.View> "Persons"
     let dogsView = table'<Dogs.View> "Dogs"
     let dogsWeightsView = table'<DogsWeights.View> "DogsWeights"
+    let vaccinationsView = table'<DogVaccinations.View> "Vaccinations"
+    let manufacturersView = table'<VaccinationManufacturers.View> "VaccinationManufacturers"
     let conn = Database.getConnection()
     let init = Database.getInitializer conn
     
@@ -577,4 +579,354 @@ type SelectTests () =
             Assert.AreEqual(None, dn)
             Assert.AreEqual(None, wn)
             Assert.AreEqual(16, Seq.length fromDb)
+        }
+        
+    [<Test>]
+    member _.``Selects with three inner joins - 1:1``() =
+        task {
+            do! init.InitPersons()
+            do! init.InitDogs()
+            do! init.InitDogsWeights()
+            do! init.InitVaccinations()
+
+            let persons = Persons.View.generate 10
+            let dogs = Dogs.View.generate1to1 persons
+            let weights = DogsWeights.View.generate1to1 dogs
+            let vaccinations = DogVaccinations.View.generate1to1 dogs
+
+            let! _ =
+                insert {
+                    into personsView
+                    values persons
+                } |> conn.InsertAsync
+            let! _ =
+                insert {
+                    into dogsView
+                    values dogs
+                } |> conn.InsertAsync
+            let! _ =
+                insert {
+                    into dogsWeightsView
+                    values weights
+                } |> conn.InsertAsync
+                
+            let! _ =
+                insert {
+                    into vaccinationsView
+                    values vaccinations
+                } |> conn.InsertAsync
+
+            let! fromDb =
+                select {
+                    for p in personsView do
+                    innerJoin d in dogsView on (p.Id = d.OwnerId)
+                    innerJoin dw in dogsWeightsView on (d.Nickname = dw.DogNickname)
+                    innerJoin v in vaccinationsView on (d.Nickname = v.DogNickname)
+                    orderBy p.Position
+                }
+                |> conn.SelectAsync<Persons.View, Dogs.View, DogsWeights.View, DogVaccinations.View>
+
+            Assert.AreEqual(10, Seq.length fromDb)
+            Assert.AreEqual((persons.Head, dogs.Head, weights.Head, vaccinations.Head), (Seq.head fromDb))
+        }
+    
+    [<Test>]
+    member _.``Selects with three inner joins - 1:N``() =
+        task {
+            do! init.InitPersons()
+            do! init.InitDogs()
+            do! init.InitDogsWeights()
+            do! init.InitVaccinations()
+
+            let persons = Persons.View.generate 10
+            let dogs = Dogs.View.generate1toN 5 persons.Head
+            let weights = DogsWeights.View.generate1toN 3 dogs.Head
+            let vaccinations = DogVaccinations.View.generate1toN 3 dogs.Head
+
+            let! _ =
+                insert {
+                    into personsView
+                    values persons
+                } |> conn.InsertAsync
+            let! _ =
+                insert {
+                    into dogsView
+                    values dogs
+                } |> conn.InsertAsync
+            let! _ =
+                insert {
+                    into dogsWeightsView
+                    values weights
+                } |> conn.InsertAsync
+                
+            let! _ =
+                insert {
+                    into vaccinationsView
+                    values vaccinations
+                } |> conn.InsertAsync
+
+            let! fromDb =
+                select {
+                    for p in personsView do
+                    innerJoin d in dogsView on (p.Id = d.OwnerId)
+                    innerJoin dw in dogsWeightsView on (d.Nickname = dw.DogNickname)
+                    leftJoin v in vaccinationsView on (dw.DogNickname = v.DogNickname)
+                    orderBy p.Position
+                    thenBy d.Nickname
+                    thenBy dw.Year
+                    thenBy v.Vaccination
+                } |> conn.SelectAsync<Persons.View, Dogs.View, DogsWeights.View, DogVaccinations.View>
+
+            Assert.AreEqual(9, Seq.length fromDb)
+            Assert.AreEqual((persons.Head, dogs.Head, weights.Head, vaccinations.Head), Seq.head fromDb)
+        }
+        
+    [<Test>]
+    member _.``Selects with three left joins``() =
+        task {
+            do! init.InitPersons()
+            do! init.InitDogs()
+            do! init.InitDogsWeights()
+            do! init.InitVaccinations()
+
+            let persons = Persons.View.generate 10
+            let dogs = Dogs.View.generate1toN 5 persons.Head
+            let weights = DogsWeights.View.generate1toN 3 dogs.Head
+            let vaccinations = DogVaccinations.View.generate1toN 3 dogs.Head
+
+            let! _ =
+                insert {
+                    into personsView
+                    values persons
+                } |> conn.InsertAsync
+            let! _ =
+                insert {
+                    into dogsView
+                    values dogs
+                } |> conn.InsertAsync
+            let! _ =
+                insert {
+                    into dogsWeightsView
+                    values weights
+                } |> conn.InsertAsync
+                
+            let! _ =
+                insert {
+                    into vaccinationsView
+                    values vaccinations
+                } |> conn.InsertAsync
+
+            let! fromDb =
+                select {
+                    for p in personsView do
+                    leftJoin d in dogsView on (p.Id = d.OwnerId)
+                    leftJoin dw in dogsWeightsView on (d.Nickname = dw.DogNickname)
+                    leftJoin v in vaccinationsView on (dw.DogNickname = v.DogNickname)
+                    orderBy p.Position
+                    thenBy d.Nickname
+                    thenBy dw.Year
+                    thenBy v.Vaccination
+                } |> conn.SelectAsyncOption<Persons.View, Dogs.View, DogsWeights.View, DogVaccinations.View>
+
+            let p1,d1,w1,v1 = fromDb |> Seq.head
+            Assert.AreEqual(persons.Head, p1)
+            Assert.AreEqual(Some dogs.Head, d1)
+            Assert.AreEqual(Some weights.Head, w1)
+            Assert.AreEqual(Some vaccinations.Head, v1)
+
+            let pn,dn,wn,vn = fromDb |> Seq.last
+            Assert.AreEqual((persons |> Seq.last), pn)
+            Assert.AreEqual(None, dn)
+            Assert.AreEqual(None, wn)
+            Assert.AreEqual(None, vn)
+        }
+        
+    [<Test>]
+    member _.``Selects with four inner joins - 1:1``() =
+        task {
+            do! init.InitPersons()
+            do! init.InitDogs()
+            do! init.InitDogsWeights()
+            do! init.InitVaccinations()
+            do! init.InitVaccinationManufacturers()
+
+            let persons = Persons.View.generate 10
+            let dogs = Dogs.View.generate1to1 persons
+            let weights = DogsWeights.View.generate1to1 dogs
+            let vaccinations = DogVaccinations.View.generate1to1 dogs
+            let manufacturers = VaccinationManufacturers.View.generate1to1 vaccinations
+
+            let! _ =
+                insert {
+                    into personsView
+                    values persons
+                } |> conn.InsertAsync
+            let! _ =
+                insert {
+                    into dogsView
+                    values dogs
+                } |> conn.InsertAsync
+            let! _ =
+                insert {
+                    into dogsWeightsView
+                    values weights
+                } |> conn.InsertAsync
+                
+            let! _ =
+                insert {
+                    into vaccinationsView
+                    values vaccinations
+                } |> conn.InsertAsync
+                
+            let! _ =
+                insert {
+                    into manufacturersView
+                    values manufacturers
+                } |> conn.InsertAsync
+
+            let! fromDb =
+                select {
+                    for p in personsView do
+                    innerJoin d in dogsView on (p.Id = d.OwnerId)
+                    innerJoin dw in dogsWeightsView on (d.Nickname = dw.DogNickname)
+                    innerJoin v in vaccinationsView on (d.Nickname = v.DogNickname)
+                    innerJoin m in manufacturersView on (v.Vaccination = m.Vaccination)
+                    orderBy p.Position
+                }
+                |> conn.SelectAsync<Persons.View, Dogs.View, DogsWeights.View, DogVaccinations.View, VaccinationManufacturers.View>
+
+            Assert.AreEqual(10, Seq.length fromDb)
+            Assert.AreEqual((persons.Head, dogs.Head, weights.Head, vaccinations.Head, manufacturers.Head), (Seq.head fromDb))
+        }
+    
+    [<Test>]
+    member _.``Selects with four inner joins - 1:N``() =
+        task {
+            do! init.InitPersons()
+            do! init.InitDogs()
+            do! init.InitDogsWeights()
+            do! init.InitVaccinations()
+            do! init.InitVaccinationManufacturers()
+
+            let persons = Persons.View.generate 10
+            let dogs = Dogs.View.generate1toN 5 persons.Head
+            let weights = DogsWeights.View.generate1toN 3 dogs.Head
+            let vaccinations = DogVaccinations.View.generate1toN 3 dogs.Head
+            let manufacturers = VaccinationManufacturers.View.generate1toN 3 vaccinations.Head
+
+            let! _ =
+                insert {
+                    into personsView
+                    values persons
+                } |> conn.InsertAsync
+            let! _ =
+                insert {
+                    into dogsView
+                    values dogs
+                } |> conn.InsertAsync
+            let! _ =
+                insert {
+                    into dogsWeightsView
+                    values weights
+                } |> conn.InsertAsync
+                
+            let! _ =
+                insert {
+                    into vaccinationsView
+                    values vaccinations
+                } |> conn.InsertAsync
+                
+            let! _ =
+                insert {
+                    into manufacturersView
+                    values manufacturers
+                } |> conn.InsertAsync
+
+            let! fromDb =
+                select {
+                    for p in personsView do
+                    innerJoin d in dogsView on (p.Id = d.OwnerId)
+                    innerJoin dw in dogsWeightsView on (d.Nickname = dw.DogNickname)
+                    innerJoin v in vaccinationsView on (dw.DogNickname = v.DogNickname)
+                    innerJoin m in manufacturersView on (v.Vaccination = m.Vaccination)
+                    orderBy p.Position
+                    thenBy d.Nickname
+                    thenBy dw.Year
+                    thenBy m.Manufacturer
+                } |> conn.SelectAsync<Persons.View, Dogs.View, DogsWeights.View, DogVaccinations.View, VaccinationManufacturers.View>
+
+            Assert.AreEqual(9, Seq.length fromDb)
+            Assert.AreEqual((persons.Head, dogs.Head, weights.Head, vaccinations.Head, manufacturers.Head), Seq.head fromDb)
+        }
+        
+    [<Test>]
+    member _.``Selects with four left joins``() =
+        task {
+            do! init.InitPersons()
+            do! init.InitDogs()
+            do! init.InitDogsWeights()
+            do! init.InitVaccinations()
+            do! init.InitVaccinationManufacturers()
+
+            let persons = Persons.View.generate 10
+            let dogs = Dogs.View.generate1toN 5 persons.Head
+            let weights = DogsWeights.View.generate1toN 3 dogs.Head
+            let vaccinations = DogVaccinations.View.generate1toN 3 dogs.Head
+            let manufacturers = VaccinationManufacturers.View.generate1toN 3 vaccinations.Head
+
+            let! _ =
+                insert {
+                    into personsView
+                    values persons
+                } |> conn.InsertAsync
+            let! _ =
+                insert {
+                    into dogsView
+                    values dogs
+                } |> conn.InsertAsync
+            let! _ =
+                insert {
+                    into dogsWeightsView
+                    values weights
+                } |> conn.InsertAsync
+                
+            let! _ =
+                insert {
+                    into vaccinationsView
+                    values vaccinations
+                } |> conn.InsertAsync
+                
+            let! _ =
+                insert {
+                    into manufacturersView
+                    values manufacturers
+                } |> conn.InsertAsync
+
+            let! fromDb =
+                select {
+                    for p in personsView do
+                    leftJoin d in dogsView on (p.Id = d.OwnerId)
+                    leftJoin dw in dogsWeightsView on (d.Nickname = dw.DogNickname)
+                    leftJoin v in vaccinationsView on (dw.DogNickname = v.DogNickname)
+                    leftJoin m in manufacturersView on (v.Vaccination = m.Vaccination)
+                    orderBy p.Position
+                    thenBy d.Nickname
+                    thenBy dw.Year
+                    thenBy v.Vaccination
+                    thenBy m.Manufacturer
+                } |> conn.SelectAsyncOption<Persons.View, Dogs.View, DogsWeights.View, DogVaccinations.View, VaccinationManufacturers.View>
+
+            let p1,d1,w1,v1,m1 = fromDb |> Seq.head
+            Assert.AreEqual(persons.Head, p1)
+            Assert.AreEqual(Some dogs.Head, d1)
+            Assert.AreEqual(Some weights.Head, w1)
+            Assert.AreEqual(Some vaccinations.Head, v1)
+            Assert.AreEqual(Some manufacturers.Head, m1)
+
+            let pn,dn,wn,vn, mn = fromDb |> Seq.last
+            Assert.AreEqual((persons |> Seq.last), pn)
+            Assert.AreEqual(None, dn)
+            Assert.AreEqual(None, wn)
+            Assert.AreEqual(None, vn)
+            Assert.AreEqual(None, mn)
         }

@@ -15,7 +15,8 @@ type ICrudInitializer =
     abstract member InitSchemedGroups : unit -> Task<unit>
     abstract member InitDogs : unit -> Task<unit>
     abstract member InitDogsWeights : unit -> Task<unit>
-    abstract member InitVaccinationHistory : unit -> Task<unit>
+    abstract member InitVaccinations : unit -> Task<unit>
+    abstract member InitVaccinationManufacturers : unit -> Task<unit>
 
 let taskToList (t:Task<seq<'a>>) = t |> Async.AwaitTask |> Async.RunSynchronously |> Seq.toList
 
@@ -75,11 +76,11 @@ module Dogs =
                 }
             )
 
-module DogVaccinationHistory =
+module DogVaccinations =
     type View = {
         PetOwnerId: Guid
         DogNickname : string
-        VaccinationDate : DateTime
+        Vaccination: string
     }
 
     module View =
@@ -89,7 +90,7 @@ module DogVaccinationHistory =
                 {
                     PetOwnerId = x.OwnerId
                     DogNickname = x.Nickname
-                    VaccinationDate =  DateTime.Now - TimeSpan.FromDays(i |> float)
+                    Vaccination = sprintf "Vaccination_%i" i
                 }
             )
 
@@ -99,7 +100,32 @@ module DogVaccinationHistory =
                 {
                     PetOwnerId = dog.OwnerId
                     DogNickname = dog.Nickname
-                    VaccinationDate =  DateTime.Now - TimeSpan.FromDays(i |> float)
+                    Vaccination = sprintf "Vaccination_%i" i
+                }
+            )
+            
+module VaccinationManufacturers =
+    type View = {
+        Vaccination: string
+        Manufacturer: string
+    }
+
+    module View =
+        let generate1to1 (dogs: DogVaccinations.View list) =
+            dogs
+            |> List.mapi (fun i x ->
+                {
+                    Vaccination = x.Vaccination
+                    Manufacturer = sprintf "Manufacturer_%i" i
+                }
+            )
+
+        let generate1toN count (dog: DogVaccinations.View) =
+            [1..count]
+            |> List.map (fun i ->
+                {
+                    Vaccination = dog.Vaccination
+                    Manufacturer = sprintf "Manufacturer_%i" i
                 }
             )
 
