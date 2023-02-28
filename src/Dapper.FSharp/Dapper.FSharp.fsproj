@@ -10,8 +10,8 @@
     <PackageIconUrl>https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png</PackageIconUrl>
     <PackageTags>fsharp;dapper;linq;database;mssql;mysql;postgresql;sqlite</PackageTags>
     <Authors>Roman Provazník;Jordan Marr</Authors>
-    <Version>4.3.0</Version>
-    <PackageReleaseNotes>Spliting unified Option type handlers #78</PackageReleaseNotes>
+    <Version>4.4.0</Version>
+    <PackageReleaseNotes>Increased join limit from 2 to 4 #82 #66</PackageReleaseNotes>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <DebugType>embedded</DebugType>

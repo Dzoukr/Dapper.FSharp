@@ -392,7 +392,7 @@ select {
 } |> conn.SelectAsync<Person, Dog>
 ```
 
-`Dapper.FSharp` will map each joined table into a separate record and return it as list of `'a * 'b` tuples. Currently, up to 2 joins are supported, so you can also join another table here:
+`Dapper.FSharp` will map each joined table into a separate record and return it as list of `'a * 'b` tuples. Currently, up to 4 joins are supported, so you can also join another table here:
 
 ```F#
 select {
