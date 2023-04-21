@@ -65,7 +65,39 @@ type SelectTests () =
             
             Assert.ThrowsAsync<OperationCanceledException>(action) |> ignore
         }
-        
+
+    [<Test>]
+    member _.``Cancellation works - one join``() =
+        task {
+            do! init.InitPersons()
+            do! init.InitDogs()
+
+            let persons = Persons.View.generate 10
+            let dogs = Dogs.View.generate1to1 persons
+            let! _ =
+                insert {
+                    into personsView
+                    values persons
+                } |> conn.InsertAsync
+            let! _ =
+                insert {
+                    into dogsView
+                    values dogs
+                } |> conn.InsertAsync
+            use cts = new CancellationTokenSource()
+            cts.Cancel()
+            let selectCrud query =
+                conn.SelectAsync<Persons.View, Dogs.View>(query, cancellationToken = cts.Token) :> Task
+            let action () =
+                select {
+                    for p in personsView do
+                    innerJoin d in dogsView on (p.Id = d.OwnerId)
+                    selectAll
+                } |> selectCrud
+
+            Assert.ThrowsAsync<OperationCanceledException>(action) |> ignore
+        }
+
     [<Test>]
     member _.``Selects by single where condition with table name used``() =
         task {
