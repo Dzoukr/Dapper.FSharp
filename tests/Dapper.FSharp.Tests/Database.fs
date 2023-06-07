@@ -53,6 +53,7 @@ module Persons =
 module Dogs =
 
     type View = {
+        Id : Guid
         OwnerId : Guid
         Nickname : string
     }
@@ -62,6 +63,7 @@ module Dogs =
             owners
             |> List.mapi (fun i x ->
                 {
+                    Id = System.Guid.NewGuid()
                     OwnerId = x.Id
                     Nickname = sprintf "Dog_%i" i
                 }
@@ -71,6 +73,7 @@ module Dogs =
             [1..count]
             |> List.map (fun i ->
                 {
+                    Id = Guid.NewGuid()
                     OwnerId = owner.Id
                     Nickname = sprintf "Dog_%i" i
                 }

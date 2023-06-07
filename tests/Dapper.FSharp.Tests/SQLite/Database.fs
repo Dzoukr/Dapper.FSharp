@@ -69,6 +69,7 @@ module Dogs =
             do!
                 """
                 CREATE TABLE [Dogs](
+                    [Id] [TEXT] NOT NULL,
                     [OwnerId] [TEXT] NOT NULL,
                     [Nickname] [TEXT] NOT NULL
                 )

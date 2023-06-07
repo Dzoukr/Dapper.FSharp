@@ -82,6 +82,7 @@ module Dogs =
             do!
                 """
                 CREATE TABLE Dogs (
+                    Id char(36) not null,
                     OwnerId char(36) not null,
                     Nickname longtext not null
                 )

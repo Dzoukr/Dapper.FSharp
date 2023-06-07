@@ -14,7 +14,7 @@ let private extractFieldsAndSplit<'a> (j:Join) =
 let private createSplitOn (xs:string list) = xs |> String.concat ","
 
 let select1<'a> evalSelectQuery (q:SelectQuery) =
-    let fields = typeof<'a> |> Reflection.getFields
+    let fields = typeof<'a> |> Reflection.getFields|> if q.Joins = [] then id else List.map (sprintf "%s.%s" q.Table)
     // extract metadata
     let meta = getWhereMetadata [] q.Where
     let joinMeta = getJoinMetadata q.Joins

@@ -78,6 +78,7 @@ module Dogs =
             do!
                 """
                 CREATE TABLE [dbo].[Dogs](
+                    [Id] [uniqueidentifier] NOT NULL,
                     [OwnerId] [uniqueidentifier] NOT NULL,
                     [Nickname] [nvarchar](max) NOT NULL
                 )
