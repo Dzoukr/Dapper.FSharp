@@ -73,7 +73,7 @@ module Dogs =
             [1..count]
             |> List.map (fun i ->
                 {
-                    Id = System.Guid.NewGuid()
+                    Id = Guid.NewGuid()
                     OwnerId = owner.Id
                     Nickname = sprintf "Dog_%i" i
                 }

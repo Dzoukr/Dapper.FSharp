@@ -78,6 +78,7 @@ module Dogs =
             do!
                 """
                 create table "Dogs" (
+                    "Id" uuid not null,
                     "OwnerId" uuid not null,
                     "Nickname" text not null
                 )

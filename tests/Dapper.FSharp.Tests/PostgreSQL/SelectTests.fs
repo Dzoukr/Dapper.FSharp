@@ -450,7 +450,36 @@ type SelectTests () =
             Assert.AreEqual(1, Seq.length byOwner)
             Assert.AreEqual(5, byOwner |> Seq.head |> snd |> Seq.length)
         }
-        
+
+    [<Test>]
+    member _.``Selects with one inner join - 1:N select only one table``() =
+        task {
+            do! init.InitPersons()
+            do! init.InitDogs()
+            let persons = Persons.View.generate 10
+            let dogs = Dogs.View.generate1toN 5 persons.Head
+            let! _ =
+                insert {
+                    into personsView
+                    values persons
+                } |> conn.InsertAsync
+            let! _ =
+                insert {
+                    into dogsView
+                    values dogs
+                } |> conn.InsertAsync
+            let! fromDb =
+                select {
+                    for p in personsView do
+                    innerJoin d in dogsView on (p.Id = d.OwnerId)
+                    distinct
+                    selectAll
+                } |> conn.SelectAsync<Persons.View>
+
+            Assert.AreEqual(1, Seq.length fromDb)
+            Assert.AreEqual(persons.Head, (Seq.head fromDb))
+        }
+
     [<Test>]
     member _.``Selects with one left join``() =
         task {
