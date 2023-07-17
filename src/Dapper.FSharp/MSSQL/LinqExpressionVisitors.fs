@@ -111,6 +111,21 @@ module SqlPatterns =
         | ExpressionType.LessThanOrEqual -> Some (exp :?> BinaryExpression)
         | _ -> None
 
+    let (|EqualCompare|_|) (exp: Expression) =
+        match exp.NodeType with
+        | ExpressionType.Equal -> Some (exp :?> BinaryExpression)
+        | _ -> None
+
+    let (|IfElse|_|) (exp: Expression) =
+        match exp.NodeType with
+        | ExpressionType.Conditional -> Some (exp :?> ConditionalExpression)
+        | _ -> None
+
+    let (|Match|_|) (exp: Expression) =
+        match exp.NodeType with
+        | ExpressionType.Conditional -> Some (exp :?> ConditionalExpression)
+        | _ -> None
+
     let isOptionType (t: Type) = 
         t.IsGenericType && t.GetGenericTypeDefinition() = typedefof<Option<_>>
 
@@ -166,6 +181,15 @@ module SqlPatterns =
                 Some null
         | _ -> None
 
+    let (|ValueOrParameterSubstitute|_|) (sub: (string * Expression) option) (exp: Expression) =
+        match exp with
+        | Value x -> Some x
+        | Parameter p ->
+            match sub with
+            | Some (name, Value v) when name = p.Name -> Some v
+            | _ -> None
+        | _ -> None
+
 let getColumnComparison (expType: ExpressionType, value: obj) =
     match expType with
     | ExpressionType.Equal when (isNull value) -> IsNull
@@ -197,13 +221,21 @@ let rec unwrapListExpr (lstValues: obj list, lstExp: MethodCallExpression) =
         lstValues
 
 let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberInfo -> string) =
-    let rec visit (exp: Expression) : Where =
+    let rec visitSubParam (sub: (string * Expression) option) (exp: Expression) : Where =
+        let visit = visitSubParam sub
         match exp with
+        | Constant c when c.Value = true ->
+            Expr "1=1"
+        | Constant c when c.Value = false ->
+            Expr "1=0"
         | Lambda x -> visit x.Body
         | Not x -> 
             let operand = visit x.Operand
             Unary (Not, operand)
         | MethodCall m when m.Method.Name = "Invoke" ->
+            match Seq.tryHead m.Arguments, m.Object with
+            | Some x, Lambda l -> visitSubParam (Some (l.Parameters[0].Name, x)) m.Object
+            | _ ->
             // Handle tuples
             visit m.Object
         | MethodCall m when List.contains m.Method.Name [ "isIn"; "isNotIn" ] ->
@@ -240,15 +272,15 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
             let rt = visit x.Right
             Binary (lt, Or, rt)
         | BinaryCompare x ->
-            match x.Left, x.Right with            
+            match x.Left, x.Right with
             | Property p1, Property p2 ->
                 // Handle col to col comparisons
                 let lt = qualifyColumn p1
                 let cp = getComparison exp.NodeType
                 let rt = qualifyColumn p2
                 Expr (sprintf "%s %s %s" lt cp rt)
-            | Property p, Value value
-            | Value value, Property p ->
+            | Property p, ValueOrParameterSubstitute sub value
+            | ValueOrParameterSubstitute sub value, Property p ->
                 // Handle column to value comparisons
                 let columnComparison = getColumnComparison(exp.NodeType, value)
                 Column (qualifyColumn p, columnComparison)
@@ -258,10 +290,27 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
                 notImplMsg("Value to value comparisons are not currently supported. Ex: where (1 = 1)")
             | _ ->
                 notImpl()
+        | IfElse x ->
+            match x.Test with
+            | Constant c when c.Value = true ->
+                visit x.IfTrue
+            | Constant c when c.Value = false ->
+                visit x.IfFalse
+            // support match ... with
+            | EqualCompare b ->
+                match b.Left with
+                | MethodCall m when m.Method.Name = "GetTag" ->
+                    match m.Arguments[0], b.Right with
+                    | Constant c, Constant right ->
+                        if (m.Method.Invoke(null, [| c.Value |]) :?> int) = (right.Value :?> int) then visit x.IfTrue else visit x.IfFalse
+                    | _ -> notImpl()
+                | _ -> notImpl()
+            | _ -> notImplMsg "Only boolean constant as condition is supported."
+
         | _ ->
             notImpl()
 
-    visit (filter :> Expression)
+    visitSubParam None (filter :> Expression)
 
 /// Returns a list of one or more fully qualified column names: ["{schema}.{table}.{column}"]
 let visitGroupBy<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) (qualifyColumn: MemberInfo -> string) =
