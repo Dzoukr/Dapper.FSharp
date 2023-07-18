@@ -306,53 +306,6 @@ type SelectTests () =
             Assert.AreEqual (rs |> List.find (fun x -> x.Position = 3), Seq.head fromDb)
         }
 
-    [<TestCase(2)>]
-    [<TestCase(7)>]
-    [<TestCase(null)>]
-    member _.``Selects by where condition with IF`` x =
-        let o = x |> Option.ofNullable
-        task {
-            do! init.InitPersons()
-            let rs = Persons.View.generate 10
-            let! _ =
-                insert {
-                    into personsView
-                    values rs
-                } |> conn.InsertAsync
-            let! fromDb =
-                let cond = o.IsSome
-                select {
-                    for p in personsView do
-                    where (if cond then (p.Position > o.Value) else false)
-                } |> conn.SelectAsync<Persons.View>
-
-            let expected = 10 - (o |> Option.defaultValue 10)
-            Assert.AreEqual (expected, Seq.length fromDb)
-        }
-
-    [<TestCase(2)>]
-    [<TestCase(7)>]
-    [<TestCase(null)>]
-    member _.``Selects by where condition with match option`` x =
-        let o = x |> Option.ofNullable
-        task {
-            do! init.InitPersons()
-            let rs = Persons.View.generate 10
-            let! _ =
-                insert {
-                    into personsView
-                    values rs
-                } |> conn.InsertAsync
-            let! fromDb =
-                select {
-                    for p in personsView do
-                    where (match o with | Some x -> p.Position > x | None -> true)
-                } |> conn.SelectAsync<Persons.View>
-
-            let expected = 10 - (o |> Option.defaultValue 0)
-            Assert.AreEqual (expected, Seq.length fromDb)
-        }
-
     [<Test>]
     member _.``Selects with order by``() =
         task {

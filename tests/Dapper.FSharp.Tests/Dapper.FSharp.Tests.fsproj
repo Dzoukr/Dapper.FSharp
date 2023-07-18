@@ -38,6 +38,7 @@
     <Compile Include="MSSQL\UpdateTests.fs" />
     <Compile Include="MSSQL\InsertTests.fs" />
     <Compile Include="MSSQL\SelectTests.fs" />
+    <Compile Include="MSSQL\WhereTests.fs" />
 	  
     <Compile Include="SQLite\Database.fs" />
     <Compile Include="SQLite\DeleteTests.fs" />
