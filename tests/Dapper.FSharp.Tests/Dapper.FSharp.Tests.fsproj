@@ -30,6 +30,7 @@
     <Compile Include="MySQL\UpdateTests.fs" />
     <Compile Include="MySQL\InsertTests.fs" />
     <Compile Include="MySQL\SelectTests.fs" />
+    <Compile Include="MySQL\WhereTests.fs" />
       
     <Compile Include="MSSQL\Database.fs" />
     <Compile Include="MSSQL\DeleteTests.fs" />
