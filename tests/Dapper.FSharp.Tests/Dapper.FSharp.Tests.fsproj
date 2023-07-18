@@ -49,6 +49,7 @@
     <Compile Include="SQLite\UpdateTests.fs" />
     <Compile Include="SQLite\InsertTests.fs" />
     <Compile Include="SQLite\SelectTests.fs" />
+    <Compile Include="SQLite\WhereTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Dapper.FSharp\Dapper.FSharp.fsproj" />
