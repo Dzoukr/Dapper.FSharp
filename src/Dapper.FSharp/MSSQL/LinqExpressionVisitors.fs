@@ -190,6 +190,19 @@ module SqlPatterns =
             | _ -> None
         | _ -> None
 
+    let (|GetTagCondition|_|) (exp: Expression) =
+        match exp.NodeType with
+        | ExpressionType.Equal ->
+            let b = exp :?> BinaryExpression
+            match b.Left with
+            | MethodCall m when m.Method.Name = "GetTag" ->
+                match m.Arguments[0], b.Right with
+                | Constant c, Constant right ->
+                    if (m.Method.Invoke(null, [| c.Value |]) :?> int) = (right.Value :?> int) then Some true else Some false
+                | _ -> None
+            | _ -> None
+        | _ -> None
+
 let getColumnComparison (expType: ExpressionType, value: obj) =
     match expType with
     | ExpressionType.Equal when (isNull value) -> IsNull
@@ -225,9 +238,9 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
         let visit = visitSubParam sub
         match exp with
         | Constant c when c.Value = true ->
-            Expr "1=1"
+            True
         | Constant c when c.Value = false ->
-            Expr "1=0"
+            False
         | Lambda x -> visit x.Body
         | Not x -> 
             let operand = visit x.Operand
@@ -263,14 +276,20 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
                 then Column (qualifyColumn p, ColumnComparison.IsNull)
                 else Column (qualifyColumn p, ColumnComparison.IsNotNull)
             | _ -> notImpl()
+        // support pattern match
+        | GetTagCondition b -> if b then True else False
         | BinaryAnd x ->
-            let lt = visit x.Left
-            let rt = visit x.Right
-            Binary (lt, And, rt)
-        | BinaryOr x -> 
-            let lt = visit x.Left
-            let rt = visit x.Right
-            Binary (lt, Or, rt)
+            match visit x.Left with
+            | False -> False // short circuit, because `if c then x else false` is converted to c && x
+            | lt ->
+                let rt = visit x.Right
+                Binary (lt, And, rt)
+        | BinaryOr x ->
+            match visit x.Left with
+            | True -> True // short circuit, because `if c then true else x` is converted to c || x
+            | lt ->
+                let rt = visit x.Right
+                Binary (lt, Or, rt)
         | BinaryCompare x ->
             match x.Left, x.Right with
             | Property p1, Property p2 ->
@@ -291,20 +310,11 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
             | _ ->
                 notImpl()
         | IfElse x ->
-            match x.Test with
-            | Constant c when c.Value = true ->
+            match visit x.Test with
+            | True ->
                 visit x.IfTrue
-            | Constant c when c.Value = false ->
+            | False ->
                 visit x.IfFalse
-            // support match ... with
-            | EqualCompare b ->
-                match b.Left with
-                | MethodCall m when m.Method.Name = "GetTag" ->
-                    match m.Arguments[0], b.Right with
-                    | Constant c, Constant right ->
-                        if (m.Method.Invoke(null, [| c.Value |]) :?> int) = (right.Value :?> int) then visit x.IfTrue else visit x.IfFalse
-                    | _ -> notImpl()
-                | _ -> notImpl()
             | _ -> notImplMsg "Only boolean constant as condition is supported."
 
         | _ ->

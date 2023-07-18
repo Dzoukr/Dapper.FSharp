@@ -24,6 +24,8 @@ let rec evalWhere (meta:WhereAnalyzer.FieldWhereMetadata list) (w:Where) =
     match w with
     | Empty -> ""
     | Expr expr -> expr
+    | True -> "1=1"
+    | False -> "1=0"
     | Column (field, comp) ->
         let fieldMeta = meta |> List.find (fun x -> x.Key = (field,comp))
         let withField op = sprintf "%s %s @%s" (inBrackets fieldMeta.Name) op fieldMeta.ParameterName
