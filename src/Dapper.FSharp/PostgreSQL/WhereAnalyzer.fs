@@ -33,7 +33,9 @@ let normalizeParamName (s:string) = s.Replace(".","_")
 
 let rec getWhereMetadata (meta:FieldWhereMetadata list) (w:Where)  =
     match w with
-    | Empty -> meta
+    | Empty
+    | True
+    | False
     | Expr _ -> meta
     | Column (field, comp) ->
         let parName =

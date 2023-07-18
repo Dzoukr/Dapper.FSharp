@@ -30,6 +30,8 @@ let evalOrderDirection = function
 let rec evalWhere (meta:FieldWhereMetadata list) (w:Where) =
     match w with
     | Empty -> ""
+    | True -> "TRUE"
+    | False -> "FALSE"
     | Expr expr -> expr
     | Column (field, comp) ->
         let fieldMeta = meta |> List.find (fun x -> x.Key = (field,comp))
