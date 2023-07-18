@@ -111,22 +111,12 @@ module SqlPatterns =
         | ExpressionType.LessThanOrEqual -> Some (exp :?> BinaryExpression)
         | _ -> None
 
-    let (|EqualCompare|_|) (exp: Expression) =
-        match exp.NodeType with
-        | ExpressionType.Equal -> Some (exp :?> BinaryExpression)
-        | _ -> None
-
     let (|IfElse|_|) (exp: Expression) =
         match exp.NodeType with
         | ExpressionType.Conditional -> Some (exp :?> ConditionalExpression)
         | _ -> None
 
-    let (|Match|_|) (exp: Expression) =
-        match exp.NodeType with
-        | ExpressionType.Conditional -> Some (exp :?> ConditionalExpression)
-        | _ -> None
-
-    let isOptionType (t: Type) = 
+    let isOptionType (t: Type) =
         t.IsGenericType && t.GetGenericTypeDefinition() = typedefof<Option<_>>
 
     /// A property member, a property wrapped in 'Some', or an option 'Value'.
@@ -251,7 +241,6 @@ let getComparisonOp (expType: ExpressionType) =
     | ExpressionType.LessThanOrEqual -> (<=)
     | _ -> notImplMsg "Unsupported comparison type"
 
-
 let rec unwrapListExpr (lstValues: obj list, lstExp: MethodCallExpression) =
     if lstExp.Arguments.Count > 0 then
         match lstExp.Arguments.[0] with
@@ -318,14 +307,6 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
                 let rt = visit x.Right
                 Binary (lt, Or, rt)
         | BinaryCompare x ->
-            match x.Left with
-            | Property p1 -> ()
-            | ValueOrParameterSubstitute sub v -> ()
-            | _ -> ()
-            match x.Right with
-            | Property p1 -> ()
-            | ValueOrParameterSubstitute sub v -> ()
-            | _ -> ()
             match x.Left, x.Right with
             | Property p1, Property p2 ->
                 // Handle col to col comparisons
