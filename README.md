@@ -286,6 +286,25 @@ select {
 } |> conn.SelectAsync<Person>
 ```
 
+You can use `if` expression in `where` condition, but condition must be of type `bool`:
+
+```F#
+select {
+    for p in personTable do
+    where (if usePositionFilter then p.Position > 5 else true)
+} |> conn.SelectAsync<Person>
+```
+
+You can use pattern match expression in `where` condition:
+
+```F#
+select {
+    for p in personTable do
+    where (match positionFilter with | Some x -> p.Position > x | None -> true)
+} |> conn.SelectAsync<Person>
+```
+(Only usage of `Option`, `Result` and simple custom DU was tested, its possible you will encounter some issues with more complex DU)
+
 NOTE: Do not use the forward pipe `|>` operator in your query expressions because it's not implemented, so don't do it (unless you like exceptions)!
 
 To use LIKE operator in `where` condition, use `like`:
