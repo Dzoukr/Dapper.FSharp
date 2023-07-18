@@ -166,7 +166,23 @@ module SqlPatterns =
             | MemberTypes.Field -> (m.Member :?> FieldInfo).GetValue(parentObject) |> Some
             | MemberTypes.Property -> (m.Member :?> PropertyInfo).GetValue(parentObject) |> Some
             | _ -> notImplMsg(sprintf "Unable to unwrap where value for '%s'" m.Member.Name)
-        | Member m when m.Expression.NodeType = ExpressionType.MemberAccess -> 
+        // Get value from DU case
+        | Member m when m.Expression.NodeType = ExpressionType.TypeAs ->
+            match (m.Expression :?> UnaryExpression).Operand with
+            | Constant c when Reflection.FSharpType.IsUnion c.Type ->
+                let values = Reflection.FSharpValue.GetUnionFields(c.Value, c.Type) |> snd
+                match m.Member.Name with
+                | "Item"
+                | "Item1" -> Some values.[0]
+                | "Item2" -> Some values.[1]
+                | "Item3" -> Some values.[2]
+                | "Item4" -> Some values.[3]
+                | "Item5" -> Some values.[4]
+                | "Item6" -> Some values.[5]
+                | "Item7" -> Some values.[6]
+                | _ -> None
+            | _ -> None
+        | Member m when m.Expression.NodeType = ExpressionType.MemberAccess ->
             // Extract constant value from nested object/properties
             notImplMsg "Nested property value extraction is not supported in 'where' statements. Try manually unwrapping and passing in the value."
         | Constant c -> Some c.Value
@@ -181,12 +197,12 @@ module SqlPatterns =
                 Some null
         | _ -> None
 
-    let (|ValueOrParameterSubstitute|_|) (sub: (string * Expression) option) (exp: Expression) =
+    let (|ValueOrParameterSubstitute|_|) (sub: Map<string, Expression>) (exp: Expression) =
         match exp with
         | Value x -> Some x
         | Parameter p ->
-            match sub with
-            | Some (name, Value v) when name = p.Name -> Some v
+            match sub |> Map.tryFind p.Name with
+            | Some (Value v) -> Some v
             | _ -> None
         | _ -> None
 
@@ -225,6 +241,17 @@ let getComparison (expType: ExpressionType) =
     | ExpressionType.LessThanOrEqual -> "<="
     | _ -> notImplMsg "Unsupported comparison type"
 
+let getComparisonOp (expType: ExpressionType) =
+    match expType with
+    | ExpressionType.Equal -> (=)
+    | ExpressionType.NotEqual -> (<>)
+    | ExpressionType.GreaterThan -> (>)
+    | ExpressionType.GreaterThanOrEqual -> (>=)
+    | ExpressionType.LessThan -> (<)
+    | ExpressionType.LessThanOrEqual -> (<=)
+    | _ -> notImplMsg "Unsupported comparison type"
+
+
 let rec unwrapListExpr (lstValues: obj list, lstExp: MethodCallExpression) =
     if lstExp.Arguments.Count > 0 then
         match lstExp.Arguments.[0] with
@@ -234,7 +261,7 @@ let rec unwrapListExpr (lstValues: obj list, lstExp: MethodCallExpression) =
         lstValues
 
 let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberInfo -> string) =
-    let rec visitSubParam (sub: (string * Expression) option) (exp: Expression) : Where =
+    let rec visitSubParam (sub: Map<string, Expression>) (exp: Expression) : Where =
         let visit = visitSubParam sub
         match exp with
         | Constant c when c.Value = true ->
@@ -247,7 +274,7 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
             Unary (Not, operand)
         | MethodCall m when m.Method.Name = "Invoke" ->
             match Seq.tryHead m.Arguments, m.Object with
-            | Some x, Lambda l -> visitSubParam (Some (l.Parameters[0].Name, x)) m.Object
+            | Some x, Lambda l -> visitSubParam (sub |> Map.add l.Parameters[0].Name x) m.Object
             | _ ->
             // Handle tuples
             visit m.Object
@@ -263,7 +290,7 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
             | _ -> notImpl()
         | MethodCall m when List.contains m.Method.Name [ "like"; "notLike" ] ->
             match m.Arguments.[0], m.Arguments.[1] with
-            | Property p, Value value -> 
+            | Property p, ValueOrParameterSubstitute sub value ->
                 let pattern = string value
                 match m.Method.Name with
                 | "like" -> Column ((qualifyColumn p), (Like pattern))
@@ -291,6 +318,14 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
                 let rt = visit x.Right
                 Binary (lt, Or, rt)
         | BinaryCompare x ->
+            match x.Left with
+            | Property p1 -> ()
+            | ValueOrParameterSubstitute sub v -> ()
+            | _ -> ()
+            match x.Right with
+            | Property p1 -> ()
+            | ValueOrParameterSubstitute sub v -> ()
+            | _ -> ()
             match x.Left, x.Right with
             | Property p1, Property p2 ->
                 // Handle col to col comparisons
@@ -303,10 +338,12 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
                 // Handle column to value comparisons
                 let columnComparison = getColumnComparison(exp.NodeType, value)
                 Column (qualifyColumn p, columnComparison)
-            | Value v1, Value v2 ->
+            | ValueOrParameterSubstitute sub v1, ValueOrParameterSubstitute sub v2 when (v1 :? int) && (v2 :? int) -> if (getComparisonOp exp.NodeType) (v1 :?> int) (v2 :?> int) then True else False
+            | ValueOrParameterSubstitute sub v1, ValueOrParameterSubstitute sub v2 when (v1 :? bool) && (v2 :? bool) -> if (getComparisonOp exp.NodeType) (v1 :?> bool) (v2 :?> bool) then True else False
+            | ValueOrParameterSubstitute sub v1, ValueOrParameterSubstitute sub v2 ->
                 // Not implemented because I didn't want to embed logic to properly format strings, dates, etc.
                 // This can be easily added later if it is implemented in Dapper.FSharp.
-                notImplMsg("Value to value comparisons are not currently supported. Ex: where (1 = 1)")
+                notImplMsg("Value to value comparisons are currently supported only for int and bool. Ex: where (1 = 1)")
             | _ ->
                 notImpl()
         | IfElse x ->
@@ -320,7 +357,7 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
         | _ ->
             notImpl()
 
-    visitSubParam None (filter :> Expression)
+    visitSubParam Map.empty (filter :> Expression)
 
 /// Returns a list of one or more fully qualified column names: ["{schema}.{table}.{column}"]
 let visitGroupBy<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) (qualifyColumn: MemberInfo -> string) =

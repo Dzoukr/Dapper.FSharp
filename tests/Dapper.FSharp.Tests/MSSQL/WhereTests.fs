@@ -1,15 +1,21 @@
 ﻿module Dapper.FSharp.Tests.MSSQL.WhereTests
 
+open System
 open System.Threading
 open System.Threading.Tasks
 open NUnit.Framework
 open Dapper.FSharp.MSSQL
 open Dapper.FSharp.Tests.Database
 
+type CustomDU =
+    | PositionBetween of int * int
+    | Name of string
+    | NoDate
+
 [<TestFixture>]
 [<NonParallelizable>]
 type WhereTests () =
-    
+
     let personsView = table'<Persons.View> "Persons"
     let conn = Database.getConnection()
     let init = Database.getInitializer conn
@@ -27,10 +33,10 @@ type WhereTests () =
                 selectQuery |> conn.SelectAsync<Persons.View>
             return fromDb
         }
-    
+
     [<OneTimeSetUp>]
     member _.``Setup DB``() = conn |> Database.safeInit
-        
+
     [<TestCase(2)>]
     [<TestCase(7)>]
     [<TestCase(null)>]
@@ -106,4 +112,44 @@ type WhereTests () =
 
         let expected = min 10 (((ub |> Option.defaultValue 1) - 1) + (10 - (lb |> Option.defaultValue 10)))
         Assert.AreEqual (expected, Seq.length fromDb)
+        }
+
+    [<TestCase(2)>]
+    [<TestCase(7)>]
+    [<TestCase(null)>]
+    member _.``Selects by where condition with match result`` x = task {
+        let o = x |> Option.ofNullable |> Option.map Ok |> Option.defaultValue (Error "error")
+        let! fromDb =
+            whereTest (
+                select {
+                    for p in personsView do
+                    where (match o with | Ok x -> p.Position > x | Error e -> false)
+                })
+
+        let expected = 10 - (o |> Result.defaultValue 10)
+        Assert.AreEqual (expected, Seq.length fromDb)
+        }
+
+    [<TestCase(2, 7, null, null)>]
+    [<TestCase(null, null, "First_1%", null)>]
+    [<TestCase(null, null, null, true)>]
+    member _.``Selects by where condition with match custom DU`` (p1, p2, n, d) = task {
+        let o =
+            match Option.ofNullable p1, Option.ofNullable p2, n, d with
+            | Some lb, Some ub, _, _ -> PositionBetween (lb, ub)
+            | _, _, x, _ when x <> null -> Name x
+            | _, _, _, true -> NoDate
+            | _ -> failwith "invalid test case"
+        let! fromDb =
+            whereTest (
+                select {
+                    for p in personsView do
+                    where (match o with | PositionBetween (lb, ub) -> p.Position > lb && p.Position < ub | Name n -> like p.FirstName n | NoDate -> p.DateOfBirth = None)
+                })
+
+        match o with
+        | PositionBetween (lb, ub) -> Assert.AreEqual (ub - lb - 1, Seq.length fromDb)
+        | Name "First_1%" -> Assert.AreEqual (2, Seq.length fromDb)
+        | NoDate -> Assert.AreEqual (5, Seq.length fromDb)
+        | _ -> Assert.Fail "invalid test case"
         }
