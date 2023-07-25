@@ -219,7 +219,7 @@ type AggregatesTests () =
         }
 
     [<Test>]
-    member _.``Select distinct + COUNTBY``() =
+    member _.``Select countByDistinct``() =
         task {
             do! init.InitPersons()
             do! init.InitDogs()
@@ -241,8 +241,7 @@ type AggregatesTests () =
                 select {
                     for p in personsView do
                     leftJoin d in dogsView on (p.Id = d.OwnerId)
-                    countBy (p.Id)
-                    distinct
+                    countByDistinct (p.Id)
                 }
                 |> conn.SelectAsync<{|Id:int|}>
                 |> taskToList
