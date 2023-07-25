@@ -60,6 +60,7 @@ module Join =
 
 type Aggregate =
     | Count of columnName:string * alias:string
+    | CountDistinct of columnName:string * alias:string
     | Avg of columnName:string * alias:string
     | Sum of columnName:string * alias:string
     | Min of columnName:string * alias:string

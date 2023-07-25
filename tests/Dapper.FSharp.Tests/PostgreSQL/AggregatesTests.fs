@@ -34,7 +34,28 @@ type AggregatesTests () =
                 |> taskToList
             Assert.AreEqual(10L, fromDb.Head.Value)
         }
-    
+
+    [<Test>]
+    member _.``Selects with COUNTBY aggregate function``() =
+        task {
+            do! init.InitPersons()
+            let rs = Persons.View.generate 10
+            let! _ =
+                insert {
+                    into personsView
+                    values rs
+                } |> conn.InsertAsync
+            let fromDb =
+                select {
+                    for p in personsView do
+                    countBy p.Id
+                }
+                |> conn.SelectAsync<{| Id : int64 |}>
+                |> taskToList
+
+            Assert.AreEqual(10L, fromDb.Head.Id)
+        }
+
     [<Test>]
     member _.``Selects with COUNT aggregate function + column``() =
         task {
@@ -192,6 +213,68 @@ type AggregatesTests () =
                 |> taskToList
 
             Assert.AreEqual(10, fromDb.Length)
+        }
+
+    [<Test>]
+    member _.``Select countDistinct``() =
+        task {
+            do! init.InitPersons()
+            do! init.InitDogs()
+
+            let ps = Persons.View.generate 10
+            let ds = Dogs.View.generate1toN 5 ps.Head
+            let! _ =
+                insert {
+                    into personsView
+                    values ps
+                } |> conn.InsertAsync
+            let! _ =
+                insert {
+                    into dogsView
+                    values ds
+                } |> conn.InsertAsync
+
+            let fromDb =
+                select {
+                    for p in personsView do
+                    leftJoin d in dogsView on (p.Id = d.OwnerId)
+                    countDistinct "Persons.Id" "Value"
+                }
+                |> conn.SelectAsync<{|Value:int64|}>
+                |> taskToList
+
+            Assert.AreEqual(10L, fromDb.Head.Value)
+        }
+
+    [<Test>]
+    member _.``Select countByDistinct``() =
+        task {
+            do! init.InitPersons()
+            do! init.InitDogs()
+
+            let ps = Persons.View.generate 10
+            let ds = Dogs.View.generate1toN 5 ps.Head
+            let! _ =
+                insert {
+                    into personsView
+                    values ps
+                } |> conn.InsertAsync
+            let! _ =
+                insert {
+                    into dogsView
+                    values ds
+                } |> conn.InsertAsync
+
+            let fromDb =
+                select {
+                    for p in personsView do
+                    leftJoin d in dogsView on (p.Id = d.OwnerId)
+                    countByDistinct (p.Id)
+                }
+                |> conn.SelectAsync<{|Id:int64|}>
+                |> taskToList
+
+            Assert.AreEqual(10L, fromDb.Head.Id)
         }
     
     [<Test>]

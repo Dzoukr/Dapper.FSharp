@@ -259,10 +259,26 @@ type SelectExpressionBuilder<'T>() =
 
     /// COUNT aggregate function for the selected column
     [<CustomOperation("countBy", MaintainsVariableSpace = true)>]
-    member this.CountBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
+    member this.CountBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) =
         let query = state |> getQueryOrDefault
-        let propertyName = visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
-        QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Count(propertyName, propertyName)] }, state.TableMappings)
+        let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
+        let alias = propertyName.Split('.') |> Array.last
+        QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Count(propertyName, alias)] }, state.TableMappings)
+
+
+    /// COUNT DISTINCT aggregate function for COLNAME (or * symbol) and map it to ALIAS
+    [<CustomOperation("countDistinct", MaintainsVariableSpace = true)>]
+    member this.CountDistinct (state:QuerySource<'T>, colName, alias) =
+        let query = state |> getQueryOrDefault
+        QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.CountDistinct(colName, alias)] }, state.TableMappings)
+
+    /// COUNT DISTINCT aggregate function for the selected column
+    [<CustomOperation("countByDistinct", MaintainsVariableSpace = true)>]
+    member this.CountByDistinct (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) =
+        let query = state |> getQueryOrDefault
+        let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
+        let alias = propertyName.Split('.') |> Array.last
+        QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.CountDistinct(propertyName, alias)] }, state.TableMappings)
 
     /// AVG aggregate function for COLNAME (or * symbol) and map it to ALIAS
     [<CustomOperation("avg", MaintainsVariableSpace = true)>]
