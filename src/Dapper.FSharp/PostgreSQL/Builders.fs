@@ -265,7 +265,6 @@ type SelectExpressionBuilder<'T>() =
         let alias = propertyName.Split('.') |> Array.last
         QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Count(propertyName, alias)] }, state.TableMappings)
 
-
     /// COUNT DISTINCT aggregate function for COLNAME (or * symbol) and map it to ALIAS
     [<CustomOperation("countDistinct", MaintainsVariableSpace = true)>]
     member this.CountDistinct (state:QuerySource<'T>, colName, alias) =
