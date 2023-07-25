@@ -78,7 +78,7 @@ let evalJoins (meta:JoinAnalyzer.JoinMetadata list) (joins:Join list) =
     joins |> List.map evalJoin |> List.iter (sb.Append >> ignore)
     sb.ToString()
 
-let evalAggregates (ags:Aggregate list) =
+let evalAggregates isDistinct (ags:Aggregate list) =
     let comparableName (column:string) (alias:string) =
         match column.Split '.' with
         | [| _ |] -> alias
@@ -86,7 +86,7 @@ let evalAggregates (ags:Aggregate list) =
         | _ -> failwith "Aggregate column format should be either <table>.<column> or <column>"
 
     ags |> List.map (function
-    | Count (column,alias) -> comparableName column alias, sprintf "COUNT(%s) AS %s" column alias
+    | Count (column,alias) -> comparableName column alias, sprintf "COUNT(%s%s) AS %s" (if isDistinct then "DISTINCT " else "") column alias
     | Avg (column,alias) -> comparableName column alias, sprintf "AVG(%s) AS %s" column alias
     | Sum (column,alias) -> comparableName column alias, sprintf "SUM(%s) AS %s" column alias
     | Min (column,alias) -> comparableName column alias, sprintf "MIN(%s) AS %s" column alias
@@ -117,7 +117,7 @@ let evalQueryOptions (opt:QueryOption list) =
     |> String.concat " "
 
 let evalSelectQuery fields meta joinMeta (q:SelectQuery) =
-    let aggregates = q.Aggregates |> evalAggregates
+    let aggregates = q.Aggregates |> evalAggregates q.Distinct
     let fieldNames =
         fields
         |> List.map (replaceFieldWithAggregate aggregates)
