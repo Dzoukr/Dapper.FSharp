@@ -265,7 +265,8 @@ type SelectExpressionBuilder<'T>() =
     member this.CountBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
         let query = state |> getQueryOrDefault
         let propertyName = LinqExpressionVisitors.visitPropertySelector<'T, 'Prop> propertySelector |> fullyQualifyColumn state.TableMappings
-        QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Count(propertyName, propertyName)] }, state.TableMappings)
+        let alias = propertyName.Split('.') |> Array.last
+        QuerySource<'T, SelectQuery>({ query with Aggregates = query.Aggregates @ [Aggregate.Count(propertyName, alias)] }, state.TableMappings)
 
     /// AVG aggregate function for COLNAME (or * symbol) and map it to ALIAS
     [<CustomOperation("avg", MaintainsVariableSpace = true)>]
