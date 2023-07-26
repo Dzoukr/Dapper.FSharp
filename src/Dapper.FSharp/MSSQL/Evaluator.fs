@@ -87,6 +87,7 @@ let evalAggregates (ags:Aggregate list) =
 
     ags |> List.map (function
     | Count (column,alias) -> comparableName column alias, sprintf "COUNT(%s) AS %s" column alias
+    | CountDistinct (column,alias) -> comparableName column alias, sprintf "COUNT(DISTINCT %s) AS %s" column alias
     | Avg (column,alias) -> comparableName column alias, sprintf "AVG(%s) AS %s" column alias
     | Sum (column,alias) -> comparableName column alias, sprintf "SUM(%s) AS %s" column alias
     | Min (column,alias) -> comparableName column alias, sprintf "MIN(%s) AS %s" column alias
@@ -95,7 +96,11 @@ let evalAggregates (ags:Aggregate list) =
 
 let replaceFieldWithAggregate (aggr:(string * string) list) (field:string) =
     aggr
-    |> List.tryPick (fun (aggrColumn, replace) -> if aggrColumn = field then Some replace else None)
+    |> List.tryPick (fun (aggrColumn, replace) ->
+        match aggrColumn.Split '.', field.Split '.' with
+        | [| _; c |], [| _ |] when c = field -> Some replace // aggrColumn is <table>.<column> but field is <column>
+        | _ when aggrColumn = field -> Some replace
+        | _ -> None)
     |> Option.defaultValue (inBrackets field)
 
 let evalGroupBy (cols:string list) =
