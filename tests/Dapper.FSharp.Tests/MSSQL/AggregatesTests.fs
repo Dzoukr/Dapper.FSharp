@@ -337,4 +337,36 @@ type AggregatesTests () =
             Assert.AreEqual(5, one.Count)
             Assert.AreEqual(1, one.Position)
             Assert.AreEqual(one.Id, two.OwnerId)
-        } 
+        }
+
+    [<Test>]
+    member _.``Select count inner join, #92``() =
+        task {
+            do! init.InitPersons()
+            do! init.InitDogs()
+
+            let px = Persons.View.generate 10
+            let ds = Dogs.View.generate1toN 5 px.Head
+            let! _ =
+                insert {
+                    into personsView
+                    values px
+                } |> conn.InsertAsync
+            let! _ =
+                insert {
+                    into dogsView
+                    values ds
+                } |> conn.InsertAsync
+
+            let fromDb =
+                select {
+                    for p in personsView do
+                    innerJoin d in dogsView on (p.Id = d.OwnerId)
+                    count "*" "Count"
+                }
+                |> conn.SelectAsync<{| Count:int |}>
+                |> taskToList
+                |> List.head
+
+            Assert.AreEqual(5, fromDb.Count)
+        }
