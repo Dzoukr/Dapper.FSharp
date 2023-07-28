@@ -10,8 +10,8 @@
     <PackageIconUrl>https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png</PackageIconUrl>
     <PackageTags>fsharp;dapper;linq;database;mssql;mysql;postgresql;sqlite</PackageTags>
     <Authors>Roman Provazník;Jordan Marr</Authors>
-    <Version>4.6.0</Version>
-    <PackageReleaseNotes>Adding countDistinct, countByDistinct operations; fix countBy #91</PackageReleaseNotes>
+    <Version>4.6.1</Version>
+    <PackageReleaseNotes>Support "count" with unqualified column, when we have qualified field #92 #93</PackageReleaseNotes>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <DebugType>embedded</DebugType>
