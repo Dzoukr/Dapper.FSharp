@@ -109,6 +109,7 @@ let replaceFieldWithAggregate (aggr:(string * string) list) (field:string) =
     |> List.tryPick (fun (aggrColumn, replace) ->
         match aggrColumn.Split '.', field.Split '.' with
         | [| _; c |], [| _ |] when c = field -> Some replace // aggrColumn is <table>.<column> but field is <column>
+        | [| _ |], [| _; c |] when aggrColumn = c -> Some replace // aggrColumn is <column> but field is <table>.<column>
         | _ when aggrColumn = field -> Some replace
         | _ -> None)
     |> Option.defaultValue (inQuotes field)
