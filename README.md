@@ -286,14 +286,14 @@ select {
 } |> conn.SelectAsync<Person>
 ```
 
-You can also combine multiple `where` conditions with `whereAnd` and `whereOr`:
+You can also combine multiple `where` conditions with `andWhere` and `orWhere`:
 
 ```F#
 select {
     for p in personTable do
     where (p.Position > 5)
-    whereAnd (p.Position < 10)
-    whereOr (p.Position < 2)
+    andWhere (p.Position < 10)
+    orWhere (p.Position < 2)
 } |> conn.SelectAsync<Person>
 ```
 
