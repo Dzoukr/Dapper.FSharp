@@ -297,6 +297,19 @@ select {
 } |> conn.SelectAsync<Person>
 ```
 
+To conditionally add `where` part, you can use `andWhereIf` and `orWhereIf`:
+
+```F#
+let pos = Some 10
+let posOr = Some 2
+select {
+    for p in personTable do
+    where (p.Position > 5)
+    andWhereIf pos.IsSome (p.Position < pos.Value)
+    orWhereIf posOr.IsSome (p.Position < posOr.Value)
+} |> conn.SelectAsync<Person>
+```
+
 NOTE: Do not use the forward pipe `|>` operator in your query expressions because it's not implemented, so don't do it (unless you like exceptions)!
 
 To use LIKE operator in `where` condition, use `like`:
