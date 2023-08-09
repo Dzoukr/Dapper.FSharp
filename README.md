@@ -286,6 +286,17 @@ select {
 } |> conn.SelectAsync<Person>
 ```
 
+You can also combine multiple `where` conditions with `andWhere` and `orWhere`:
+
+```F#
+select {
+    for p in personTable do
+    where (p.Position > 5)
+    andWhere (p.Position < 10)
+    orWhere (p.Position < 2)
+} |> conn.SelectAsync<Person>
+```
+
 NOTE: Do not use the forward pipe `|>` operator in your query expressions because it's not implemented, so don't do it (unless you like exceptions)!
 
 To use LIKE operator in `where` condition, use `like`:

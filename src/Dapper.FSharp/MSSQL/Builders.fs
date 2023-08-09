@@ -105,6 +105,20 @@ type SelectExpressionBuilder<'T>() =
         let where = LinqExpressionVisitors.visitWhere<'T> whereExpression (fullyQualifyColumn state.TableMappings)
         QuerySource<'T, SelectQuery>({ query with Where = where }, state.TableMappings)
 
+    /// Combine existing WHERE condition with AND
+    [<CustomOperation("andWhere", MaintainsVariableSpace = true)>]
+    member this.AndWhere (state: QuerySource<'T, SelectQuery>, [<ProjectionParameter>] whereExpression ) =
+        let state2 = this.Where(state, whereExpression)
+        let where2 = if state.Query.Where = Where.Empty then state2.Query.Where else Binary(state.Query.Where, And, state2.Query.Where)
+        QuerySource<'T, SelectQuery>( { state.Query with Where = where2 }, state.TableMappings)
+
+    /// Combine existing WHERE condition with OR
+    [<CustomOperation("orWhere", MaintainsVariableSpace = true)>]
+    member this.OrWhere (state: QuerySource<'T, SelectQuery>, [<ProjectionParameter>] whereExpression ) =
+        let state2 = this.Where(state, whereExpression)
+        let where2 = if state.Query.Where = Where.Empty then state2.Query.Where else Binary(state.Query.Where, Or, state2.Query.Where)
+        QuerySource<'T, SelectQuery>( { state.Query with Where = where2 }, state.TableMappings)
+
     /// Sets the ORDER BY for single column
     [<CustomOperation("orderBy", MaintainsVariableSpace = true)>]
     member this.OrderBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 

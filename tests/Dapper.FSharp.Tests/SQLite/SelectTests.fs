@@ -306,7 +306,89 @@ type SelectTests () =
             
             Assert.AreEqual (rs |> List.find (fun x -> x.Position = 3), Seq.head fromDb)
         }
-    
+
+    [<Test>]
+    member _.``Selects by andWhere``() =
+        task {
+            do! init.InitPersons()
+            let rs = Persons.View.generate 10
+            let! _ =
+                insert {
+                    into personsView
+                    values rs
+                } |> conn.InsertAsync
+            let! fromDb =
+                select {
+                    for p in personsView do
+                    where (p.Position > 2)
+                    andWhere (p.Position < 4)
+                } |> conn.SelectAsync<Persons.View>
+
+            Assert.AreEqual (rs |> List.find (fun x -> x.Position = 3), Seq.head fromDb)
+            Assert.AreEqual(1, Seq.length fromDb)
+        }
+
+    [<Test>]
+    member _.``Selects by orWhere``() =
+        task {
+            do! init.InitPersons()
+            let rs = Persons.View.generate 10
+            let! _ =
+                insert {
+                    into personsView
+                    values rs
+                } |> conn.InsertAsync
+            let! fromDb =
+                select {
+                    for p in personsView do
+                    where (p.Position < 2)
+                    orWhere (p.Position > 8)
+                } |> conn.SelectAsync<Persons.View>
+
+            Assert.AreEqual(3, Seq.length fromDb)
+        }
+
+    [<Test>]
+    member _.``Selects by just andWhere``() =
+        task {
+            do! init.InitPersons()
+            let rs = Persons.View.generate 10
+            let! _ =
+                insert {
+                    into personsView
+                    values rs
+                } |> conn.InsertAsync
+            let! fromDb =
+                select {
+                    for p in personsView do
+                    andWhere (p.Position < 2)
+                } |> conn.SelectAsync<Persons.View>
+
+            Assert.AreEqual (rs |> List.find (fun x -> x.Position = 1), Seq.head fromDb)
+            Assert.AreEqual(1, Seq.length fromDb)
+        }
+
+    [<Test>]
+    member _.``Selects by andWhere and orWhere``() =
+        task {
+            do! init.InitPersons()
+            let rs = Persons.View.generate 10
+            let! _ =
+                insert {
+                    into personsView
+                    values rs
+                } |> conn.InsertAsync
+            let! fromDb =
+                select {
+                    for p in personsView do
+                    where (p.Position > 2)
+                    andWhere (p.Position < 4)
+                    orWhere (p.Position > 9)
+                } |> conn.SelectAsync<Persons.View>
+
+            Assert.AreEqual(2, Seq.length fromDb)
+        }
+
     [<Test>]
     member _.``Selects with order by``() =
         task {
