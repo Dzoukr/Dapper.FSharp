@@ -388,6 +388,58 @@ type SelectTests () =
             Assert.AreEqual(2, Seq.length fromDb)
         }
 
+    [<TestCase(4)>]
+    [<TestCase(7)>]
+    [<TestCase(2)>]
+    [<TestCase(null)>]
+    member _.``Selects by andWhereIf`` pos =
+        let pos = pos |> Option.ofNullable
+        task {
+            do! init.InitPersons()
+            let rs = Persons.View.generate 10
+            let! _ =
+                insert {
+                    into personsView
+                    values rs
+                } |> conn.InsertAsync
+
+            let! fromDb =
+                select {
+                    for p in personsView do
+                    where (p.Position > 2)
+                    andWhereIf pos.IsSome (p.Position < pos.Value)
+                } |> conn.SelectAsync<Persons.View>
+
+            let expected = rs |> List.filter (fun x -> x.Position > 2 && Option.forall (fun p -> x.Position < p) pos) |> List.length
+            Assert.AreEqual(expected, Seq.length fromDb)
+        }
+
+    [<TestCase(4)>]
+    [<TestCase(7)>]
+    [<TestCase(0)>]
+    [<TestCase(null)>]
+    member _.``Selects by orWhereIf`` pos =
+        let pos = pos |> Option.ofNullable
+        task {
+            do! init.InitPersons()
+            let rs = Persons.View.generate 10
+            let! _ =
+                insert {
+                    into personsView
+                    values rs
+                } |> conn.InsertAsync
+
+            let! fromDb =
+                select {
+                    for p in personsView do
+                    where (p.Position < 2)
+                    orWhereIf pos.IsSome (p.Position > pos.Value)
+                } |> conn.SelectAsync<Persons.View>
+
+            let expected = rs |> List.filter (fun x -> x.Position < 2 || Option.exists (fun p -> x.Position > p) pos) |> List.length
+            Assert.AreEqual(expected, Seq.length fromDb)
+        }
+
     [<Test>]
     member _.``Selects with order by``() =
         task {

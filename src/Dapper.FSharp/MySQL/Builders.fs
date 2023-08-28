@@ -117,6 +117,16 @@ type SelectExpressionBuilder<'T>() =
         let where2 = if state.Query.Where = Where.Empty then state2.Query.Where else Binary(state.Query.Where, Or, state2.Query.Where)
         QuerySource<'T, SelectQuery>( { state.Query with Where = where2 }, state.TableMappings)
 
+    /// Combine existing WHERE condition with AND only if condition is true
+    [<CustomOperation("andWhereIf", MaintainsVariableSpace = true)>]
+    member this.AndWhereIf (state: QuerySource<'T, SelectQuery>, condition: bool, [<ProjectionParameter>] whereExpression ) =
+        if condition then this.AndWhere(state, whereExpression) else state
+
+    /// Combine existing WHERE condition with OR only if condition is true
+    [<CustomOperation("orWhereIf", MaintainsVariableSpace = true)>]
+    member this.OrWhereIf (state: QuerySource<'T, SelectQuery>, condition: bool, [<ProjectionParameter>] whereExpression ) =
+        if condition then this.OrWhere(state, whereExpression) else state
+
     /// Sets the ORDER BY for single column
     [<CustomOperation("orderBy", MaintainsVariableSpace = true)>]
     member this.OrderBy (state:QuerySource<'T>, [<ProjectionParameter>] propertySelector) = 
