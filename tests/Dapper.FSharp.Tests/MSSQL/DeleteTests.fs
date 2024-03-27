@@ -3,6 +3,7 @@
 open System.Threading
 open System.Threading.Tasks
 open NUnit.Framework
+open NUnit.Framework.Legacy
 open Dapper.FSharp.MSSQL
 open Dapper.FSharp.Tests.Database
 
@@ -37,8 +38,8 @@ type DeleteTests () =
                 orderByDescending p.Position
             } |> conn.SelectAsync<Persons.View>
         
-        Assert.AreEqual(9, Seq.length fromDb)
-        Assert.AreEqual(9, fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position)
+        ClassicAssert.AreEqual(9, Seq.length fromDb)
+        ClassicAssert.AreEqual(9, fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position)
     }
     
     [<Test>]
@@ -86,7 +87,7 @@ type DeleteTests () =
                     selectAll
                 } |> conn.SelectAsync<Persons.View>
             
-            Assert.AreEqual(6, Seq.length fromDb)
+            ClassicAssert.AreEqual(6, Seq.length fromDb)
         }
 
 [<TestFixture>]
@@ -115,8 +116,8 @@ type DeleteOutputTests () =
                     where (p.Position = 10)
                 } |> conn.DeleteOutputAsync<Persons.View>
             
-            Assert.AreEqual(1, Seq.length fromDb)
-            Assert.AreEqual(10, fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position)
+            ClassicAssert.AreEqual(1, Seq.length fromDb)
+            ClassicAssert.AreEqual(10, fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position)
         }
     
     [<Test>]
@@ -137,7 +138,7 @@ type DeleteOutputTests () =
                     where (isIn p.Id personIds)
                 } |> conn.DeleteOutputAsync<Persons.View>
             
-            Assert.AreEqual(10, Seq.length deleted)
+            ClassicAssert.AreEqual(10, Seq.length deleted)
             deleted |> Seq.iter (fun (p:Persons.View) ->
-                Assert.IsTrue (personIds |> List.exists ((=) p.Id)))
+                ClassicAssert.IsTrue (personIds |> List.exists ((=) p.Id)))
         }

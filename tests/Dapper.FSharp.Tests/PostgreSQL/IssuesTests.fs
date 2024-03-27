@@ -1,6 +1,7 @@
 ﻿module Dapper.FSharp.Tests.PostgreSQL.IssuesTests
 
 open NUnit.Framework
+open NUnit.Framework.Legacy
 open Dapper.FSharp.PostgreSQL
 open Dapper.FSharp.Tests.Database
 
@@ -44,8 +45,8 @@ type IssuesTests () =
                     selectAll
                 } |> conn.SelectAsync<Persons.View, Dogs.View>
             
-            Assert.AreEqual(1, Seq.length fromDb)
-            Assert.AreEqual((thirdPerson, thirdDog), (Seq.head fromDb))
+            ClassicAssert.AreEqual(1, Seq.length fromDb)
+            ClassicAssert.AreEqual((thirdPerson, thirdDog), (Seq.head fromDb))
         }
     
     [<Test>]
@@ -77,7 +78,7 @@ type IssuesTests () =
                     selectAll
                 } |> conn.SelectAsyncOption<Persons.View, Dogs.View>
             
-            Assert.AreEqual(14, Seq.length fromDb)
+            ClassicAssert.AreEqual(14, Seq.length fromDb)
         }
     
     [<Test>]
@@ -99,7 +100,7 @@ type IssuesTests () =
                     where (ilike p.FirstName "fIrSt_%")
                 } |> conn.SelectAsync<Persons.View>
             
-            Assert.AreEqual(10, Seq.length fromDb)
+            ClassicAssert.AreEqual(10, Seq.length fromDb)
         }
     
     [<Test>]
@@ -121,7 +122,7 @@ type IssuesTests () =
                     where (notILike p.FirstName "fIrSt_%")
                 } |> conn.SelectAsync<Persons.View>
             
-            Assert.AreEqual(0, Seq.length fromDb)
+            ClassicAssert.AreEqual(0, Seq.length fromDb)
         }
     
     [<Test>]
@@ -153,9 +154,9 @@ type IssuesTests () =
                 }
                 |> conn.SelectAsync<Persons.View>
             
-            Assert.AreEqual(1, Seq.length resultsA)
-            Assert.AreEqual(5, resultsA |> Seq.head |> (fun x -> x.Position))
+            ClassicAssert.AreEqual(1, Seq.length resultsA)
+            ClassicAssert.AreEqual(5, resultsA |> Seq.head |> (fun x -> x.Position))
             
-            Assert.AreEqual(1, Seq.length resultsB)
-            Assert.AreEqual(5, resultsB |> Seq.head |> (fun x -> x.Position))
+            ClassicAssert.AreEqual(1, Seq.length resultsB)
+            ClassicAssert.AreEqual(5, resultsB |> Seq.head |> (fun x -> x.Position))
         }

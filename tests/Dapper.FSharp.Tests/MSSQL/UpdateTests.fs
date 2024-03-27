@@ -4,6 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open NUnit.Framework
+open NUnit.Framework.Legacy
 open Dapper.FSharp.MSSQL
 open Dapper.FSharp.Tests.Database
 
@@ -39,8 +40,8 @@ type UpdateTests () =
                     where (p.LastName = "UPDATED")
                 } |> conn.SelectAsync<Persons.View>
             
-            Assert.AreEqual(1, Seq.length fromDb)
-            Assert.AreEqual(2, fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position)
+            ClassicAssert.AreEqual(1, Seq.length fromDb)
+            ClassicAssert.AreEqual(2, fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position)
         }
 
     [<Test>]
@@ -90,8 +91,8 @@ type UpdateTests () =
                     where (p.Position = 2)
                 } |> conn.SelectAsync<Persons.View>
             
-            Assert.IsTrue(fromDb |> Seq.head |> fun (x:Persons.View) -> x.DateOfBirth |> Option.isNone)
-            Assert.AreEqual(2, fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position)
+            ClassicAssert.IsTrue(fromDb |> Seq.head |> fun (x:Persons.View) -> x.DateOfBirth |> Option.isNone)
+            ClassicAssert.AreEqual(2, fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position)
         }
 
     [<Test>]
@@ -117,7 +118,7 @@ type UpdateTests () =
                     where (p.LastName = "UPDATED")
                 } |> conn.SelectAsync<Persons.View>
             
-            Assert.AreEqual(3, Seq.length fromDb)
+            ClassicAssert.AreEqual(3, Seq.length fromDb)
         }
     
     [<Test>]
@@ -140,7 +141,7 @@ type UpdateTests () =
                     includeColumn p.LastName
                 }
                 
-            Assert.AreEqual(query.Fields, [nameof(person.FirstName); nameof(person.LastName)])
+            ClassicAssert.AreEqual(query.Fields, [nameof(person.FirstName); nameof(person.LastName)])
         }
 
     
@@ -171,8 +172,8 @@ type UpdateOutputTests () =
                     where (p.Position = 2)
                 } |> conn.UpdateOutputAsync
             
-            Assert.IsTrue(fromDb |> Seq.head |> fun (x:Persons.View) -> x.DateOfBirth |> Option.isSome)
-            Assert.AreEqual(2, fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position)
+            ClassicAssert.IsTrue(fromDb |> Seq.head |> fun (x:Persons.View) -> x.DateOfBirth |> Option.isSome)
+            ClassicAssert.AreEqual(2, fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position)
         }
     
     [<Test>]
@@ -192,8 +193,8 @@ type UpdateOutputTests () =
                     where (p.Position = 2)
                 } |> conn.UpdateOutputAsync
                 
-            Assert.AreEqual("UPDATED", fromDb |> Seq.head |> fun (x:Persons.View) -> x.LastName)
-            Assert.AreEqual(2, fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position)
+            ClassicAssert.AreEqual("UPDATED", fromDb |> Seq.head |> fun (x:Persons.View) -> x.LastName)
+            ClassicAssert.AreEqual(2, fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position)
         }
 
     [<Test>]
@@ -214,10 +215,10 @@ type UpdateOutputTests () =
                     where (isIn p.Id personIds)
                 } |> conn.UpdateOutputAsync // If we specify the output type after, we dont need to specify it here
             
-            Assert.AreEqual(10, Seq.length updated)
+            ClassicAssert.AreEqual(10, Seq.length updated)
             updated |> Seq.iter (fun (p:Persons.View) -> // Output specified here
-                Assert.AreEqual("UPDATED", p.LastName)
-                Assert.IsTrue (personIds |> List.exists ((=) p.Id))
+                ClassicAssert.AreEqual("UPDATED", p.LastName)
+                ClassicAssert.IsTrue (personIds |> List.exists ((=) p.Id))
             )
         }
 
@@ -239,7 +240,7 @@ type UpdateOutputTests () =
                 } |> conn.UpdateOutputAsync
             let pos2Id = rs |> List.pick (fun p -> if p.Position = 2 then Some p.Id else None)
             
-            Assert.AreEqual(pos2Id, fromDb |> Seq.head |> fun (p:{| Id:Guid |}) -> p.Id)
+            ClassicAssert.AreEqual(pos2Id, fromDb |> Seq.head |> fun (p:{| Id:Guid |}) -> p.Id)
         }
 
     [<Test>]
@@ -259,8 +260,8 @@ type UpdateOutputTests () =
                     where (p.Position = 2)
                 } |> conn.UpdateOutputAsync
             
-            Assert.IsTrue (fromDb |> Seq.head |> fun (x:Persons.View) -> x.DateOfBirth |> Option.isNone)
-            Assert.AreEqual(2, fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position)
+            ClassicAssert.IsTrue (fromDb |> Seq.head |> fun (x:Persons.View) -> x.DateOfBirth |> Option.isNone)
+            ClassicAssert.AreEqual(2, fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position)
         }
 
     [<Test>]
@@ -280,6 +281,6 @@ type UpdateOutputTests () =
                     where (p.Position = 2)
                 } |> conn.UpdateOutputAsync
             
-            Assert.IsTrue (fromDb |> Seq.head |> fun (x:Persons.View) -> x.DateOfBirth |> Option.isSome)
-            Assert.AreEqual(2, fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position)
+            ClassicAssert.IsTrue (fromDb |> Seq.head |> fun (x:Persons.View) -> x.DateOfBirth |> Option.isSome)
+            ClassicAssert.AreEqual(2, fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position)
         }

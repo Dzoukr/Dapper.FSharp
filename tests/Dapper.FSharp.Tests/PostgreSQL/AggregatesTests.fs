@@ -1,6 +1,7 @@
 ﻿module Dapper.FSharp.Tests.PostgreSQL.AggregatesTests
 
 open NUnit.Framework
+open NUnit.Framework.Legacy
 open Dapper.FSharp.PostgreSQL
 open Dapper.FSharp.Tests.Database
 
@@ -32,7 +33,7 @@ type AggregatesTests () =
                 }
                 |> conn.SelectAsync<{| Value : int64 |}>
                 |> taskToList
-            Assert.AreEqual(10L, fromDb.Head.Value)
+            ClassicAssert.AreEqual(10L, fromDb.Head.Value)
         }
 
     [<Test>]
@@ -53,7 +54,7 @@ type AggregatesTests () =
                 |> conn.SelectAsync<{| Id : int64 |}>
                 |> taskToList
 
-            Assert.AreEqual(10L, fromDb.Head.Id)
+            ClassicAssert.AreEqual(10L, fromDb.Head.Id)
         }
 
     [<Test>]
@@ -78,9 +79,9 @@ type AggregatesTests () =
                 |> conn.SelectAsync<{| Value : int64; Position : int |}>
                 |> taskToList
             
-            Assert.AreEqual(6, fromDb.Length)
-            Assert.AreEqual(10, fromDb.Head.Position)
-            Assert.AreEqual(5L, fromDb.Head.Value)
+            ClassicAssert.AreEqual(6, fromDb.Length)
+            ClassicAssert.AreEqual(10, fromDb.Head.Position)
+            ClassicAssert.AreEqual(5L, fromDb.Head.Value)
         }
     
     [<Test>]
@@ -101,7 +102,7 @@ type AggregatesTests () =
                 }
                 |> conn.SelectAsync<{| Value : int64 |}>
                 |> taskToList
-            Assert.AreEqual(5L, fromDb.Head.Value)
+            ClassicAssert.AreEqual(5L, fromDb.Head.Value)
         }
     
     [<Test>]
@@ -121,7 +122,7 @@ type AggregatesTests () =
                 }
                 |> conn.SelectAsync<{| Value : decimal |}>
                 |> taskToList
-            Assert.AreEqual(5.5M, fromDb.Head.Value)
+            ClassicAssert.AreEqual(5.5M, fromDb.Head.Value)
         }
     
     [<Test>]
@@ -141,7 +142,7 @@ type AggregatesTests () =
                 }
                 |> conn.SelectAsync<{| Value : int64 |}>
                 |> taskToList
-            Assert.AreEqual(55L, fromDb.Head.Value)
+            ClassicAssert.AreEqual(55L, fromDb.Head.Value)
         }
     
     [<Test>]
@@ -161,7 +162,7 @@ type AggregatesTests () =
                 }
                 |> conn.SelectAsync<{| Value : int |}>
                 |> taskToList
-            Assert.AreEqual(1, fromDb.Head.Value)
+            ClassicAssert.AreEqual(1, fromDb.Head.Value)
         }
     
     [<Test>]
@@ -181,7 +182,7 @@ type AggregatesTests () =
                 }
                 |> conn.SelectAsync<{| Value : int |}>
                 |> taskToList
-            Assert.AreEqual(10, fromDb.Head.Value)
+            ClassicAssert.AreEqual(10, fromDb.Head.Value)
         }
     
     [<Test>]
@@ -212,7 +213,7 @@ type AggregatesTests () =
                 |> conn.SelectAsync<{| FirstName:string |}>
                 |> taskToList
 
-            Assert.AreEqual(10, fromDb.Length)
+            ClassicAssert.AreEqual(10, fromDb.Length)
         }
 
     [<Test>]
@@ -243,7 +244,7 @@ type AggregatesTests () =
                 |> conn.SelectAsync<{|Value:int64|}>
                 |> taskToList
 
-            Assert.AreEqual(10L, fromDb.Head.Value)
+            ClassicAssert.AreEqual(10L, fromDb.Head.Value)
         }
 
     [<Test>]
@@ -274,7 +275,7 @@ type AggregatesTests () =
                 |> conn.SelectAsync<{|Id:int64|}>
                 |> taskToList
 
-            Assert.AreEqual(10L, fromDb.Head.Id)
+            ClassicAssert.AreEqual(10L, fromDb.Head.Id)
         }
     
     [<Test>]
@@ -296,8 +297,8 @@ type AggregatesTests () =
                 |> conn.SelectAsync<{| MaxValue : int; MinValue : int |}>
                 |> taskToList
 
-            Assert.AreEqual(10, fromDb.Head.MaxValue)
-            Assert.AreEqual(1, fromDb.Head.MinValue)
+            ClassicAssert.AreEqual(10, fromDb.Head.MaxValue)
+            ClassicAssert.AreEqual(1, fromDb.Head.MinValue)
         }
     
     [<Test>]
@@ -331,9 +332,9 @@ type AggregatesTests () =
                 |> taskToList
                 |> List.head
                 
-            Assert.AreEqual(5L, one.Count)
-            Assert.AreEqual(1, one.Position)
-            Assert.AreEqual(one.Id, two.OwnerId)
+            ClassicAssert.AreEqual(5L, one.Count)
+            ClassicAssert.AreEqual(1, one.Position)
+            ClassicAssert.AreEqual(one.Id, two.OwnerId)
         }
 
     [<Test>]
@@ -365,5 +366,5 @@ type AggregatesTests () =
                 |> taskToList
                 |> List.head
 
-            Assert.AreEqual(5, fromDb.Count)
+            ClassicAssert.AreEqual(5, fromDb.Count)
         }

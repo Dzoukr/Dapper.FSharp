@@ -4,6 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open NUnit.Framework
+open NUnit.Framework.Legacy
 open Dapper.FSharp.MySQL
 open Dapper.FSharp.Tests.Database
 
@@ -33,7 +34,7 @@ type InsertTests () =
                     where (p.Id = r.Id)
                 } |> conn.SelectAsync<Persons.View>
             
-            Assert.AreEqual(r, Seq.head fromDb)
+            ClassicAssert.AreEqual(r, Seq.head fromDb)
         }
     
     [<Test>]
@@ -76,7 +77,7 @@ type InsertTests () =
                     where (p.Id = r.Id)
                 } |> conn.SelectAsync<Persons.ViewRequired>
             
-            Assert.AreEqual(r, Seq.head fromDb)
+            ClassicAssert.AreEqual(r, Seq.head fromDb)
         }
     
     [<Test>]
@@ -100,7 +101,7 @@ type InsertTests () =
                     where (p.Id = r.Id)
                 } |> conn.SelectAsync<Persons.View>
             
-            Assert.AreEqual({ r with DateOfBirth = None }, Seq.head fromDb)
+            ClassicAssert.AreEqual({ r with DateOfBirth = None }, Seq.head fromDb)
         }
     
     [<Test>]
@@ -141,5 +142,5 @@ type InsertTests () =
                     includeColumn p.LastName
                 }
                 
-            Assert.AreEqual (query.Fields, [nameof(person.FirstName); nameof(person.LastName)])
+            ClassicAssert.AreEqual (query.Fields, [nameof(person.FirstName); nameof(person.LastName)])
         }

@@ -4,6 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open NUnit.Framework
+open NUnit.Framework.Legacy
 open Dapper.FSharp.SQLite
 open Dapper.FSharp.Tests.Database
 
@@ -33,7 +34,7 @@ type InsertTests () =
                     where (p.Id = r.Id)
                 } |> conn.SelectAsync<Persons.View>
             
-            Assert.AreEqual(r, Seq.head fromDb)
+            ClassicAssert.AreEqual(r, Seq.head fromDb)
         }
     
     [<Test>]
@@ -76,7 +77,7 @@ type InsertTests () =
                     where (p.Id = r.Id)
                 } |> conn.SelectAsync<Persons.ViewRequired>
             
-            Assert.AreEqual(r, Seq.head fromDb)
+            ClassicAssert.AreEqual(r, Seq.head fromDb)
         }
     
     [<Test>]
@@ -100,7 +101,7 @@ type InsertTests () =
                     where (p.Id = r.Id)
                 } |> conn.SelectAsync<Persons.View>
             
-            Assert.AreEqual({ r with DateOfBirth = None }, Seq.head fromDb)
+            ClassicAssert.AreEqual({ r with DateOfBirth = None }, Seq.head fromDb)
         }
     
     [<Test>]
@@ -141,7 +142,7 @@ type InsertTests () =
                     includeColumn p.LastName
                 }
                 
-            Assert.AreEqual (query.Fields, [nameof(person.FirstName); nameof(person.LastName)])
+            ClassicAssert.AreEqual (query.Fields, [nameof(person.FirstName); nameof(person.LastName)])
         }
 
     [<Test>]
@@ -174,6 +175,6 @@ type InsertTests () =
 
             // get data back and ensure everything is modified
             let! fromDb = select { for p in personsView do orderBy p.Position } |> conn.SelectAsync<Persons.View>
-            Assert.AreEqual(10, conflictCount)
+            ClassicAssert.AreEqual(10, conflictCount)
             CollectionAssert.AreEqual(modified, Seq.toList fromDb)
         }

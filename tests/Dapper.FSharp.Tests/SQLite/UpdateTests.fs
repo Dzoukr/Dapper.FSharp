@@ -4,6 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open NUnit.Framework
+open NUnit.Framework.Legacy
 open Dapper.FSharp.SQLite
 open Dapper.FSharp.Tests.Database
 
@@ -39,8 +40,8 @@ type UpdateTests () =
                     where (p.LastName = "UPDATED")
                 } |> conn.SelectAsync<Persons.View>
             
-            Assert.AreEqual(1, Seq.length fromDb)
-            Assert.AreEqual(2, fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position)
+            ClassicAssert.AreEqual(1, Seq.length fromDb)
+            ClassicAssert.AreEqual(2, fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position)
         }
 
     [<Test>]
@@ -90,8 +91,8 @@ type UpdateTests () =
                     where (p.Position = 2)
                 } |> conn.SelectAsync<Persons.View>
             
-            Assert.IsTrue(fromDb |> Seq.head |> fun (x:Persons.View) -> x.DateOfBirth |> Option.isNone)
-            Assert.AreEqual(2, fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position)
+            ClassicAssert.IsTrue(fromDb |> Seq.head |> fun (x:Persons.View) -> x.DateOfBirth |> Option.isNone)
+            ClassicAssert.AreEqual(2, fromDb |> Seq.head |> fun (x:Persons.View) -> x.Position)
         }
 
     [<Test>]
@@ -117,7 +118,7 @@ type UpdateTests () =
                     where (p.LastName = "UPDATED")
                 } |> conn.SelectAsync<Persons.View>
             
-            Assert.AreEqual(3, Seq.length fromDb)
+            ClassicAssert.AreEqual(3, Seq.length fromDb)
         }
     
     [<Test>]
@@ -140,5 +141,5 @@ type UpdateTests () =
                     includeColumn p.LastName
                 }
                 
-            Assert.AreEqual(query.Fields, [nameof(person.FirstName); nameof(person.LastName)])
+            ClassicAssert.AreEqual(query.Fields, [nameof(person.FirstName); nameof(person.LastName)])
         }

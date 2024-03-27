@@ -4,6 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open NUnit.Framework
+open NUnit.Framework.Legacy
 open Dapper.FSharp.PostgreSQL
 open Dapper.FSharp.Tests.Database
 
@@ -33,7 +34,7 @@ type InsertTests () =
                     where (p.Id = r.Id)
                 } |> conn.SelectAsync<Persons.View>
             
-            Assert.AreEqual(r, Seq.head fromDb)
+            ClassicAssert.AreEqual(r, Seq.head fromDb)
         }
     
     [<Test>]
@@ -76,7 +77,7 @@ type InsertTests () =
                     where (p.Id = r.Id)
                 } |> conn.SelectAsync<Persons.ViewRequired>
             
-            Assert.AreEqual(r, Seq.head fromDb)
+            ClassicAssert.AreEqual(r, Seq.head fromDb)
         }
     
     [<Test>]
@@ -100,7 +101,7 @@ type InsertTests () =
                     where (p.Id = r.Id)
                 } |> conn.SelectAsync<Persons.View>
             
-            Assert.AreEqual({ r with DateOfBirth = None }, Seq.head fromDb)
+            ClassicAssert.AreEqual({ r with DateOfBirth = None }, Seq.head fromDb)
         }
     
     [<Test>]
@@ -141,7 +142,7 @@ type InsertTests () =
                     includeColumn p.LastName
                 }
                 
-            Assert.AreEqual (query.Fields, [nameof(person.FirstName); nameof(person.LastName)])
+            ClassicAssert.AreEqual (query.Fields, [nameof(person.FirstName); nameof(person.LastName)])
         }
 
 
@@ -166,7 +167,7 @@ type InsertOutputTests () =
                     value r
                 } |> conn.InsertOutputAsync<Persons.View, Persons.View> // Optional type specification
             
-            Assert.AreEqual(r, Seq.head fromDb)
+            ClassicAssert.AreEqual(r, Seq.head fromDb)
         }
     
     [<Test>]
@@ -181,9 +182,9 @@ type InsertOutputTests () =
                 } |> conn.InsertOutputAsync
             let generatedPositions = rs |> List.map (fun p -> p.Position)
             
-            Assert.AreEqual(10, Seq.length insertedPersons)
+            ClassicAssert.AreEqual(10, Seq.length insertedPersons)
             insertedPersons |> Seq.iter (fun (p:Persons.View) ->
-                Assert.IsTrue (generatedPositions |> List.exists ((=) p.Position))
+                ClassicAssert.IsTrue (generatedPositions |> List.exists ((=) p.Position))
             )
         }
     
@@ -198,7 +199,7 @@ type InsertOutputTests () =
                     value r
                 } |> conn.InsertOutputAsync
             
-            Assert.AreEqual(r.Position, Seq.head fromDb |> fun (p:{| Position:int |}) -> p.Position)
+            ClassicAssert.AreEqual(r.Position, Seq.head fromDb |> fun (p:{| Position:int |}) -> p.Position)
         }
     
     [<Test>]
@@ -212,7 +213,7 @@ type InsertOutputTests () =
                     value r
                 } |> conn.InsertOutputAsync
             
-            Assert.AreEqual(r.Id, fromDb |> Seq.head |> (fun x -> x.Id))
+            ClassicAssert.AreEqual(r.Id, fromDb |> Seq.head |> (fun x -> x.Id))
         }
     
     [<Test>]
@@ -226,6 +227,6 @@ type InsertOutputTests () =
                     value r
                 } |> conn.InsertOutputAsync
             
-            Assert.IsTrue(fromDb |> Seq.head |> fun (x:Persons.View) -> x.DateOfBirth |> Option.isSome)
-            Assert.AreEqual(r.Id, Seq.head fromDb |> fun (p:Persons.View) -> p.Id) // Comparing Some <datetime> fails even though it is the same
+            ClassicAssert.IsTrue(fromDb |> Seq.head |> fun (x:Persons.View) -> x.DateOfBirth |> Option.isSome)
+            ClassicAssert.AreEqual(r.Id, Seq.head fromDb |> fun (p:Persons.View) -> p.Id) // Comparing Some <datetime> fails even though it is the same
         }
