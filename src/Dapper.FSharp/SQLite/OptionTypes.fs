@@ -30,6 +30,7 @@ type SqliteOptionSByteHandler()          = inherit OptionTypeHandlerWithConverte
 type SqliteOptionTimeSpanHandler()       = inherit OptionTypeHandlerWithParser<TimeSpan>(TimeSpan.Parse)
 type SqliteOptionUInt16Handler()         = inherit OptionTypeHandlerWithConverter<UInt16>(Convert.ToUInt16)
 type SqliteOptionUInt32Handler()         = inherit OptionTypeHandlerWithConverter<UInt32>(Convert.ToUInt32)
+type SqliteOptionStringHandler()         = inherit OptionTypeHandlerWithConverter<String>(Convert.ToString)
 
 let register() =
     SqlMapper.AddTypeHandler(SqliteBooleanHandler())
@@ -57,3 +58,4 @@ let register() =
     SqlMapper.AddTypeHandler(SqliteOptionTimeSpanHandler())
     SqlMapper.AddTypeHandler(SqliteOptionUInt16Handler())
     SqlMapper.AddTypeHandler(SqliteOptionUInt32Handler())
+    SqlMapper.AddTypeHandler(SqliteOptionStringHandler())
