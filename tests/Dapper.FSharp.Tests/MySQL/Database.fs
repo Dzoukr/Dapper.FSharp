@@ -206,6 +206,23 @@ module Issues =
                 return ()
             }
 
+    module Reviews = 
+        let init (conn:IDbConnection) =
+            task {
+                do! "drop table Reviews" |> conn.ExecuteIgnore
+                do!
+                    """
+                    create table Reviews(
+                    Id int not null,
+                    Score int not null,
+                    Username nvarchar(63) not null,
+                    Review nvarchar(255) null
+                    )
+                    """
+                    |> conn.ExecuteIgnore
+                return ()
+            }
+
 open Dapper.FSharp.MySQL
 
 let getInitializer (conn:IDbConnection) =
@@ -220,4 +237,5 @@ let getInitializer (conn:IDbConnection) =
         member x.InitDogsWeights () = DogsWeights.init conn
         member x.InitVaccinations () = Vaccinations.init conn
         member x.InitVaccinationManufacturers () = VaccinationManufacturers.init conn
+        member x.InitReviews () = Issues.Reviews.init conn
     }
