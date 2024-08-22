@@ -221,14 +221,6 @@ module Issues =
                     Review = if x % 2 = 1 then Some (sprintf "Review_%i" x) else None
                 })
 
-            let mapToAnon r = 
-                {|
-                    Id = r.Id
-                    Score = r.Score
-                    Username = r.Username
-                    Review = r.Review
-                |}
-
 module Articles =
 
     type View = {
