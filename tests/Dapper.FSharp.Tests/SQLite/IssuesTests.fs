@@ -2,6 +2,7 @@
 
 open NUnit.Framework
 open NUnit.Framework.Legacy
+open Dapper
 open Dapper.FSharp.SQLite
 open Dapper.FSharp.Tests.Database
 
@@ -10,6 +11,7 @@ open Dapper.FSharp.Tests.Database
 type IssuesTests () =
     let personsView = table'<Persons.View> "Persons"
     let dogsView = table'<Dogs.View> "Dogs"
+    let reviewsView = table'<Issues.Reviews.View> "Reviews"
     let conn = Database.getConnection()
     let init = Database.getInitializer conn
     
@@ -115,4 +117,57 @@ type IssuesTests () =
             
             ClassicAssert.AreEqual(1, Seq.length resultsB)
             ClassicAssert.AreEqual(5, resultsB |> Seq.head |> (fun x -> x.Position))
+        }
+
+    [<Test>]
+    member _.``Insert records with string option field into nullable text column #106``() = 
+        task {
+            do! init.InitReviews()
+
+            let reviews = Issues.Reviews.View.generate 5
+
+            let! _ =
+                insert {
+                    into reviewsView
+                    values reviews
+                } 
+                |> conn.InsertAsync
+            let! fromDb =
+                select {
+                    for r in reviewsView do
+                    selectAll
+                } |> conn.SelectAsync<Issues.Reviews.View>
+
+            let fromDbList = fromDb |> List.ofSeq
+
+            ClassicAssert.AreEqual(5, fromDbList.Length)
+            ClassicAssert.AreEqual(Some "Review_1", fromDbList[0].Review)
+            ClassicAssert.AreEqual(None, fromDbList[1].Review)
+        }
+
+    [<Test>]
+    member _.``Insert records with string option field into nullable text column (Parameterised query) #106 ``() = 
+        task {
+            do! init.InitReviews()
+
+            let reviews = Issues.Reviews.View.generate 5
+            
+            let sql = 
+                """
+                INSERT INTO [Reviews] ([Id], [Username], [Score], [Review])
+                VALUES (@Id, @Username, @Score, @Review)
+                """
+
+            let! _ = conn.ExecuteAsync(sql, reviews)
+            let! fromDb =
+                select {
+                    for r in reviewsView do
+                    selectAll
+                } |> conn.SelectAsync<Issues.Reviews.View>
+
+            let fromDbList = fromDb |> List.ofSeq
+
+            ClassicAssert.AreEqual(5, fromDbList.Length)
+            ClassicAssert.AreEqual(Some "Review_1", fromDbList[0].Review)
+            ClassicAssert.AreEqual(None, fromDbList[1].Review)
         }

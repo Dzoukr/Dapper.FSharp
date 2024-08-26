@@ -17,6 +17,7 @@ type ICrudInitializer =
     abstract member InitDogsWeights : unit -> Task<unit>
     abstract member InitVaccinations : unit -> Task<unit>
     abstract member InitVaccinationManufacturers : unit -> Task<unit>
+    abstract member InitReviews : unit -> Task<unit>
 
 let taskToList (t:Task<seq<'a>>) = t |> Async.AwaitTask |> Async.RunSynchronously |> Seq.toList
 
@@ -199,6 +200,26 @@ module Issues =
                         Desc = sprintf "Desc_%i" x
                     }
                 )
+
+    module Reviews =
+
+        type View = { 
+            Id: int
+            Score: int
+            Username: string
+            Review: string option
+        }
+
+        module View = 
+            let generate x = 
+                [1..x]
+                |> List.map (fun x ->
+                {
+                    Id = x
+                    Score = x % 5
+                    Username = sprintf "Username_%i" x
+                    Review = if x % 2 = 1 then Some (sprintf "Review_%i" x) else None
+                })
 
 module Articles =
 

@@ -202,6 +202,22 @@ module Issues =
                 return ()
             }
 
+    module Reviews = 
+        let init (conn:IDbConnection) =
+            task {
+                do! "DROP TABLE [dbo].[Reviews]" |> conn.ExecuteIgnore
+                do!
+                    """
+                    create table [dbo].[Reviews](
+                    [Id] [int] NOT NULL,
+                    [Score] [int] NOT NULL,
+                    [Username] [nvarchar](max) NOT NULL,
+                    [Review] [nvarchar](max) NULL
+                    )
+                    """
+                    |> conn.ExecuteIgnore
+                return ()
+            }
 
 let getInitializer (conn:IDbConnection) =
     { new ICrudInitializer with
@@ -215,4 +231,5 @@ let getInitializer (conn:IDbConnection) =
         member x.InitDogsWeights () = DogsWeights.init conn
         member x.InitVaccinations () = Vaccinations.init conn
         member x.InitVaccinationManufacturers () = VaccinationManufacturers.init conn
+        member x.InitReviews () = Issues.Reviews.init conn
     }
