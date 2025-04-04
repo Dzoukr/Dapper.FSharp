@@ -268,6 +268,10 @@ select {
 
 NOTE: You also need to use `selectAll` if you have a no `where` and no `orderBy` clauses because a query cannot consist of only `for` or `join` statements.
 
+NOTE: The type does not have to have all columns from the table. You can create a record with only the columns you need.
+
+NOTE: This same approach will enable you to query views.
+
 Filtering with where statement:
 
 ```F#
