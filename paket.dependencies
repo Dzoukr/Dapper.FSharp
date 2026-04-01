@@ -2,7 +2,7 @@ version 5.241.2
 
 source https://api.nuget.org/v3/index.json
 storage: none
-framework: net8.0
+framework: net6.0, net7.0, net8.0, net9.0, net10.0
 
 nuget FSharp.Core
 nuget Dapper
