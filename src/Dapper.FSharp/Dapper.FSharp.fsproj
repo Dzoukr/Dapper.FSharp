@@ -10,8 +10,8 @@
     <PackageIconUrl>https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png</PackageIconUrl>
     <PackageTags>fsharp;dapper;linq;database;mssql;mysql;postgresql;sqlite</PackageTags>
     <Authors>Roman Provazník;Jordan Marr</Authors>
-    <Version>4.9.1</Version>
-    <PackageReleaseNotes>Fix: Handle F# 10 BlockExpression in LINQ visitors for joined queries with where clauses #111</PackageReleaseNotes>
+    <Version>4.10.0</Version>
+    <PackageReleaseNotes>Fix: Handle F# 10 BlockExpression in LINQ visitors for joined queries. Upgrade on .NET 10. #111</PackageReleaseNotes>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <DebugType>embedded</DebugType>

@@ -21,6 +21,8 @@ let register() =
     SqlMapper.AddTypeHandler (OptionHandler<char>())
     SqlMapper.AddTypeHandler (OptionHandler<DateTime>())
     SqlMapper.AddTypeHandler (OptionHandler<DateTimeOffset>())
+    SqlMapper.AddTypeHandler (OptionHandler<DateOnly>())
+    SqlMapper.AddTypeHandler (OptionHandler<TimeOnly>())
     SqlMapper.AddTypeHandler (OptionHandler<bool>())
     SqlMapper.AddTypeHandler (OptionHandler<TimeSpan>())
     SqlMapper.AddTypeHandler (OptionHandler<byte[]>())

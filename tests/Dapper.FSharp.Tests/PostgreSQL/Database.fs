@@ -45,7 +45,7 @@ module Persons =
                     "FirstName" varchar(255) not null,
                     "LastName" text not null,
                     "Position" int not null,
-                    "DateOfBirth" date
+                    "DateOfBirth" timestamp
                 );
                 """
                 |> conn.ExecuteIgnore

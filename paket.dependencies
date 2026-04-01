@@ -19,7 +19,7 @@ nuget Microsoft.Data.Sqlite
 
 group Build
     source https://api.nuget.org/v3/index.json
-    framework: net8.0
+    framework: net10.0
     storage: none
 
     nuget FSharp.Core
