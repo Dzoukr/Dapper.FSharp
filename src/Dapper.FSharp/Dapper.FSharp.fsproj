@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net6.0;net7.0;net8.0;net9.0;net10.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>Dapper.FSharp</PackageId>
     <Description>Lightweight F# extension for StackOverflow Dapper with support for MSSQL, MySQL, PostgreSQL, and SQLite</Description>
@@ -10,8 +10,8 @@
     <PackageIconUrl>https://github.com/Dzoukr/Dapper.FSharp/raw/master/logo.png</PackageIconUrl>
     <PackageTags>fsharp;dapper;linq;database;mssql;mysql;postgresql;sqlite</PackageTags>
     <Authors>Roman Provazník;Jordan Marr</Authors>
-    <Version>4.9.0</Version>
-    <PackageReleaseNotes>Fix: SQLite string option handler #107</PackageReleaseNotes>
+    <Version>4.9.1</Version>
+    <PackageReleaseNotes>Fix: Handle F# 10 BlockExpression in LINQ visitors for joined queries with where clauses #111</PackageReleaseNotes>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <DebugType>embedded</DebugType>

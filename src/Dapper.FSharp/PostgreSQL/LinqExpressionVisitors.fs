@@ -262,6 +262,10 @@ let visitWhere<'T> (filter: Expression<Func<'T, bool>>) (qualifyColumn: MemberIn
                 notImplMsg("Value to value comparisons are not currently supported. Ex: where (1 = 1)")
             | _ ->
                 notImpl()
+        | exp when exp.NodeType = ExpressionType.Block ->
+            // F# 10 compiles tuple-destructuring lambdas (e.g. joined queries) as BlockExpression.
+            // Unwrap by visiting the block's result expression.
+            visit ((exp :?> BlockExpression).Result)
         | _ ->
             notImpl()
 
@@ -278,15 +282,17 @@ let visitGroupBy<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) (qua
         | New n -> 
             // Handle groupBy that returns a tuple of multiple columns
             n.Arguments |> Seq.map visit |> Seq.toList |> List.concat
-        | Member m -> 
+        | Member m ->
             // Handle groupBy for a single column
             let column = qualifyColumn m.Member
             [column]
+        | exp when exp.NodeType = ExpressionType.Block ->
+            visit ((exp :?> BlockExpression).Result)
         | _ -> notImpl()
 
     visit (propertySelector :> Expression)
 
-type JoinInfo = 
+type JoinInfo =
     | MI of MemberInfo
     | Const of obj
 
@@ -298,16 +304,18 @@ let visitJoin<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Prop>>) =
         | MethodCall m when m.Method.Name = "Invoke" ->
             // Handle tuples
             visit m.Object
-        | New n -> 
+        | New n ->
             // Handle groupBy that returns a tuple of multiple columns
             n.Arguments |> Seq.map visit |> Seq.toList |> List.collect id
-        | Member m -> 
+        | Member m ->
             if m.Member.DeclaringType |> isOptionType
             then visit m.Expression
             else [ MI m.Member ]
         | Property mi -> [ MI mi ]
-        | Constant c -> 
+        | Constant c ->
             [ Const c.Value ]
+        | exp when exp.NodeType = ExpressionType.Block ->
+            visit ((exp :?> BlockExpression).Result)
         | _ -> notImpl()
 
     visit (propertySelector :> Expression)
@@ -320,11 +328,13 @@ let visitPropertySelector<'T, 'Prop> (propertySelector: Expression<Func<'T, 'Pro
         | MethodCall m when m.Method.Name = "Invoke" ->
             // Handle tuples
             visit m.Object
-        | Member m -> 
+        | Member m ->
             if m.Member.DeclaringType |> isOptionType
             then visit m.Expression
             else m.Member
         | Property mi -> mi
+        | exp when exp.NodeType = ExpressionType.Block ->
+            visit ((exp :?> BlockExpression).Result)
         | _ -> notImpl()
 
     visit (propertySelector :> Expression)
